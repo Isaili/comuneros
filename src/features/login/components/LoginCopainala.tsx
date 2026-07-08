@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { 
@@ -37,7 +37,13 @@ const loginSchema = yup.object({
   recordar: yup.boolean().default(true),
 });
 
-type LoginFormData = yup.InferType<typeof loginSchema>;
+// Tipo definido manualmente (en vez de yup.InferType) para evitar
+// el desajuste de "optional vs required" entre Yup y react-hook-form
+interface LoginFormData {
+  usuario: string;
+  password: string;
+  recordar: boolean;
+}
 
 export default function LoginCopainala() {
   const [showPassword, setShowPassword] = useState(false);
@@ -48,7 +54,7 @@ export default function LoginCopainala() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
-    resolver: yupResolver(loginSchema),
+    resolver: yupResolver(loginSchema) as Resolver<LoginFormData>,
     defaultValues: {
       recordar: true,
     },
@@ -83,17 +89,14 @@ export default function LoginCopainala() {
 
           {/* Textos Centrales Ajustados con Precisión */}
           <div className="text-center flex flex-col items-center min-w-0 px-1 flex-1">
-            {/* Se aumentó el tamaño significativamente manteniendo el estilo Serif */}
             <h1 className="text-[21px] sm:text-[23px] font-serif text-gray-900 leading-tight tracking-tight">
               Casa de Bienes<br />Comunales
             </h1>
            
-            {/* Copainalá - SE MANTIENE INTACTO */}
             <h2 className="text-[40px] sm:text-[40px] text-[#C09E5F] mt-0 mb-0 font-[family-name:var(--font-dancing-script)] leading-none select-none tracking-normal">
               "Copainalá"
             </h2>
             
-            {/* Clave y Periodo */}
             <p className="text-[9px] sm:text-[10px] font-bold text-gray-600 tracking-widest uppercase leading-snug mt-3">
               CLAVE: 07-021-20001-9
             </p>
