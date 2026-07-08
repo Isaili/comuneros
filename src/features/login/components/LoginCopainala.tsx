@@ -34,7 +34,7 @@ const loginSchema = yup.object({
     .string()
     .required('La contraseña es obligatoria')
     .min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  recordar: yup.boolean(),
+  recordar: yup.boolean().default(true),
 });
 
 type LoginFormData = yup.InferType<typeof loginSchema>;
