@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Plus, SlidersHorizontal, Calendar } from 'lucide-react';
 
 interface HeaderProps {
@@ -7,6 +7,22 @@ interface HeaderProps {
 }
 
 export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchChange }) => {
+  const [fechaActual, setFechaActual] = useState<string>('');
+
+  useEffect(() => {
+    // Genera la fecha en tiempo real en el cliente
+    const opciones: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    };
+    
+    const fecha = new Date().toLocaleDateString('es-ES', opciones);
+    // Capitaliza la primera letra (ej: "domingo" -> "Domingo")
+    setFechaActual(fecha.charAt(0).toUpperCase() + fecha.slice(1));
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Fila de Bienvenida y Fecha */}
@@ -21,7 +37,9 @@ export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchCha
         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm text-xs font-semibold text-gray-700 self-start sm:self-auto">
           <Calendar className="w-4 h-4 text-gray-400" />
           <span>FECHA ACTUAL:</span>
-          <span className="text-gray-900 font-bold">Sábado, 11 de Julio de 2026</span>
+          <span className="text-gray-900 font-bold">
+            {fechaActual || "Cargando..."}
+          </span>
         </div>
       </div>
 
