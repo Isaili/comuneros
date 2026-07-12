@@ -18,7 +18,7 @@ export default function NextAssembly() {
       {/* Contenido Principal y Estatus */}
       <div className="mt-1">
         <h3 className="text-lg font-bold text-gray-800 tracking-tight break-words group-hover:text-gray-900">
-          Domingo 26 de julio
+          Domingo 30 de agosto
         </h3>
         
         <div className="flex items-center justify-between gap-2 mt-2">
