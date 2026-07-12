@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useForm, Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { useRouter } from 'next/navigation';
 import { 
   User, 
   Lock, 
@@ -37,8 +38,6 @@ const loginSchema = yup.object({
   recordar: yup.boolean().default(true),
 });
 
-// Tipo definido manualmente (en vez de yup.InferType) para evitar
-// el desajuste de "optional vs required" entre Yup y react-hook-form
 interface LoginFormData {
   usuario: string;
   password: string;
@@ -48,6 +47,7 @@ interface LoginFormData {
 export default function LoginCopainala() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const router = useRouter();
 
   const {
     register,
@@ -60,10 +60,14 @@ export default function LoginCopainala() {
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmitFormulario = async (data: LoginFormData) => {
     setLoginError(null);
     try {
-      console.log('Datos del formulario:', data);
+      console.log('¡Validación exitosa! Redirigiendo a /menu...');
+      
+      // Viajamos a la nueva ruta en app/menu/page.tsx
+      router.push('/menu');
+      
     } catch (err) {
       setLoginError('Usuario o contraseña incorrectos. Intenta de nuevo.');
     }
@@ -78,7 +82,6 @@ export default function LoginCopainala() {
         
         {/* --- HEADER --- */}
         <header className="flex items-center justify-between gap-2 mb-2 shrink-0">
-          {/* Escudo México */}
           <div className="w-14 sm:w-16 shrink-0">
             <img 
               src="https://th.bing.com/th/id/R.1ec4f3cefeefdc9c8463c6fca2da4e63?rik=POmiAu2hUvchEQ&pid=ImgRaw&r=0" 
@@ -87,7 +90,6 @@ export default function LoginCopainala() {
             />
           </div>
 
-          {/* Textos Centrales Ajustados con Precisión */}
           <div className="text-center flex flex-col items-center min-w-0 px-1 flex-1">
             <h1 className="text-[21px] sm:text-[23px] font-serif text-gray-900 leading-tight tracking-tight">
               Casa de Bienes<br />Comunales
@@ -106,7 +108,6 @@ export default function LoginCopainala() {
             <div className="w-12 h-[1.5px] bg-[#C09E5F] mt-2 rounded-full"></div>
           </div>
 
-          {/* Escudo Chiapas */}
           <div className="w-10 sm:w-12 shrink-0">
             <img 
               src="https://tse1.explicit.bing.net/th/id/OIP.8C8vXyoLrLsLUNeSI1cX2gAAAA?rs=1&pid=ImgDetMain&o=7&rm=3" 
@@ -120,7 +121,6 @@ export default function LoginCopainala() {
         <div className="w-full flex-1 flex flex-col justify-center min-h-0">
           
           <div className="space-y-6 my-auto py-4">
-            {/* Títulos */}
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <Leaf className="w-5 h-5 text-[#C09E5F]" />
@@ -137,21 +137,22 @@ export default function LoginCopainala() {
               )}
             </div>
 
-            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+            {/* 🛑 Usamos un div contenedor plano para asegurar al 100% que el navegador no interfiera en la URL */}
+            <div className="space-y-4">
               
               {/* Input Usuario */}
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-green-900 " >
+                <label className="text-sm font-semibold text-green-900">
                   Usuario o correo electrónico
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
+                    <User className="h-5 w-5 text-gray-700" />
                   </div>
                   <input
                     type="text"
                     {...register('usuario')}
-                    className={`block w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:ring-[#C09E5F] focus:border-[#C09E5F] bg-white transition-colors ${
+                    className={`block w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:ring-[#C09E5F] focus:border-[#C09E5F] bg-white text-gray-950 font-medium transition-colors ${
                       errors.usuario ? 'border-red-400' : 'border-gray-200'
                     }`}
                     placeholder="ej. capturista@comisaria.gob.mx"
@@ -171,12 +172,12 @@ export default function LoginCopainala() {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                    <Lock className="h-5 w-5 text-gray-700" />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
                     {...register('password')}
-                    className={`block w-full pl-10 pr-10 py-3 border rounded-xl text-sm focus:ring-[#C09E5F] focus:border-[#C09E5F] bg-white transition-colors ${
+                    className={`block w-full pl-10 pr-10 py-3 border rounded-xl text-sm focus:ring-[#C09E5F] focus:border-[#C09E5F] bg-white text-gray-950 font-medium transition-colors ${
                       errors.password ? 'border-red-400' : 'border-gray-200'
                     }`}
                     placeholder="ingresa tu contraseña"
@@ -187,9 +188,9 @@ export default function LoginCopainala() {
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                      <EyeOff className="h-5 w-5 text-gray-500 hover:text-gray-800" />
                     ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                      <Eye className="h-5 w-5 text-gray-500 hover:text-gray-800" />
                     )}
                   </button>
                 </div>
@@ -215,10 +216,11 @@ export default function LoginCopainala() {
                 </a>
               </div>
 
-              {/* Botón Principal */}
+              {/* Botón Principal - Ejecuta handleSubmit al hacer clic */}
               <button
-                type="submit"
+                type="button"
                 disabled={isSubmitting}
+                onClick={handleSubmit(onSubmitFormulario)}
                 className="w-full bg-gradient-to-r from-[#213326] to-[#36493A] hover:from-[#1b2a1f] hover:to-[#2b3c2f] disabled:opacity-60 disabled:cursor-not-allowed text-white py-3 px-4 rounded-xl font-medium flex items-center justify-between group transition-all pt-3 text-sm sm:text-base mt-2"
               >
                 <span className="w-full text-center pl-6">
@@ -226,7 +228,7 @@ export default function LoginCopainala() {
                 </span>
                 <ArrowRight className="h-5 w-5 text-[#C09E5F] group-hover:translate-x-1 transition-transform" />
               </button>
-            </form>
+            </div>
           </div>
 
           {/* Footer de Seguridad y Créditos */}
