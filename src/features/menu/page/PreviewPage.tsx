@@ -1,21 +1,45 @@
 "use client";
 
-import React from "react";
-// Importación de los componentes principales
-import Sidebar from "../components/Sidebar";
-import DashboardView from "../components/DashboardView"; // Asegúrate de ajustar la ruta si está en otra carpeta
+import React, { useState } from 'react';
+import Sidebar from '../components/Sidebar';
+import DashboardView from '../components/DashboardView';
+// 1. Importamos la vista real de Comuneros usando su ubicación relativa correcta
+import { ComunerosFeature } from '../../comuneros/page/ComunerosFeature';
 
-export default function PreviewPage() {
+export const PreviewPage: React.FC = () => {
+  const [currentView, setView] = useState<string>('dashboard');
+
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-slate-50">
-      {/* Menú lateral (Responsivo: Oculto en móviles con botón, fijo en escritorio) */}
-      <Sidebar />
+    <div className="flex min-h-screen bg-[#f8fafc] font-sans antialiased">
+      
+      {/* El Sidebar pasa el estado de la vista de forma global */}
+      <Sidebar currentView={currentView} setView={setView} />
 
-      {/* Contenedor del contenido principal */}
-      {/* CORRECCIÓN RESPONSIVA: Añadimos pt-16 en pantallas pequeñas para que el botón flotante del Sidebar no tape el título del Dashboard */}
-      <main className="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden">
-        <DashboardView />
+      {/* Contenedor dinámico del panel derecho */}
+      <main className="flex-1 min-w-0 p-4 sm:p-8 pt-20 lg:pt-8 space-y-8 overflow-y-auto h-screen">
+        
+        {/* VISTA: Dashboard */}
+        {currentView === 'dashboard' && (
+          <div className="animate-fade-in">
+            <DashboardView />
+          </div>
+        )}
+
+        {/* VISTA: Comuneros (¡Ahora cargará el componente real!) */}
+        {currentView === 'comuneros' && (
+          <ComunerosFeature />
+        )}
+
+        {/* OTRAS VISTAS EN CONSTRUCCIÓN */}
+        {!['dashboard', 'comuneros'].includes(currentView) && (
+          <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 font-medium capitalize animate-fade-in">
+            Sección de <span className="font-bold text-gray-700">{currentView.replace('-', ' ')}</span> en desarrollo.
+          </div>
+        )}
+
       </main>
     </div>
   );
-}
+};
+
+export default PreviewPage;
