@@ -11,6 +11,7 @@ export interface Comunero {
   id: string;
   nombre: string;
   apellidos: string;
+  tipo: 'comunero' | 'avecindado';
   fechaNacimiento: string;
   edad: number;
   estadoCivil: 'Casado' | 'Soltero' | 'Divorciado' | 'Viudo';

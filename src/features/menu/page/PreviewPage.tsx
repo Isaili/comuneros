@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import DashboardView from '../components/DashboardView';
-// 1. Importamos la vista real de Comuneros usando su ubicación relativa correcta
 import { ComunerosFeature } from '../../comuneros/page/ComunerosFeature';
+import { ParcelasFeature } from '../../parcelas/page/ParcelasFeature';
 
 export const PreviewPage: React.FC = () => {
   const [currentView, setView] = useState<string>('dashboard');
@@ -25,13 +25,19 @@ export const PreviewPage: React.FC = () => {
           </div>
         )}
 
-        {/* VISTA: Comuneros (¡Ahora cargará el componente real!) */}
+        {/* VISTA: Comuneros */}
         {currentView === 'comuneros' && (
           <ComunerosFeature />
         )}
 
+        {/* 💡 VISTA: Parcelas (¡Carga la nueva sección modular!) */}
+        {currentView === 'parcelas' && (
+          <ParcelasFeature />
+        )}
+
         {/* OTRAS VISTAS EN CONSTRUCCIÓN */}
-        {!['dashboard', 'comuneros'].includes(currentView) && (
+        {/* 💡 Agregamos 'parcelas' a la lista de excluidos para que no muestre el mensaje de "en desarrollo" */}
+        {!['dashboard', 'comuneros', 'parcelas'].includes(currentView) && (
           <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 font-medium capitalize animate-fade-in">
             Sección de <span className="font-bold text-gray-700">{currentView.replace('-', ' ')}</span> en desarrollo.
           </div>

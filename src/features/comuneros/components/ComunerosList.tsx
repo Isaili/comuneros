@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, ChevronLeft, ChevronRight, UserCheck, UserPlus } from 'lucide-react';
 import { Comunero } from '@/features/comuneros/types/types';
 
 interface ListProps {
@@ -23,6 +23,8 @@ export const ComunerosList: React.FC<ListProps> = ({ comuneros, selectedId, onSe
             <thead>
               <tr className="text-gray-400 font-bold text-xs uppercase tracking-wider border-b border-gray-100">
                 <th className="py-3 px-2">Nombre</th>
+                <th className="py-3 px-2">Tipo</th>
+                {/* 💡 Restaurados a la normalidad para que siempre se muestren */}
                 <th className="py-3 px-2">Fecha de nacimiento</th>
                 <th className="py-3 px-2">Estado civil</th>
                 <th className="py-3 px-2">Colonia</th>
@@ -38,6 +40,7 @@ export const ComunerosList: React.FC<ListProps> = ({ comuneros, selectedId, onSe
                     selectedId === c.id ? 'bg-[#006837]/5' : 'hover:bg-gray-50'
                   }`}
                 >
+                  {/* Nombre */}
                   <td className="py-3 px-2 flex items-center gap-3">
                     <img src={c.fotografia} alt={c.nombre} className="w-10 h-10 rounded-xl object-cover border border-gray-100 shadow-sm" />
                     <div>
@@ -47,9 +50,34 @@ export const ComunerosList: React.FC<ListProps> = ({ comuneros, selectedId, onSe
                       <p className="text-xs text-gray-500 font-medium">{c.apellidos}</p>
                     </div>
                   </td>
-                  <td className="py-3 px-2 text-gray-600 font-medium">{c.fechaNacimiento}</td>
-                  <td className="py-3 px-2 text-gray-600 font-medium">{c.estadoCivil}</td>
+
+                  {/* Tipo */}
+                  <td className="py-3 px-2 whitespace-nowrap">
+                    {c.tipo === 'comunero' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        <UserCheck className="w-3 h-3" />
+                        Comunero
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                        <UserPlus className="w-3 h-3" />
+                        Avecindado
+                      </span>
+                    )}
+                  </td>
+
+                  {/* 💡 Listos y visibles sin restricciones */}
+                  <td className="py-3 px-2 text-gray-600 font-medium whitespace-nowrap">
+                    {c.fechaNacimiento}
+                  </td>
+                  <td className="py-3 px-2 text-gray-600 font-medium">
+                    {c.estadoCivil}
+                  </td>
+                  
+                  {/* Colonia */}
                   <td className="py-3 px-2 text-gray-600 font-medium">{c.colonia}</td>
+                  
+                  {/* Acciones */}
                   <td className="py-3 px-2 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1.5">
                       <button onClick={() => onEdit(c.id)} className="p-2 border border-gray-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600 transition-all">
