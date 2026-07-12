@@ -70,12 +70,12 @@ export default function LoginCopainala() {
   };
 
   return (
-    /* 💡 SOLUCIÓN 1: Cambiamos h-full por min-h-screen y permitimos overflow-y-auto */
+   
     <div className="min-h-screen w-full bg-[#FAFAFA] flex flex-col items-center justify-start p-4 pt-6 sm:pt-10 relative overflow-y-auto font-sans">
       
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-5 bg-[url('https://www.transparenttextures.com/patterns/topography.png')]"></div>
 
-      /* 💡 SOLUCIÓN 2: Quitamos h-full estricto para que el contenedor pueda estirarse de ser necesario */
+     
       <div className="w-full max-w-sm z-10 flex flex-col justify-between gap-6 min-h-[calc(100vh-3rem)]">
         
         {/* --- HEADER --- */}
