@@ -5,6 +5,8 @@ import Sidebar from '../components/Sidebar';
 import DashboardView from '../components/DashboardView';
 import { ComunerosFeature } from '../../comuneros/page/ComunerosFeature';
 import { ParcelasFeature } from '../../parcelas/page/ParcelasFeature';
+// 💡 Importamos el nuevo componente unificador de lotes
+import { LotesFeature } from '../../lotes/page/LotesFeature';
 
 export const PreviewPage: React.FC = () => {
   const [currentView, setView] = useState<string>('dashboard');
@@ -30,14 +32,19 @@ export const PreviewPage: React.FC = () => {
           <ComunerosFeature />
         )}
 
-        {/* 💡 VISTA: Parcelas (¡Carga la nueva sección modular!) */}
+        {/* VISTA: Parcelas */}
         {currentView === 'parcelas' && (
           <ParcelasFeature />
         )}
 
+        {/* 💡 VISTA: Lotes (¡Carga la nueva sección modular adaptada de la imagen!) */}
+        {currentView === 'lotes' && (
+          <LotesFeature />
+        )}
+
         {/* OTRAS VISTAS EN CONSTRUCCIÓN */}
-        {/* 💡 Agregamos 'parcelas' a la lista de excluidos para que no muestre el mensaje de "en desarrollo" */}
-        {!['dashboard', 'comuneros', 'parcelas'].includes(currentView) && (
+        {/* 💡 Agregamos 'lotes' a la lista de excluidos para que no muestre el mensaje de "en desarrollo" */}
+        {!['dashboard', 'comuneros', 'parcelas', 'lotes'].includes(currentView) && (
           <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 font-medium capitalize animate-fade-in">
             Sección de <span className="font-bold text-gray-700">{currentView.replace('-', ' ')}</span> en desarrollo.
           </div>

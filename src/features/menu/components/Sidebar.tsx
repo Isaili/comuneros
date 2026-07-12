@@ -20,6 +20,7 @@ const menuItems = [
   { name: "Dashboard", view: "dashboard", icon: LayoutGrid },
   { name: "Comuneros", view: "comuneros", icon: Users },
   { name: "Parcelas", view: "parcelas", icon: FileText },
+  { name: "Lotes", view: "lotes", icon: FileText },
   { name: "Pagos", view: "pagos", icon: Receipt },
   { name: "Multas y Asistencias", view: "multas-asistencias", icon: CircleDollarSign },
   { name: "Reportes", view: "reportes", icon: ClipboardList },

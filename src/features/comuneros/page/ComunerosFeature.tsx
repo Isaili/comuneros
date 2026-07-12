@@ -8,7 +8,7 @@ import { ComuneroDetail } from '../components/ComuneroDetail';
 
 // 1. RE-INSERTAMOS LOS DATOS DE PRUEBA (MOCK DATA)
 const MOCK_COMUNEROS: Comunero[] = [
-    {
+  {
     id: '1',
     nombre: 'Isabel',
     apellidos: 'Hernández López',
@@ -86,44 +86,54 @@ export const ComunerosFeature: React.FC = () => {
   const handleAddComunero = () => alert("Manejador para añadir nuevo comunero");
   const handleEdit = (id: string) => alert(`Editar comunero con ID: ${id}`);
   const handleDelete = (id: string) => {
-    if(confirm("¿Estás seguro?")) setComuneros(prev => prev.filter(c => c.id !== id));
+    if (confirm("¿Estás seguro?")) setComuneros(prev => prev.filter(c => c.id !== id));
   };
 
   const filteredComuneros = comuneros.filter(c => 
     `${c.nombre} ${c.apellidos}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Asegura la consistencia visual si un filtro descarta al elemento activo actual
+  const activeComunero = filteredComuneros.find(c => c.id === selectedComunero?.id) || filteredComuneros[0];
+
   return (
-    <div className="space-y-8 animate-fade-in w-full">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto">
+      
+      {/* Encabezado Responsivo */}
       <ComunerosHeader 
         onAddClick={handleAddComunero} 
         onSearchChange={handleSearch} 
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-5">
+      {/* Grid de Distribución Asimétrica 5/7 */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-start">
+        
+        {/* Tabla / Lista de Comuneros (Ocupa 5/12 en Desktop) */}
+        <div className="lg:col-span-5 w-full order-1">
           <ComunerosList 
             comuneros={filteredComuneros}
-            selectedId={selectedComunero?.id}
+            selectedId={activeComunero?.id}
             onSelect={setSelectedComunero}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
         </div>
 
-        <div className="lg:col-span-7">
-          {selectedComunero ? (
+        {/* Panel de Expediente Detallado (Ocupa 7/12 en Desktop) */}
+        <div className="lg:col-span-7 w-full order-2">
+          {activeComunero ? (
             <ComuneroDetail 
-              comunero={selectedComunero} 
+              comunero={activeComunero} 
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
           ) : (
-            <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 font-medium">
-              Selecciona un comunero de la lista para ver su expediente.
+            <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-12 text-center text-gray-400 font-medium text-xs sm:text-sm shadow-sm">
+              No se encontraron comuneros o avecindados registrados con ese nombre.
             </div>
           )}
         </div>
+
       </div>
     </div>
   );
