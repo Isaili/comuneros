@@ -48,7 +48,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
             <Edit2 className="w-3.5 h-3.5" /> Editar
           </button>
           <button onClick={() => onDelete(comunero.id)} className="flex items-center gap-1.5 px-3 py-1.5 border border-red-200 bg-white hover:bg-red-50 rounded-lg text-xs font-bold text-red-600 transition-colors">
-            <Trash2 className="w-3.5 h-3.5" /> Dar de baja
+            <Trash2 className="w-3.5 h-3.5" />baja
           </button>
         </div>
       </div>
