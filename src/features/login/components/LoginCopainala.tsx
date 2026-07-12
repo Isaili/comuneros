@@ -15,7 +15,6 @@ import {
   Leaf 
 } from 'lucide-react';
 
-// --- Esquema de validación ---
 const loginSchema = yup.object({
   usuario: yup
     .string()
@@ -64,21 +63,20 @@ export default function LoginCopainala() {
     setLoginError(null);
     try {
       console.log('¡Validación exitosa! Redirigiendo a /menu...');
-      
-      // Viajamos a la nueva ruta en app/menu/page.tsx
       router.push('/menu');
-      
     } catch (err) {
       setLoginError('Usuario o contraseña incorrectos. Intenta de nuevo.');
     }
   };
 
   return (
-    <div className="h-full w-full bg-[#FAFAFA] flex flex-col items-center justify-start p-4 pt-6 sm:pt-10 relative overflow-hidden font-sans">
+    /* 💡 SOLUCIÓN 1: Cambiamos h-full por min-h-screen y permitimos overflow-y-auto */
+    <div className="min-h-screen w-full bg-[#FAFAFA] flex flex-col items-center justify-start p-4 pt-6 sm:pt-10 relative overflow-y-auto font-sans">
       
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-5 bg-[url('https://www.transparenttextures.com/patterns/topography.png')]"></div>
 
-      <div className="w-full max-w-sm z-10 h-full flex flex-col justify-between gap-6">
+      /* 💡 SOLUCIÓN 2: Quitamos h-full estricto para que el contenedor pueda estirarse de ser necesario */
+      <div className="w-full max-w-sm z-10 flex flex-col justify-between gap-6 min-h-[calc(100vh-3rem)]">
         
         {/* --- HEADER --- */}
         <header className="flex items-center justify-between gap-2 mb-2 shrink-0">
@@ -118,9 +116,10 @@ export default function LoginCopainala() {
         </header>
 
         {/* --- CUERPO PRINCIPAL --- */}
-        <div className="w-full flex-1 flex flex-col justify-center min-h-0">
+        /* 💡 SOLUCIÓN 3: Quitamos min-h-0 rígido que asfixiaba los elementos en pantallas pequeñas */
+        <div className="w-full flex-1 flex flex-col justify-center">
           
-          <div className="space-y-6 my-auto py-4">
+          <div className="space-y-5 my-auto py-4">
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <Leaf className="w-5 h-5 text-[#C09E5F]" />
@@ -137,7 +136,6 @@ export default function LoginCopainala() {
               )}
             </div>
 
-            {/* 🛑 Usamos un div contenedor plano para asegurar al 100% que el navegador no interfiera en la URL */}
             <div className="space-y-4">
               
               {/* Input Usuario */}
@@ -216,12 +214,12 @@ export default function LoginCopainala() {
                 </a>
               </div>
 
-              {/* Botón Principal - Ejecuta handleSubmit al hacer clic */}
+              {/* Botón Principal */}
               <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleSubmit(onSubmitFormulario)}
-                className="w-full bg-gradient-to-r from-[#213326] to-[#36493A] hover:from-[#1b2a1f] hover:to-[#2b3c2f] disabled:opacity-60 disabled:cursor-not-allowed text-white py-3 px-4 rounded-xl font-medium flex items-center justify-between group transition-all pt-3 text-sm sm:text-base mt-2"
+                className="w-full bg-gradient-to-r from-[#213326] to-[#36493A] hover:from-[#1b2a1f] hover:to-[#2b3c2f] disabled:opacity-60 disabled:cursor-not-allowed text-white py-3 px-4 rounded-xl font-medium flex items-center justify-between group transition-all text-sm sm:text-base mt-4 shadow-sm"
               >
                 <span className="w-full text-center pl-6">
                   {isSubmitting ? 'Ingresando...' : 'Ingresar al sistema'}
@@ -232,7 +230,7 @@ export default function LoginCopainala() {
           </div>
 
           {/* Footer de Seguridad y Créditos */}
-          <div className="text-center space-y-2 mt-auto shrink-0 pb-2">
+          <div className="text-center space-y-2 mt-auto shrink-0 pb-2 pt-4">
             <div className="flex flex-col items-center justify-center gap-0.5">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#C09E5F]" />
