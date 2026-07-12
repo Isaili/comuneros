@@ -8,8 +8,30 @@ import { ComuneroDetail } from '../components/ComuneroDetail';
 
 // 1. RE-INSERTAMOS LOS DATOS DE PRUEBA (MOCK DATA)
 const MOCK_COMUNEROS: Comunero[] = [
-  {
+    {
     id: '1',
+    nombre: 'Isabel',
+    apellidos: 'Hernández López',
+    fechaNacimiento: '15/03/1980',
+    edad: 65,
+    estadoCivil: 'Casado',
+    direccion: 'Calle Miguel Hidalgo #123',
+    colonia: 'Santa Ana',
+    telefono: '961 123 4567',
+    correo: 'jose.hernandez@email.com',
+    fechaRegistro: '10 de enero de 2010',
+    folioComunero: 'COM-0042',
+    fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
+    qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0042',
+    activo: true,
+    terrenos: [
+      { tipo: 'Parcela', numero: 155, folio: 'P-0155', certificado: 'CERT-15857', superficie: '2.50 ha', ubicacion: 'Ejido Copainalá' },
+      { tipo: 'Parcela', numero: 257, folio: 'P-0627', certificado: 'CERT-23565', superficie: '1.75 ha', ubicacion: 'Ejido Copainalá' },
+      { tipo: 'Lote', numero: 85, folio: 'L-008', superficie: '300 m²', ubicacion: 'Barrio San José' }
+    ]
+  },
+  {
+    id: '2',
     nombre: 'José Antonio',
     apellidos: 'Hernández López',
     fechaNacimiento: '15/03/1980',
@@ -31,7 +53,7 @@ const MOCK_COMUNEROS: Comunero[] = [
     ]
   },
   {
-    id: '2',
+    id: '3',
     nombre: 'María Guadalupe',
     apellidos: 'Pérez Martínez',
     fechaNacimiento: '22/07/1985',
