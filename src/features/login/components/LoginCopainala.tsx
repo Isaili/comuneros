@@ -116,7 +116,7 @@ export default function LoginCopainala() {
         </header>
 
         {/* --- CUERPO PRINCIPAL --- */}
-        /* 💡 SOLUCIÓN 3: Quitamos min-h-0 rígido que asfixiaba los elementos en pantallas pequeñas */
+       
         <div className="w-full flex-1 flex flex-col justify-center">
           
           <div className="space-y-5 my-auto py-4">
