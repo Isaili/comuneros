@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 
 export interface Lote {
   id: string;
@@ -16,9 +16,17 @@ interface ListProps {
   lotes: Lote[];
   selectedId: string;
   onSelect: (lote: Lote) => void;
+  onEdit?: (lote: Lote) => void;   // Callback para editar
+  onDelete?: (lote: Lote) => void; // Callback para eliminar
 }
 
-export const LotesList: React.FC<ListProps> = ({ lotes, selectedId, onSelect }) => {
+export const LotesList: React.FC<ListProps> = ({ 
+  lotes, 
+  selectedId, 
+  onSelect, 
+  onEdit, 
+  onDelete 
+}) => {
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-5 flex flex-col justify-between min-h-[600px] sm:min-h-[680px] w-full">
       <div>
@@ -42,7 +50,7 @@ export const LotesList: React.FC<ListProps> = ({ lotes, selectedId, onSelect }) 
                 <th className="pb-3 px-2.5 text-[10px]">Superficie</th>
                 <th className="pb-3 px-2.5 text-[10px]">Propietario(s)</th>
                 <th className="pb-3 px-2.5 text-[10px]">Estado predial</th>
-                <th className="pb-3 px-2.5 text-[10px] text-right">Acciones</th>
+                <th className="pb-3 px-2.5 text-center w-24 text-[10px]">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-700 font-medium">
@@ -79,10 +87,24 @@ export const LotesList: React.FC<ListProps> = ({ lotes, selectedId, onSelect }) 
                         {l.estadoPredial}
                       </span>
                     </td>
-                    <td className="py-3.5 px-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <button className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center justify-center">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
+                    {/* Columna de acciones con detener propagación para evitar disparar onSelect */}
+                    <td className="py-3.5 px-2.5" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button 
+                          onClick={() => onEdit?.(l)}
+                          className="p-2 border border-gray-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600 transition-all"
+                          title="Editar lote"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={() => onDelete?.(l)}
+                          className="p-2 border border-gray-100 rounded-lg hover:border-red-200 hover:bg-red-50 text-red-500 transition-all"
+                          title="Eliminar lote"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -92,18 +114,16 @@ export const LotesList: React.FC<ListProps> = ({ lotes, selectedId, onSelect }) 
         </div>
       </div>
 
-      {/* Paginación Adaptativa (Compacta en móvil, extendida en Desktop) */}
+      {/* Paginación Adaptativa */}
       <div className="flex items-center justify-between sm:justify-center gap-1.5 pt-4 border-t border-gray-50 text-xs font-bold text-gray-500 mt-4">
         <button className="p-2 rounded-xl border border-gray-100 hover:bg-gray-50 text-gray-400 transition-colors min-w-[36px] flex items-center justify-center">
           <ChevronLeft className="w-4 h-4" />
         </button>
         
-        {/* Leyenda visible solo en móviles */}
         <span className="inline sm:hidden text-gray-600 font-semibold px-2">
           Pág. 1 de 13
         </span>
 
-        {/* Botones numéricos ocultos en móviles */}
         <div className="hidden sm:flex items-center gap-1.5">
           <button className="w-8 h-8 rounded-xl bg-[#006837] text-white flex items-center justify-center shadow-xs">1</button>
           <button className="w-8 h-8 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">2</button>

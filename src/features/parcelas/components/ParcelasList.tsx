@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 
 export interface Parcela {
   id: string;
@@ -16,9 +16,17 @@ interface ListProps {
   parcelas: Parcela[];
   selectedId: string;
   onSelect: (parcela: Parcela) => void;
+  onEdit?: (parcela: Parcela) => void;   // Callback para editar
+  onDelete?: (parcela: Parcela) => void; // Callback para eliminar
 }
 
-export const ParcelasList: React.FC<ListProps> = ({ parcelas, selectedId, onSelect }) => {
+export const ParcelasList: React.FC<ListProps> = ({ 
+  parcelas, 
+  selectedId, 
+  onSelect,
+  onEdit,
+  onDelete
+}) => {
   const [activeTab, setActiveTab] = useState<'parcelas' | 'lotes'>('parcelas');
 
   return (
@@ -64,7 +72,7 @@ export const ParcelasList: React.FC<ListProps> = ({ parcelas, selectedId, onSele
                 <th className="pb-3 px-2 text-[10px] text-center">Titulares</th>
                 <th className="pb-3 px-2 text-[10px]">Propietario(s)</th>
                 <th className="pb-3 px-2 text-[10px]">Estado predial</th>
-                <th className="pb-3 px-2 text-[10px] text-right">Acciones</th>
+                <th className="pb-3 px-2 text-[10px] text-center w-24">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-700 font-medium">
@@ -74,8 +82,10 @@ export const ParcelasList: React.FC<ListProps> = ({ parcelas, selectedId, onSele
                   <tr 
                     key={p.id}
                     onClick={() => onSelect(p)}
-                    className={`cursor-pointer transition-all ${
-                      isSelected ? 'bg-slate-50/90' : 'hover:bg-gray-50/50'
+                    className={`cursor-pointer transition-all border-l-4 ${
+                      isSelected 
+                        ? 'bg-slate-50/90 border-l-[#006837]' 
+                        : 'hover:bg-gray-50/50 border-l-transparent'
                     }`}
                   >
                     <td className="py-3.5 px-2 font-bold text-gray-900">{p.numero}</td>
@@ -101,10 +111,24 @@ export const ParcelasList: React.FC<ListProps> = ({ parcelas, selectedId, onSele
                         {p.estadoPredial}
                       </span>
                     </td>
-                    <td className="py-3.5 px-2 text-right" onClick={(e) => e.stopPropagation()}>
-                      <button className="p-1 rounded hover:bg-gray-100 text-gray-400 transition-colors">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
+                    {/* Columna de acciones con detener propagación para evitar disparar onSelect */}
+                    <td className="py-3.5 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button 
+                          onClick={() => onEdit?.(p)}
+                          className="p-2 border border-gray-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600 transition-all"
+                          title="Editar parcela"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={() => onDelete?.(p)}
+                          className="p-2 border border-gray-100 rounded-lg hover:border-red-200 hover:bg-red-50 text-red-500 transition-all"
+                          title="Eliminar parcela"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

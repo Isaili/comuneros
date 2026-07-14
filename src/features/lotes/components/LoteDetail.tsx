@@ -9,7 +9,33 @@ interface DetailProps {
 }
 
 export const LoteDetail: React.FC<DetailProps> = ({ lote }) => {
-  const isPagado = lote.estadoPredial === 'Pagado';
+  const esPagado2026 = lote.estadoPredial === 'Pagado';
+
+  // Estructura del historial dinámico de 3 años con la lógica de negocio solicitada
+  const registrosHistorial = [
+    {
+      anio: 2026,
+      fecha: esPagado2026 ? "10/07/2026" : "—",
+      // Si pagó en julio (después de marzo), se duplica a $40. Si no ha pagado, adeudo de $20 base.
+      importe: esPagado2026 ? "$40.00" : "$20.00",
+      estado: lote.estadoPredial, // Estado dinámico según la propiedad del lote
+      reciboDisponible: esPagado2026
+    },
+    {
+      anio: 2025,
+      fecha: "—",
+      importe: "$20.00", // Adeudo de año anterior (tarifa base)
+      estado: "Pagar" as const, // Forzado a "Pagar" (adeudo)
+      reciboDisponible: false
+    },
+    {
+      anio: 2024,
+      fecha: "18/02/2024", // Pagado a tiempo antes de marzo
+      importe: "$20.00",
+      estado: "Pagado" as const, // Forzado a "Pagado"
+      reciboDisponible: true
+    }
+  ];
 
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-5 space-y-4 w-full lg:max-h-[750px] lg:overflow-y-auto scrollbar-thin">
@@ -21,7 +47,7 @@ export const LoteDetail: React.FC<DetailProps> = ({ lote }) => {
           <div className="flex items-center gap-2 mt-0.5">
             <h2 className="text-xl font-black text-gray-900">{lote.numero}</h2>
             <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
-              isPagado ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+              esPagado2026 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
             }`}>
               {lote.estadoPredial}
             </span>
@@ -50,7 +76,7 @@ export const LoteDetail: React.FC<DetailProps> = ({ lote }) => {
           <p className="text-[10px] font-bold text-gray-400">Estado predial</p>
           <div className="mt-0.5">
             <span className={`text-[10px] font-black px-1.5 py-0.5 rounded text-center inline-block ${
-              isPagado ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+              esPagado2026 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
             }`}>
               {lote.estadoPredial}
             </span>
@@ -67,7 +93,10 @@ export const LoteDetail: React.FC<DetailProps> = ({ lote }) => {
           <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-400">Folio interno</span> <span className="text-gray-900 font-mono">{lote.folio}</span></div>
           <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-400">Estado</span> <span className="text-emerald-700 font-bold">Activo</span></div>
           <div className="flex justify-between border-b border-gray-50 sm:border-0 pb-1 sm:pb-0"><span className="text-gray-400">Superficie</span> <span className="text-gray-900">{lote.superficie}</span></div>
-          <div className="flex justify-between border-b border-gray-50 sm:border-0 pb-1 sm:pb-0"><span className="text-gray-400">Último pago predial</span> <span className="text-gray-900">10/07/2026</span></div>
+          <div className="flex justify-between border-b border-gray-50 sm:border-0 pb-1 sm:pb-0">
+            <span className="text-gray-400">Último pago predial</span> 
+            <span className="text-gray-900">{esPagado2026 ? "10/07/2026" : "—"}</span>
+          </div>
           <div className="flex justify-between border-b border-gray-50 sm:border-0 pb-1 sm:pb-0"><span className="text-gray-400">Uso actual</span> <span className="text-gray-900">Habitacional</span></div>
           <div className="flex justify-between"><span className="text-gray-400">Observaciones</span> <span className="text-gray-400">—</span></div>
         </div>
@@ -140,29 +169,40 @@ export const LoteDetail: React.FC<DetailProps> = ({ lote }) => {
               <tr className="text-gray-400 font-semibold border-b border-gray-100">
                 <th className="pb-1.5">Año</th>
                 <th className="pb-1.5">Fecha de pago</th>
-                <th className="pb-1.5">Importe</th>
+                <th className="pb-1.5">Importe / Adeudo</th>
                 <th className="pb-1.5">Estado</th>
                 <th className="pb-1.5 text-right">Recibo</th>
               </tr>
             </thead>
             <tbody className="font-semibold text-gray-700">
-              <tr>
-                <td className="py-2">2026</td>
-                <td className="py-2 text-gray-500 font-normal">10/07/2026</td>
-                <td className="py-2 font-bold text-gray-900">$750.00</td>
-                <td className="py-2">
-                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
-                    isPagado ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
-                  }`}>
-                    {lote.estadoPredial}
-                  </span>
-                </td>
-                <td className="py-2 text-right">
-                  <button className="text-emerald-700 text-[10px] font-bold inline-flex items-center gap-0.5 hover:underline">
-                    VER <span>↗</span>
-                  </button>
-                </td>
-              </tr>
+              {registrosHistorial.map((registro) => {
+                const esRegistroPagado = registro.estado === 'Pagado';
+                return (
+                  <tr key={registro.anio} className="hover:bg-gray-50/40">
+                    <td className="py-2 font-bold text-gray-900">{registro.anio}</td>
+                    <td className="py-2 text-gray-500 font-normal whitespace-nowrap">{registro.fecha}</td>
+                    <td className={`py-2 font-bold ${esRegistroPagado ? 'text-gray-900' : 'text-red-600'}`}>
+                      {registro.importe}
+                    </td>
+                    <td className="py-2">
+                      <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
+                        esRegistroPagado ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+                      }`}>
+                        {registro.estado}
+                      </span>
+                    </td>
+                    <td className="py-2 text-right">
+                      {registro.reciboDisponible ? (
+                        <button className="text-emerald-700 text-[10px] font-bold inline-flex items-center gap-0.5 hover:underline">
+                          VER <span>↗</span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 font-normal select-none">No disponible</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

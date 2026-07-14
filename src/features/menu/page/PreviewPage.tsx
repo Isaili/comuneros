@@ -5,8 +5,10 @@ import Sidebar from '../components/Sidebar';
 import DashboardView from '../components/DashboardView';
 import { ComunerosFeature } from '../../comuneros/page/ComunerosFeature';
 import { ParcelasFeature } from '../../parcelas/page/ParcelasFeature';
-// 💡 Importamos el nuevo componente unificador de lotes
 import { LotesFeature } from '../../lotes/page/LotesFeature';
+
+// 💡 CORREGIDO: Añadida la barra diagonal '/' que faltaba en la ruta relativa
+import { PredialPagos } from '../../pagos/page/PredialPagos';
 
 export const PreviewPage: React.FC = () => {
   const [currentView, setView] = useState<string>('dashboard');
@@ -37,14 +39,19 @@ export const PreviewPage: React.FC = () => {
           <ParcelasFeature />
         )}
 
-        {/* 💡 VISTA: Lotes (¡Carga la nueva sección modular adaptada de la imagen!) */}
+        {/* VISTA: Lotes */}
         {currentView === 'lotes' && (
           <LotesFeature />
         )}
 
+        {/* 💡 CORREGIDO: Ahora sí asignamos PredialPagos a su vista correspondiente ('pagos') */}
+        {currentView === 'pagos' && (
+          <PredialPagos />
+        )}
+
         {/* OTRAS VISTAS EN CONSTRUCCIÓN */}
-        {/* 💡 Agregamos 'lotes' a la lista de excluidos para que no muestre el mensaje de "en desarrollo" */}
-        {!['dashboard', 'comuneros', 'parcelas', 'lotes'].includes(currentView) && (
+        {/* 💡 CORREGIDO: Agregamos 'pagos' a la lista de excluidos para que cargue limpio */}
+        {!['dashboard', 'comuneros', 'parcelas', 'lotes', 'pagos'].includes(currentView) && (
           <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 font-medium capitalize animate-fade-in">
             Sección de <span className="font-bold text-gray-700">{currentView.replace('-', ' ')}</span> en desarrollo.
           </div>

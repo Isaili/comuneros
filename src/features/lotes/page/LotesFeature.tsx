@@ -19,7 +19,9 @@ const MOCK_LOTES: Lote[] = [
 export const LotesFeature: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<'parcelas' | 'lotes'>('lotes');
   const [lotes] = useState<Lote[]>(MOCK_LOTES);
-  const [selectedLote, setSelectedLote] = useState<Lote>(MOCK_LOTES[0]);
+  
+  // Iniciamos en null para que el modal empiece cerrado
+  const [selectedLote, setSelectedLote] = useState<Lote | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredLotes = lotes.filter(l => 
@@ -28,11 +30,8 @@ export const LotesFeature: React.FC = () => {
     l.propietarios.some((prop: string) => prop.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Asegura que siempre haya un lote seleccionado visible si el filtro cambia
-  const activeLote = filteredLotes.find(l => l.id === selectedLote?.id) || filteredLotes[0];
-
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
       
       {/* 1. Encabezado y Filtros Adaptativos */}
       <LotesHeader 
@@ -44,34 +43,56 @@ export const LotesFeature: React.FC = () => {
 
       {/* Switcher de vistas principal */}
       {currentTab === 'lotes' ? (
-        /* Grid de Distribución Modular: Colapsa a 1 columna en móvil, 12 columnas desde LG (Large) */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
-          
-          {/* 2. Tabla de Lotes (Ocupa 7/12 del espacio en pantallas grandes) */}
-          <div className="lg:col-span-7 w-full order-1">
+        /* Lista de Lotes a Ancho Completo (100% de la vista) */
+        <div className="w-full">
+          {filteredLotes.length > 0 ? (
             <LotesList 
               lotes={filteredLotes}
-              selectedId={activeLote?.id}
+              selectedId={selectedLote?.id ?? ""} // Evita fallos de TypeScript si está cerrado
               onSelect={setSelectedLote}
             />
-          </div>
-
-          {/* 3. Panel de Detalle Derecho (Ocupa 5/12 del espacio en pantallas grandes) */}
-          <div className="lg:col-span-5 w-full order-2">
-            {activeLote ? (
-              <LoteDetail lote={activeLote} />
-            ) : (
-              <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-12 text-center text-gray-400 font-medium text-xs sm:text-sm shadow-sm">
-                No se encontraron lotes que coincidan con la búsqueda.
-              </div>
-            )}
-          </div>
+          ) : (
+            <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-12 text-center text-gray-400 font-medium text-xs sm:text-sm shadow-sm">
+              No se encontraron lotes que coincidan con la búsqueda.
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-white border border-gray-100 rounded-2xl p-8 sm:p-12 text-center text-gray-400 font-semibold text-xs sm:text-sm shadow-sm animate-fade-in">
           Redireccionando al panel de Parcelas...
         </div>
       )}
+
+      {/* VENTANA MODAL COMPACTA: Despliega los detalles por encima de la lista */}
+      {currentTab === 'lotes' && selectedLote && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-fade-in">
+          
+          {/* Fondo interactivo que cierra el modal al dar clic por fuera */}
+          <div className="absolute inset-0" onClick={() => setSelectedLote(null)} />
+
+          {/* Tarjeta contenedora con ancho reducido (max-w-2xl) y altura equilibrada (max-h-[85vh]) */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto z-10 animate-slide-up">
+            
+            {/* Cabecera superior del Modal */}
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-20">
+              <h3 className="text-base font-bold text-gray-800">Expediente del Lote</h3>
+              <button 
+                onClick={() => setSelectedLote(null)}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-semibold transition-colors"
+              >
+                ✕ Cerrar
+              </button>
+            </div>
+
+            {/* Contenido inyectado del lote con paddings estilizados */}
+            <div className="p-5 sm:p-6">
+              <LoteDetail lote={selectedLote} />
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -6,7 +6,6 @@ import { ComunerosHeader } from '../components/ComunerosHeader';
 import { ComunerosList } from '../components/ComunerosList';
 import { ComuneroDetail } from '../components/ComuneroDetail';
 
-// 1. RE-INSERTAMOS LOS DATOS DE PRUEBA (MOCK DATA)
 const MOCK_COMUNEROS: Comunero[] = [
   {
     id: '1',
@@ -79,62 +78,85 @@ const MOCK_COMUNEROS: Comunero[] = [
 
 export const ComunerosFeature: React.FC = () => {
   const [comuneros, setComuneros] = useState<Comunero[]>(MOCK_COMUNEROS);
-  const [selectedComunero, setSelectedComunero] = useState<Comunero>(MOCK_COMUNEROS[0]);
+  
+  // Iniciamos en null para que no haya ningún modal abierto por defecto
+  const [selectedComunero, setSelectedComunero] = useState<Comunero | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleSearch = (text: string) => setSearchTerm(text);
   const handleAddComunero = () => alert("Manejador para añadir nuevo comunero");
   const handleEdit = (id: string) => alert(`Editar comunero con ID: ${id}`);
   const handleDelete = (id: string) => {
-    if (confirm("¿Estás seguro?")) setComuneros(prev => prev.filter(c => c.id !== id));
+    if (confirm("¿Estás seguro?")) {
+      setComuneros(prev => prev.filter(c => c.id !== id));
+      if (selectedComunero?.id === id) setSelectedComunero(null);
+    }
   };
 
   const filteredComuneros = comuneros.filter(c => 
     `${c.nombre} ${c.apellidos}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Asegura la consistencia visual si un filtro descarta al elemento activo actual
-  const activeComunero = filteredComuneros.find(c => c.id === selectedComunero?.id) || filteredComuneros[0];
-
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
       
-      {/* Encabezado Responsivo */}
+      {/* Encabezado Principal */}
       <ComunerosHeader 
         onAddClick={handleAddComunero} 
         onSearchChange={handleSearch} 
       />
 
-      {/* Grid de Distribución Asimétrica 5/7 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-start">
-        
-        {/* Tabla / Lista de Comuneros (Ocupa 5/12 en Desktop) */}
-        <div className="lg:col-span-5 w-full order-1">
+      {/* Lista de Comuneros a Ancho Completo */}
+      <div className="w-full">
+        {filteredComuneros.length > 0 ? (
           <ComunerosList 
             comuneros={filteredComuneros}
-            selectedId={activeComunero?.id}
+            selectedId={selectedComunero?.id ?? ""} // Solución al error de TypeScript
             onSelect={setSelectedComunero}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
-        </div>
-
-        {/* Panel de Expediente Detallado (Ocupa 7/12 en Desktop) */}
-        <div className="lg:col-span-7 w-full order-2">
-          {activeComunero ? (
-            <ComuneroDetail 
-              comunero={activeComunero} 
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          ) : (
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-12 text-center text-gray-400 font-medium text-xs sm:text-sm shadow-sm">
-              No se encontraron comuneros o avecindados registrados con ese nombre.
-            </div>
-          )}
-        </div>
-
+        ) : (
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-12 text-center text-gray-400 font-medium text-xs sm:text-sm shadow-sm">
+            No se encontraron comuneros o avecindados registrados con ese nombre.
+          </div>
+        )}
       </div>
+
+      {/* VENTANA MODAL (Se renderiza arriba de la lista cuando seleccionas uno) */}
+      {selectedComunero && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-fade-in">
+          
+          {/* Fondo oscuro interactivo (Cierra el modal si haces clic fuera) */}
+          <div className="absolute inset-0" onClick={() => setSelectedComunero(null)} />
+
+          {/* Tarjeta del Contenedor del Detalle */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10 animate-slide-up">
+            
+            {/* Cabecera del Modal */}
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-20">
+              <h3 className="text-lg font-bold text-gray-800">Expediente del Comunero</h3>
+              <button 
+                onClick={() => setSelectedComunero(null)}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-semibold transition-colors"
+              >
+                ✕ Cerrar
+              </button>
+            </div>
+
+            {/* Componente del Detalle */}
+            <div className="p-6">
+              <ComuneroDetail 
+                comunero={selectedComunero} 
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

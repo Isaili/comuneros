@@ -9,6 +9,34 @@ interface DetailProps {
 }
 
 export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
+  const esPagado2026 = parcela.estadoPredial === 'Pagado';
+  
+  // Fechas y estados calculados para el historial
+  const registrosHistorial = [
+    {
+      anio: 2026,
+      fecha: esPagado2026 ? "10/07/2026" : "—",
+      // Si pagó en julio (después de marzo), se duplica a $40. Si no ha pagado, el adeudo es de $20 base
+      importe: esPagado2026 ? "$40.00" : "$20.00",
+      estado: parcela.estadoPredial, // Toma el estado dinámico (Pagado / Pagar)
+      reciboDisponible: esPagado2026
+    },
+    {
+      anio: 2025,
+      fecha: "—",
+      importe: "$20.00", // Adeudo de año anterior (tarifa base)
+      estado: "Pagar" as const, // Forzado a "Pagar" (adeudo) según tu instrucción
+      reciboDisponible: false
+    },
+    {
+      anio: 2024,
+      fecha: "18/02/2024", // Pagado a tiempo antes de marzo
+      importe: "$20.00",
+      estado: "Pagado" as const, // Forzado a "Pagado" según tu instrucción
+      reciboDisponible: true
+    }
+  ];
+
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-5 space-y-4 w-full max-h-[720px] overflow-y-auto scrollbar-thin">
       
@@ -18,7 +46,9 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Parcela seleccionada</p>
           <div className="flex items-center gap-2 mt-0.5">
             <h2 className="text-lg font-black text-gray-900">{parcela.numero}</h2>
-            <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-md">
+            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+              esPagado2026 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+            }`}>
               {parcela.estadoPredial}
             </span>
           </div>
@@ -56,8 +86,15 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
           <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-400">Registro</span> <span className="text-gray-900">15/03/2010</span></div>
           <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-400">Superficie</span> <span className="text-gray-900">2.50 ha</span></div>
           <div className="flex justify-between border-b border-gray-50 pb-1"><span className="text-gray-400">Obs.</span> <span className="text-gray-900">—</span></div>
-          <div className="flex justify-between border-b border-gray-50 xs:border-0 pb-1 xs:pb-0"><span className="text-gray-400">Predial</span> <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded text-[10px]">{parcela.estadoPredial}</span></div>
-          <div className="flex justify-between"><span className="text-gray-400">Último pago</span> <span className="text-gray-900">10/07/2026</span></div>
+          <div className="flex justify-between border-b border-gray-50 xs:border-0 pb-1 xs:pb-0">
+            <span className="text-gray-400">Predial</span> 
+            <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${
+              esPagado2026 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+            }`}>
+              {parcela.estadoPredial}
+            </span>
+          </div>
+          <div className="flex justify-between"><span className="text-gray-400">Último pago</span> <span className="text-gray-900">{esPagado2026 ? "10/07/2026" : "—"}</span></div>
         </div>
       </div>
 
@@ -124,23 +161,40 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
               <tr className="text-gray-400 font-semibold border-b border-gray-100">
                 <th className="pb-1.5">Año</th>
                 <th className="pb-1.5">Fecha de pago</th>
-                <th className="pb-1.5">Importe</th>
+                <th className="pb-1.5">Importe / Adeudo</th>
                 <th className="pb-1.5">Estado</th>
                 <th className="pb-1.5 text-right">Recibo</th>
               </tr>
             </thead>
             <tbody className="font-semibold text-gray-700">
-              <tr className="hover:bg-gray-50/40">
-                <td className="py-1.5">2026</td>
-                <td className="py-1.5 text-gray-500 font-normal whitespace-nowrap">10/07/2026</td>
-                <td className="py-1.5 font-bold text-gray-900">$1,250.00</td>
-                <td className="py-1.5"><span className="text-[10px] font-extrabold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">Pagado</span></td>
-                <td className="py-1.5 text-right">
-                  <button className="text-emerald-700 hover:underline text-[10px] font-bold flex items-center justify-end gap-0.5 ml-auto whitespace-nowrap">
-                    VER <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                  </button>
-                </td>
-              </tr>
+              {registrosHistorial.map((registro) => {
+                const esRegistroPagado = registro.estado === 'Pagado';
+                return (
+                  <tr key={registro.anio} className="hover:bg-gray-50/40">
+                    <td className="py-2 font-bold text-gray-900">{registro.anio}</td>
+                    <td className="py-2 text-gray-500 font-normal whitespace-nowrap">{registro.fecha}</td>
+                    <td className={`py-2 font-bold ${esRegistroPagado ? 'text-gray-900' : 'text-red-600'}`}>
+                      {registro.importe}
+                    </td>
+                    <td className="py-2">
+                      <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
+                        esRegistroPagado ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+                      }`}>
+                        {registro.estado}
+                      </span>
+                    </td>
+                    <td className="py-2 text-right">
+                      {registro.reciboDisponible ? (
+                        <button className="text-emerald-700 hover:underline text-[10px] font-bold flex items-center justify-end gap-0.5 ml-auto whitespace-nowrap">
+                          VER <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 font-normal select-none">No disponible</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
