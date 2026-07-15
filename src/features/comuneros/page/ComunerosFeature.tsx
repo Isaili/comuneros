@@ -84,47 +84,110 @@ export const ComunerosFeature: React.FC = () => {
   const [selectedComunero, setSelectedComunero] = useState<Comunero | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // 💡 NUEVO: Estado para saber a quién estamos editando
+  const [comuneroAEditar, setComuneroAEditar] = useState<Comunero | null>(null);
 
   const handleSearch = (text: string) => setSearchTerm(text);
   
-  // Abrir el modal de creación
-  const handleAddComunero = () => setIsAddModalOpen(true);
-
-  // Función para procesar y guardar el nuevo miembro desde el formulario validado
-  const handleGuardarNuevoComunero = (nuevoComunero: any) => {
-    // Generar un folio aleatorio para el ejemplo
-    const numeroFolio = Math.floor(1000 + Math.random() * 9000);
-    const folioGenerado = `COM-${numeroFolio}`;
-
-    // Mapear la respuesta del formulario a la interfaz estricta de Comunero
-    const comuneroFormateado: Comunero = {
-      id: nuevoComunero.id,
-      nombre: nuevoComunero.nombre,
-      apellidos: nuevoComunero.apellidos,
-      tipo: nuevoComunero.tipoComunero as 'comunero' | 'avecindado',
-      fechaNacimiento: nuevoComunero.fechaNacimiento,
-      edad: nuevoComunero.fechaNacimiento ? new Date().getFullYear() - new Date(nuevoComunero.fechaNacimiento).getFullYear() : 30,
-      estadoCivil: 'Soltero', // Por defecto o mapear si se agrega en el futuro
-      direccion: nuevoComunero.direccion || 'Sin dirección registrada',
-      colonia: nuevoComunero.colonia,
-      telefono: nuevoComunero.telefono || '',
-      correo: nuevoComunero.correo || '',
-      fechaRegistro: new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }),
-      folioComunero: folioGenerado,
-      fotografia: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200', // Avatar por defecto
-      qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${folioGenerado}`,
-      activo: true,
-      terrenos: [] // Inicializa sin terrenos asignados
-    };
-
-    setComuneros(prev => [comuneroFormateado, ...prev]);
-    setIsAddModalOpen(false); // Cierra el modal de creación
+  // Abrir el modal de creación (limpiando cualquier edición previa)
+  const handleAddComunero = () => {
+    setComuneroAEditar(null);
+    setIsAddModalOpen(true);
   };
 
-  const handleEdit = (id: string) => alert(`Editar comunero con ID: ${id}`);
+  // Función unificada para guardar (crear o actualizar) un miembro
+  const handleGuardarNuevoComunero = (datosFormulario: any) => {
+    const esEdicion = comuneros.some(c => c.id === datosFormulario.id);
+
+    if (esEdicion) {
+      // 💡 MODO EDICIÓN: Buscamos el elemento y reemplazamos sus campos sin perder terrenos, folios ni QR
+      setComuneros(prev => prev.map(c => {
+        if (c.id === datosFormulario.id) {
+          // Formatear la fecha del input tipo date (YYYY-MM-DD) al formato de vista habitual (DD/MM/YYYY) si es necesario
+          let fechaNacimientoFormateada = datosFormulario.fechaNacimiento;
+          if (datosFormulario.fechaNacimiento.includes('-')) {
+            const partes = datosFormulario.fechaNacimiento.split('-');
+            fechaNacimientoFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+          }
+
+          const nuevaEdad = datosFormulario.fechaNacimiento 
+            ? new Date().getFullYear() - new Date(datosFormulario.fechaNacimiento).getFullYear() 
+            : c.edad;
+
+          return {
+            ...c,
+            nombre: datosFormulario.nombre,
+            apellidos: datosFormulario.apellidos,
+            tipo: datosFormulario.tipoComunero as 'comunero' | 'avecindado',
+            fechaNacimiento: fechaNacimientoFormateada,
+            edad: nuevaEdad,
+            direccion: datosFormulario.direccion || 'Sin dirección registrada',
+            colonia: datosFormulario.colonia,
+            telefono: datosFormulario.telefono || '',
+            correo: datosFormulario.correo || '',
+            fotografia: datosFormulario.fotografia,
+          };
+        }
+        return c;
+      }));
+
+      // Si el comunero editado estaba abierto en la vista de detalle, actualizamos su vista
+      if (selectedComunero?.id === datosFormulario.id) {
+        setSelectedComunero(null); // Reseteamos el detalle para que reciba los nuevos cambios cuando vuelvan a hacer clic
+      }
+
+    } else {
+      // ➕ MODO REGISTRO NUEVO: Generamos folio único e inicializamos terrenos vacíos
+      const numeroFolio = Math.floor(1000 + Math.random() * 9000);
+      const folioGenerado = `COM-${numeroFolio}`;
+
+      // Formateamos fecha nacimiento de YYYY-MM-DD a DD/MM/YYYY
+      let fechaNacimientoFormateada = datosFormulario.fechaNacimiento;
+      if (datosFormulario.fechaNacimiento.includes('-')) {
+        const partes = datosFormulario.fechaNacimiento.split('-');
+        fechaNacimientoFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+
+      const comuneroFormateado: Comunero = {
+        id: datosFormulario.id,
+        nombre: datosFormulario.nombre,
+        apellidos: datosFormulario.apellidos,
+        tipo: datosFormulario.tipoComunero as 'comunero' | 'avecindado',
+        fechaNacimiento: fechaNacimientoFormateada,
+        edad: datosFormulario.fechaNacimiento ? new Date().getFullYear() - new Date(datosFormulario.fechaNacimiento).getFullYear() : 30,
+        estadoCivil: 'Soltero',
+        direccion: datosFormulario.direccion || 'Sin dirección registrada',
+        colonia: datosFormulario.colonia,
+        telefono: datosFormulario.telefono || '',
+        correo: datosFormulario.correo || '',
+        fechaRegistro: new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }),
+        folioComunero: folioGenerado,
+        fotografia: datosFormulario.fotografia,
+        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${folioGenerado}`,
+        activo: true,
+        terrenos: []
+      };
+
+      setComuneros(prev => [comuneroFormateado, ...prev]);
+    }
+
+    // Cerramos el modal y limpiamos estados
+    setIsAddModalOpen(false);
+    setComuneroAEditar(null);
+  };
+
+  // 💡 MODO EDICIÓN: Activamos el formulario enviando el objeto del comunero seleccionado
+  const handleEdit = (id: string) => {
+    const comuneroBuscado = comuneros.find(c => c.id === id);
+    if (comuneroBuscado) {
+      setComuneroAEditar(comuneroBuscado);
+      setIsAddModalOpen(true);
+    }
+  };
   
   const handleDelete = (id: string) => {
-    if (confirm("¿Estás seguro?")) {
+    if (confirm("¿Estás seguro de que deseas eliminar este registro?")) {
       setComuneros(prev => prev.filter(c => c.id !== id));
       if (selectedComunero?.id === id) setSelectedComunero(null);
     }
@@ -177,7 +240,10 @@ export const ComunerosFeature: React.FC = () => {
             <div className="p-6">
               <ComuneroDetail 
                 comunero={selectedComunero} 
-                onEdit={handleEdit}
+                onEdit={(id) => {
+                  setSelectedComunero(null); // Cerramos el expediente
+                  handleEdit(id);           // Abrimos el editor
+                }}
                 onDelete={handleDelete}
               />
             </div>
@@ -185,11 +251,15 @@ export const ComunerosFeature: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL PARA AGREGAR NUEVO COMUNERO */}
+      {/* MODAL PARA AGREGAR / EDITAR COMUNERO */}
       {isAddModalOpen && (
         <AgregarComuneroForm 
-          onClose={() => setIsAddModalOpen(false)}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setComuneroAEditar(null);
+          }}
           onGuardar={handleGuardarNuevoComunero}
+          comuneroAEditar={comuneroAEditar} // 💡 Conectamos el prop de edición
         />
       )}
 

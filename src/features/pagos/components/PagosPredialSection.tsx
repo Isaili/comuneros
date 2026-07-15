@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { Search, DollarSign, Receipt, Clock, CheckCircle2 } from 'lucide-react';
-import { Parcela } from '@/features/parcelas/components/ParcelasList';
+import { Parcela } from '@/features/parcelas/types/types'; 
+
 import { Lote } from '@/features/lotes/components/LotesList';
 import { ProcesarPagoModal } from './ProcesarPagoModal';
 
@@ -67,7 +68,7 @@ export const PagosPredialSection: React.FC = () => {
           </p>
         </div>
 
-        {/* Buscador full-width en móviles y auto en tablet/desktop */}
+        {/* Buscador */}
         <div className="relative w-full md:w-72">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input 
@@ -80,7 +81,7 @@ export const PagosPredialSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs / Pestañas de Selección (Equitativas en móvil) */}
+      {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-gray-100 w-full">
         <button 
           onClick={() => { setActiveTab('parcelas'); setSearchQuery(''); }}
@@ -106,7 +107,7 @@ export const PagosPredialSection: React.FC = () => {
         {/* ================= SECCIÓN PARCELAS ================= */}
         {activeTab === 'parcelas' && (
           <div>
-            {/* Vista Mobile/Tablet: Lista de Cards (Oculta en md:) */}
+            {/* Vista Mobile/Tablet */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
               {filteredParcelas.map((p) => {
                 const isPagado = p.estadoPredial === 'Pagado';
@@ -154,7 +155,7 @@ export const PagosPredialSection: React.FC = () => {
               )}
             </div>
 
-            {/* Vista Desktop: Tabla tradicional (Oculta en pantallas pequeñas) */}
+            {/* Vista Desktop */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
@@ -206,7 +207,7 @@ export const PagosPredialSection: React.FC = () => {
         {/* ================= SECCIÓN LOTES ================= */}
         {activeTab === 'lotes' && (
           <div>
-            {/* Vista Mobile/Tablet: Lista de Cards (Oculta en md:) */}
+            {/* Vista Mobile/Tablet */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
               {filteredLotes.map((l) => {
                 const isPagado = l.estadoPredial === 'Pagado';
@@ -254,7 +255,7 @@ export const PagosPredialSection: React.FC = () => {
               )}
             </div>
 
-            {/* Vista Desktop: Tabla tradicional (Oculta en pantallas pequeñas) */}
+            {/* Vista Desktop */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>

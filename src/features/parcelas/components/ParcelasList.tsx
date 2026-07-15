@@ -1,23 +1,17 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Trash2, ArrowRightLeft } from 'lucide-react';
 
-export interface Parcela {
-  id: string;
-  numero: string;
-  superficie: string;
-  titularesCount: number;
-  propietarios: string[];
-  estadoPredial: 'Pagado' | 'Pagar';
-}
+import { Parcela } from '../types/types'; 
 
 interface ListProps {
   parcelas: Parcela[];
   selectedId: string;
   onSelect: (parcela: Parcela) => void;
-  onEdit?: (parcela: Parcela) => void;   // Callback para editar
-  onDelete?: (parcela: Parcela) => void; // Callback para eliminar
+  onEdit?: (parcela: Parcela) => void;   
+  onDelete?: (parcela: Parcela) => void; 
+  onTraspasar?: (parcela: Parcela) => void; // 👈 NUEVO PROP PARA TRASPASAR
 }
 
 export const ParcelasList: React.FC<ListProps> = ({ 
@@ -25,7 +19,8 @@ export const ParcelasList: React.FC<ListProps> = ({
   selectedId, 
   onSelect,
   onEdit,
-  onDelete
+  onDelete,
+  onTraspasar 
 }) => {
   const [activeTab, setActiveTab] = useState<'parcelas' | 'lotes'>('parcelas');
 
@@ -58,7 +53,7 @@ export const ParcelasList: React.FC<ListProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
           <h3 className="font-bold text-gray-900 text-sm">
-            Lista de parcelas ({parcelas.length})
+            Lista de {activeTab === 'parcelas' ? 'parcelas' : 'lotes'} ({parcelas.length})
           </h3>
         </div>
 
@@ -67,12 +62,12 @@ export const ParcelasList: React.FC<ListProps> = ({
           <table className="w-full text-left text-xs border-collapse min-w-[550px]">
             <thead>
               <tr className="text-gray-400 font-bold uppercase tracking-wider border-b border-gray-100">
-                <th className="pb-3 px-2 text-[10px]">Núm. Parcela</th>
+                <th className="pb-3 px-2 text-[10px]">Núm. {activeTab === 'parcelas' ? 'Parcela' : 'Lote'}</th>
                 <th className="pb-3 px-2 text-[10px]">Superficie</th>
                 <th className="pb-3 px-2 text-[10px] text-center">Titulares</th>
                 <th className="pb-3 px-2 text-[10px]">Propietario(s)</th>
                 <th className="pb-3 px-2 text-[10px]">Estado predial</th>
-                <th className="pb-3 px-2 text-[10px] text-center w-24">Acciones</th>
+                <th className="pb-3 px-2 text-[10px] text-center w-28">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-700 font-medium">
@@ -111,20 +106,28 @@ export const ParcelasList: React.FC<ListProps> = ({
                         {p.estadoPredial}
                       </span>
                     </td>
-                    {/* Columna de acciones con detener propagación para evitar disparar onSelect */}
                     <td className="py-3.5 px-2 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1.5">
+                        {/* 🔄 BOTÓN DE TRASPASAR */}
+                        <button 
+                          onClick={() => onTraspasar?.(p)}
+                          className="p-2 border border-gray-100 rounded-lg hover:border-amber-200 hover:bg-amber-50 text-amber-600 transition-all"
+                          title="Traspasar derechos (Tracto Sucesivo)"
+                        >
+                          <ArrowRightLeft className="w-3.5 h-3.5" />
+                        </button>
+
                         <button 
                           onClick={() => onEdit?.(p)}
                           className="p-2 border border-gray-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600 transition-all"
-                          title="Editar parcela"
+                          title="Editar registro"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button 
                           onClick={() => onDelete?.(p)}
                           className="p-2 border border-gray-100 rounded-lg hover:border-red-200 hover:bg-red-50 text-red-500 transition-all"
-                          title="Eliminar parcela"
+                          title="Eliminar registro"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -138,20 +141,14 @@ export const ParcelasList: React.FC<ListProps> = ({
         </div>
       </div>
 
-      {/* Paginación Adaptable Móvil / Desktop */}
+      {/* Paginación */}
       <div className="flex items-center justify-between sm:justify-center gap-1.5 pt-4 border-t border-gray-50 text-xs font-bold text-gray-500 mt-4">
-        
-        {/* Botón Izquierda */}
         <button className="p-1.5 rounded-lg border border-gray-100 hover:bg-gray-50 text-gray-400 transition-colors">
           <ChevronLeft className="w-4 h-4" />
         </button>
-        
-        {/* Vista Mobile: Indicador compacto */}
         <span className="inline sm:hidden text-gray-600 font-medium">
           Pág. 1 de 20
         </span>
-
-        {/* Vista Desktop: Paginación Completa */}
         <div className="hidden sm:flex items-center gap-1.5">
           <button className="w-7 h-7 rounded-lg bg-[#006837] text-white flex items-center justify-center">1</button>
           <button className="w-7 h-7 rounded-lg border border-transparent hover:bg-gray-50 flex items-center justify-center transition-colors">2</button>
@@ -160,8 +157,6 @@ export const ParcelasList: React.FC<ListProps> = ({
           <span className="px-0.5 text-gray-300 select-none">...</span>
           <button className="w-7 h-7 rounded-lg border border-transparent hover:bg-gray-50 flex items-center justify-center transition-colors">20</button>
         </div>
-        
-        {/* Botón Derecha */}
         <button className="p-1.5 rounded-lg border border-gray-100 hover:bg-gray-50 text-gray-400 transition-colors">
           <ChevronRight className="w-4 h-4" />
         </button>

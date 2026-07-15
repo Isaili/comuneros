@@ -2,9 +2,11 @@ export interface Terreno {
   tipo: 'Parcela' | 'Lote';
   numero: number;
   folio: string;
-  certificado?: string; // Solo para parcelas
+  certificado?: string; 
   superficie: string;
   ubicacion: string;
+  porcentajePosesion?: number; 
+  pagoPredial?: number;        
 }
 
 export interface Comunero {
