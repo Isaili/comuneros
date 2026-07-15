@@ -9,16 +9,16 @@ interface ListProps {
   parcelas: Parcela[];
   selectedId: string;
   onSelect: (parcela: Parcela) => void;
-  onEdit?: (parcela: Parcela) => void;   
+  onEditar?: (parcela: Parcela) => void;   // 🔄 CAMBIADO: De onEdit a onEditar para coincidir con el componente principal
   onDelete?: (parcela: Parcela) => void; 
-  onTraspasar?: (parcela: Parcela) => void; // 👈 NUEVO PROP PARA TRASPASAR
+  onTraspasar?: (parcela: Parcela) => void; 
 }
 
 export const ParcelasList: React.FC<ListProps> = ({ 
   parcelas, 
   selectedId, 
   onSelect,
-  onEdit,
+  onEditar, // 🔄 Reflejado aquí
   onDelete,
   onTraspasar 
 }) => {
@@ -117,8 +117,9 @@ export const ParcelasList: React.FC<ListProps> = ({
                           <ArrowRightLeft className="w-3.5 h-3.5" />
                         </button>
 
+                        {/* 🔄 BOTÓN DE EDITAR */}
                         <button 
-                          onClick={() => onEdit?.(p)}
+                          onClick={() => onEditar?.(p)} // 🔄 Reflejado aquí
                           className="p-2 border border-gray-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600 transition-all"
                           title="Editar registro"
                         >

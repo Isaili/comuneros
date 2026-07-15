@@ -2,43 +2,29 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Plus, Trash2, Calculator, Landmark, FileText, Calendar, AlertCircle, Search, History, DollarSign, Check, ChevronDown } from 'lucide-react';
+
 import { Comunero } from '../../comuneros/types/types';
+
+// Importaciones modularizadas desde tu archivo de tipos de parcelas
+import { 
+  Parcela, 
+  TitularFila, 
+  PropietarioHistoricoFila, 
+  PredialHistoricoFila 
+} from '../types/typesParcela';
 
 interface AgregarParcelaFormProps {
   comunerosRegistrados: Comunero[];
   onClose: () => void;
   onGuardar: (nuevaParcela: any) => void;
-}
-
-interface TitularFila {
-  comuneroId: string;
-  nombreCompleto: string;
-  certificado: string;
-  porcentajePosesion: number;
-  calidadAgraria: string;
-  actoJuridico: string;
-  vigencia: string;
-}
-
-interface PropietarioHistoricoFila {
-  nombre: string;
-  certificado: string;
-  fechaAdquisicion: string;
-  fechaCesion: string;
-  actoJuridico: string;
-  adquirente: string;
-}
-
-interface PredialHistoricoFila {
-  anio: number;
-  monto: number;
-  estado: 'Pagado' | 'Pagar';
+  parcelaAEditar?: Parcela | null;
 }
 
 export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
   comunerosRegistrados,
   onClose,
   onGuardar,
+  parcelaAEditar
 }) => {
   // 1. Estados principales de la Parcela
   const [superficie, setSuperficie] = useState<number>(0);
@@ -54,7 +40,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
     { comuneroId: '', nombreCompleto: '', certificado: '', porcentajePosesion: 100, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }
   ]);
 
-  // 3. NUEVOS ESTADOS: Historiales de dueños y de adeudos prediales
+  // 3. Historiales
   const [historialPropietarios, setHistorialPropietarios] = useState<PropietarioHistoricoFila[]>([]);
   const [historialPrediales, setHistorialPrediales] = useState<PredialHistoricoFila[]>([]);
 
@@ -64,12 +50,45 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
   const [errorPorcentaje, setErrorPorcentaje] = useState<string>('');
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
+  // 🔄 Efecto de rellenado automático (Edición vs Creación)
   useEffect(() => {
-    const numeroAleatorio = Math.floor(100 + Math.random() * 900);
-    setFolioInterno(`P-${numeroAleatorio}`);
-  }, []);
+    if (parcelaAEditar) {
+      const numSuperficie = Number(parcelaAEditar.superficie.replace(' ha', ''));
+      
+      setFolioInterno(parcelaAEditar.id ? `P-${parcelaAEditar.id}` : 'P-000');
+      setNumeroParcela(parcelaAEditar.numero);
+      setSuperficie(isNaN(numSuperficie) ? 0 : numSuperficie);
+      setEstadoPredialActual(parcelaAEditar.estadoPredial as 'Pagado' | 'Pagar');
+      setHistorialPropietarios(parcelaAEditar.historialPropietarios || []);
+      setHistorialPrediales(parcelaAEditar.historialPrediales || []);
+      
+      if (parcelaAEditar.propietarios && parcelaAEditar.propietarios.length > 0) {
+        setTieneMultiplesTitulares(parcelaAEditar.propietarios.length > 1);
+        
+        const filasMapeadas = parcelaAEditar.propietarios.map(nombreCompleto => {
+          const comuneroEncontrado = comunerosRegistrados.find(
+            c => `${c.nombre} ${c.apellidos}`.toLowerCase() === nombreCompleto.toLowerCase()
+          );
+          
+          return {
+            comuneroId: comuneroEncontrado ? comuneroEncontrado.id : '',
+            nombreCompleto: nombreCompleto,
+            certificado: 'CERT-EXISTENTE', 
+            porcentajePosesion: Math.floor(100 / parcelaAEditar.propietarios.length),
+            calidadAgraria: 'Ejidatario',
+            actoJuridico: 'Asignación',
+            vigencia: 'Vigente'
+          };
+        });
+        setTitulares(filasMapeadas);
+      }
+    } else {
+      const numeroAleatorio = Math.floor(100 + Math.random() * 900);
+      setFolioInterno(`P-${numeroAleatorio}`);
+    }
+  }, [parcelaAEditar, comunerosRegistrados]);
 
-  // Cerrar buscadores si se hace click fuera
+  // Cerrar buscadores al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       Object.keys(dropdownRefs.current).forEach((key) => {
@@ -127,7 +146,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
     setHistorialPrediales(prev => prev.map((item, i) => i === index ? { ...item, [campo]: valor } : item));
   };
 
-  // --- LÓGICA DE SELECCIÓN CON FILTRADO (LUPA) ---
+  // --- LÓGICA DE SELECCIÓN CON FILTRADO ---
   const handleActualizarTitular = (index: number, campo: keyof TitularFila, valor: any) => {
     setTitulares(prev => {
       const copia = [...prev];
@@ -151,8 +170,8 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
       return;
     }
 
-    if (titulares.some(t => t.comuneroId === '')) {
-      alert("Por favor, selecciona a un comunero ejidal para cada titular activo.");
+    if (titulares.some(t => t.nombreCompleto.trim() === '')) {
+      alert("Por favor, selecciona o ingrese un nombre para cada titular activo.");
       return;
     }
 
@@ -167,7 +186,6 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
       estadoPredial: estadoPredialActual,
       titularesCount: titulares.length,
       propietarios: titulares.map(t => t.nombreCompleto),
-      // Atributos extendidos del expediente
       titularesDetalle: titulares,
       historialPropietarios,
       historialPrediales
@@ -189,7 +207,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
               <span className="p-1.5 bg-[#006837]/10 text-[#006837] rounded-lg">
                 <Landmark className="w-4 h-4" />
               </span>
-              Alta Integral de Parcela Ejidal (Con Históricos)
+              {parcelaAEditar ? 'Modificar Expediente de Parcela Ejidal' : 'Alta Integral de Parcela Ejidal (Con Históricos)'}
             </h3>
             <p className="text-xs text-gray-400 font-medium mt-0.5">Buscador avanzado para +1500 registros, tracto sucesivo cronológico e historial hacendario.</p>
           </div>
@@ -239,7 +257,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
             </div>
           </div>
 
-          {/* Fila de Predial y Selección de Tipo Titulares */}
+          {/* Tasa predial y Control de Titulares */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-[#006837]/5 p-4 rounded-xl border border-[#006837]/10">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-[#006837]/10 text-[#006837] rounded-xl"><Calculator className="w-5 h-5" /></div>
@@ -254,7 +272,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
             </div>
           </div>
 
-          {/* SECCIÓN 1: TITULARES ACTIVOS (CON BUSCADOR AVANZADO / LUPA) */}
+          {/* SECCIÓN 1: TITULARES ACTIVOS */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider text-emerald-800">1. Titulares Activos Vigentes</h4>
@@ -283,18 +301,17 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
                     const filteredComuneros = comunerosRegistrados.filter(c => 
                       `${c.nombre} ${c.apellidos}`.toLowerCase().includes(query.toLowerCase()) ||
                       c.folioComunero.toLowerCase().includes(query.toLowerCase())
-                    ).slice(0, 5); // Limitar a los 5 más relevantes para agilidad visual
+                    ).slice(0, 5);
 
                     return (
                       <tr key={index} className="hover:bg-slate-50/30">
-                        {/* INPUT CON LUPA AUTOCOMPLETABLE */}
                         <td className="p-2 relative overflow-visible">
                           <div ref={el => { dropdownRefs.current[index] = el; }} className="relative w-full">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                             <input
                               type="text"
                               required
-                              placeholder="🔎 Escriba para buscar entre los 1,500 comuneros..."
+                              placeholder="🔎 Escriba para buscar..."
                               value={query}
                               onFocus={() => setMenusAbiertos(prev => ({ ...prev, [index]: true }))}
                               onChange={(e) => {
@@ -306,7 +323,6 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
                             />
                             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                             
-                            {/* Desplegable Flotante */}
                             {menusAbiertos[index] && (
                               <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
                                 {filteredComuneros.length > 0 ? (
@@ -366,7 +382,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
             {errorPorcentaje && <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2.5 rounded-xl"><AlertCircle className="w-4 h-4" /><span className="text-[11px] font-bold">{errorPorcentaje}</span></div>}
           </div>
 
-          {/* SECCIÓN 2: TRACTO SUCESIVO (DUEÑOS ANTERIORES HISTÓRICOS) */}
+          {/* SECCIÓN 2: TRACTO SUCESIVO */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider flex items-center gap-1 text-amber-800">
@@ -394,7 +410,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
                   <tbody className="divide-y divide-gray-50">
                     {historialPropietarios.map((hist, index) => (
                       <tr key={index} className="hover:bg-amber-50/10">
-                        <td className="p-2"><input type="text" required placeholder="Ej. Pedro Martínez Cruz" value={hist.nombre} onChange={(e) => actualizarPropietarioHistorico(index, 'nombre', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800 font-bold focus:border-amber-500" /></td>
+                        <td className="p-2"><input type="text" required placeholder="Ej. Pedro Martínez" value={hist.nombre} onChange={(e) => actualizarPropietarioHistorico(index, 'nombre', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800 font-bold focus:border-amber-500" /></td>
                         <td className="p-2"><input type="text" required placeholder="CERT-012" value={hist.certificado} onChange={(e) => actualizarPropietarioHistorico(index, 'certificado', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800" /></td>
                         <td className="p-2"><input type="text" required placeholder="DD/MM/YYYY" value={hist.fechaAdquisicion} onChange={(e) => actualizarPropietarioHistorico(index, 'fechaAdquisicion', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800 text-center" /></td>
                         <td className="p-2"><input type="text" required placeholder="DD/MM/YYYY" value={hist.fechaCesion} onChange={(e) => actualizarPropietarioHistorico(index, 'fechaCesion', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800 text-center" /></td>
@@ -406,7 +422,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
                             <option value="Donación Directa">Donación Directa</option>
                           </select>
                         </td>
-                        <td className="p-2"><input type="text" required placeholder="Ej. José Antonio Hernández" value={hist.adquirente} onChange={(e) => actualizarPropietarioHistorico(index, 'adquirente', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800" /></td>
+                        <td className="p-2"><input type="text" required placeholder="Ej. José Hernández" value={hist.adquirente} onChange={(e) => actualizarPropietarioHistorico(index, 'adquirente', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800" /></td>
                         <td className="p-2 text-center">
                           <button type="button" onClick={() => eliminarPropietarioHistorico(index)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
                         </td>
@@ -424,7 +440,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider flex items-center gap-1 text-red-800">
-                <DollarSign className="w-4 h-4" /> 3. Historial Fiscal Hecendario (Años Anteriores)
+                <DollarSign className="w-4 h-4" /> 3. Historial Fiscal Hacendario (Años Anteriores)
               </h4>
               <button type="button" onClick={agregarPredialHistorico} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-800 border border-red-200 rounded-lg hover:bg-red-100/60">
                 <Plus className="w-3.5 h-3.5 stroke-[3]" /> Cargar Año Anterior
@@ -480,7 +496,10 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
         {/* Botones de Acción */}
         <div className="p-4 border-t border-gray-100 bg-slate-50/50 flex flex-col-reverse sm:flex-row items-center gap-2 shrink-0">
           <button type="button" onClick={onClose} className="w-full sm:w-1/2 py-2.5 sm:py-3 border border-gray-200 rounded-xl font-bold text-gray-500 bg-white hover:bg-gray-50">Cancelar</button>
-          <button type="submit" className="w-full sm:w-1/2 py-2.5 sm:py-3 bg-[#006837] hover:bg-[#00522b] text-white rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-xs"><Save className="w-4 h-4" /> Registrar Expediente Completo</button>
+          <button type="submit" className="w-full sm:w-1/2 py-2.5 sm:py-3 bg-[#006837] hover:bg-[#00522b] text-white rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-xs">
+            <Save className="w-4 h-4" /> 
+            {parcelaAEditar ? 'Guardar Cambios del Expediente' : 'Registrar Expediente Completo'}
+          </button>
         </div>
       </form>
     </div>
