@@ -5,6 +5,7 @@ import { Comunero } from '../types/types';
 import { ComunerosHeader } from '../components/ComunerosHeader';
 import { ComunerosList } from '../components/ComunerosList';
 import { ComuneroDetail } from '../components/ComuneroDetail';
+import { AgregarComuneroForm } from '../components/AgregarComuneroForm'; 
 
 const MOCK_COMUNEROS: Comunero[] = [
   {
@@ -79,13 +80,49 @@ const MOCK_COMUNEROS: Comunero[] = [
 export const ComunerosFeature: React.FC = () => {
   const [comuneros, setComuneros] = useState<Comunero[]>(MOCK_COMUNEROS);
   
-  // Iniciamos en null para que no haya ningún modal abierto por defecto
+  // Estados para modales y búsquedas
   const [selectedComunero, setSelectedComunero] = useState<Comunero | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleSearch = (text: string) => setSearchTerm(text);
-  const handleAddComunero = () => alert("Manejador para añadir nuevo comunero");
+  
+  // Abrir el modal de creación
+  const handleAddComunero = () => setIsAddModalOpen(true);
+
+  // Función para procesar y guardar el nuevo miembro desde el formulario validado
+  const handleGuardarNuevoComunero = (nuevoComunero: any) => {
+    // Generar un folio aleatorio para el ejemplo
+    const numeroFolio = Math.floor(1000 + Math.random() * 9000);
+    const folioGenerado = `COM-${numeroFolio}`;
+
+    // Mapear la respuesta del formulario a la interfaz estricta de Comunero
+    const comuneroFormateado: Comunero = {
+      id: nuevoComunero.id,
+      nombre: nuevoComunero.nombre,
+      apellidos: nuevoComunero.apellidos,
+      tipo: nuevoComunero.tipoComunero as 'comunero' | 'avecindado',
+      fechaNacimiento: nuevoComunero.fechaNacimiento,
+      edad: nuevoComunero.fechaNacimiento ? new Date().getFullYear() - new Date(nuevoComunero.fechaNacimiento).getFullYear() : 30,
+      estadoCivil: 'Soltero', // Por defecto o mapear si se agrega en el futuro
+      direccion: nuevoComunero.direccion || 'Sin dirección registrada',
+      colonia: nuevoComunero.colonia,
+      telefono: nuevoComunero.telefono || '',
+      correo: nuevoComunero.correo || '',
+      fechaRegistro: new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }),
+      folioComunero: folioGenerado,
+      fotografia: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200', // Avatar por defecto
+      qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${folioGenerado}`,
+      activo: true,
+      terrenos: [] // Inicializa sin terrenos asignados
+    };
+
+    setComuneros(prev => [comuneroFormateado, ...prev]);
+    setIsAddModalOpen(false); // Cierra el modal de creación
+  };
+
   const handleEdit = (id: string) => alert(`Editar comunero con ID: ${id}`);
+  
   const handleDelete = (id: string) => {
     if (confirm("¿Estás seguro?")) {
       setComuneros(prev => prev.filter(c => c.id !== id));
@@ -111,7 +148,7 @@ export const ComunerosFeature: React.FC = () => {
         {filteredComuneros.length > 0 ? (
           <ComunerosList 
             comuneros={filteredComuneros}
-            selectedId={selectedComunero?.id ?? ""} // Solución al error de TypeScript
+            selectedId={selectedComunero?.id ?? ""}
             onSelect={setSelectedComunero}
             onEdit={handleEdit}
             onDelete={handleDelete}
@@ -123,17 +160,11 @@ export const ComunerosFeature: React.FC = () => {
         )}
       </div>
 
-      {/* VENTANA MODAL (Se renderiza arriba de la lista cuando seleccionas uno) */}
+      {/* MODAL PARA DETALLE DEL COMUNERO */}
       {selectedComunero && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-fade-in">
-          
-          {/* Fondo oscuro interactivo (Cierra el modal si haces clic fuera) */}
           <div className="absolute inset-0" onClick={() => setSelectedComunero(null)} />
-
-          {/* Tarjeta del Contenedor del Detalle */}
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10 animate-slide-up">
-            
-            {/* Cabecera del Modal */}
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-20">
               <h3 className="text-lg font-bold text-gray-800">Expediente del Comunero</h3>
               <button 
@@ -143,8 +174,6 @@ export const ComunerosFeature: React.FC = () => {
                 ✕ Cerrar
               </button>
             </div>
-
-            {/* Componente del Detalle */}
             <div className="p-6">
               <ComuneroDetail 
                 comunero={selectedComunero} 
@@ -152,9 +181,16 @@ export const ComunerosFeature: React.FC = () => {
                 onDelete={handleDelete}
               />
             </div>
-
           </div>
         </div>
+      )}
+
+      {/* MODAL PARA AGREGAR NUEVO COMUNERO */}
+      {isAddModalOpen && (
+        <AgregarComuneroForm 
+          onClose={() => setIsAddModalOpen(false)}
+          onGuardar={handleGuardarNuevoComunero}
+        />
       )}
 
     </div>
