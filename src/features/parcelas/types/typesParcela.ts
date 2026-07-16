@@ -1,6 +1,6 @@
-// src/features/parcelas/types/typesParcelas.ts
+// src/features/parcelas/types/typesParcela.ts
 
-export interface PropietarioHistoricoFila {
+export interface PropietarioHistorico {
   nombre: string;
   certificado: string;
   fechaAdquisicion: string;
@@ -9,35 +9,36 @@ export interface PropietarioHistoricoFila {
   adquirente: string;
 }
 
-export interface PredialHistoricoFila {
+export interface PredialHistorico {
   anio: number;
   monto: number;
   estado: 'Pagado' | 'Pagar';
 }
 
+// Interfaz para el manejo de las filas dinámicas en el buscador de titulares activos
 export interface TitularFila {
   comuneroId: string;
   nombreCompleto: string;
   certificado: string;
   porcentajePosesion: number;
-  calidadAgraria: string;
-  actoJuridico: string;
-  vigencia: string;
+  calidadAgraria: 'Ejidatario' | 'Avecindado' | 'Posesionario' | string;
+  actoJuridico: 'Asignación' | 'Cesión de derechos' | 'Sucesión' | string;
+  vigencia: 'Vigente' | string;
 }
 
-// 👑 INTERFAZ PARCELA DEFINITIVA Y UNIFICADA
+//  INTERFAZ DEFINITIVA PARA LA PARCELA
 export interface Parcela {
-  id?: string;                  // Opcional para cuando se está creando
-  folioInterno: string;          // Requerido por el formulario
-  numero: string;                // Requerido por la lista y detalle
-  superficie: string;            // Requerido por todos
-  fechaRegistro: string;         // Requerido por el formulario
-  observaciones: string;         // Requerido por el formulario
-  estadoPredial: 'Pagado' | 'Pagar'; // Requerido por todos
-  propietarios: string[];        // Requerido por todos
-  titularesCount?: number;       // 👈 ¡FUSIONADO! Ahora la lista no dará error
+  id: string;                         // Requerido para listados y edición
+  folioInterno?: string;              // Opcional para soportar mockups antiguos, requerido en nuevos
+  numero: string;                     // Número de parcela (ej: P-001 o Parcela 155)
+  superficie: string;                 // Con formato (ej: "2.50 ha")
+  fechaRegistro?: string;             // Opcional para retrocompatibilidad
+  observaciones?: string;             // Opcional
+  estadoPredial: 'Pagado' | 'Pagar';
+  titularesCount: number;             // Total de co-propietarios actuales
+  propietarios: string[];             // Nombres completos de los titulares vigentes
   
-  // Historiales usando los nombres del formulario
-  historialPropietarios?: PropietarioHistoricoFila[]; 
-  historialPrediales?: PredialHistoricoFila[];
+  // Historiales opcionales unificados
+  historialPropietarios?: PropietarioHistorico[]; 
+  historialPrediales?: PredialHistorico[];
 }

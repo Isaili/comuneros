@@ -9,8 +9,8 @@ import { Comunero } from '../../comuneros/types/types';
 import { 
   Parcela, 
   TitularFila, 
-  PropietarioHistoricoFila, 
-  PredialHistoricoFila 
+  PropietarioHistorico, 
+  PredialHistorico      
 } from '../types/typesParcela';
 
 interface AgregarParcelaFormProps {
@@ -26,6 +26,9 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
   onGuardar,
   parcelaAEditar
 }) => {
+  // Determinar si estamos editando o agregando nuevo
+  const esEdicion = !!parcelaAEditar;
+
   // 1. Estados principales de la Parcela
   const [superficie, setSuperficie] = useState<number>(0);
   const [tieneMultiplesTitulares, setTieneMultiplesTitulares] = useState<boolean>(false);
@@ -41,8 +44,8 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
   ]);
 
   // 3. Historiales
-  const [historialPropietarios, setHistorialPropietarios] = useState<PropietarioHistoricoFila[]>([]);
-  const [historialPrediales, setHistorialPrediales] = useState<PredialHistoricoFila[]>([]);
+const [historialPropietarios, setHistorialPropietarios] = useState<PropietarioHistorico[]>([]);
+const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>([]);
 
   // Estados de control para el buscador con lupa por fila
   const [busquedas, setBusquedas] = useState<{ [key: number]: string }>({});
@@ -50,9 +53,10 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
   const [errorPorcentaje, setErrorPorcentaje] = useState<string>('');
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
-  // 🔄 Efecto de rellenado automático (Edición vs Creación)
+  // 🔄 Efecto de rellenado automático para Edición vs Creación
   useEffect(() => {
     if (parcelaAEditar) {
+      // Limpiamos la unidad "ha" para dejar solo el valor numérico
       const numSuperficie = Number(parcelaAEditar.superficie.replace(' ha', ''));
       
       setFolioInterno(parcelaAEditar.id ? `P-${parcelaAEditar.id}` : 'P-000');
@@ -63,9 +67,11 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
       setHistorialPrediales(parcelaAEditar.historialPrediales || []);
       
       if (parcelaAEditar.propietarios && parcelaAEditar.propietarios.length > 0) {
-        setTieneMultiplesTitulares(parcelaAEditar.propietarios.length > 1);
+        const multiples = parcelaAEditar.propietarios.length > 1;
+        setTieneMultiplesTitulares(multiples);
         
-        const filasMapeadas = parcelaAEditar.propietarios.map(nombreCompleto => {
+        // Mapeamos los propietarios existentes a la estructura de filas de la tabla
+        const filasMapeadas = parcelaAEditar.propietarios.map((nombreCompleto, idx) => {
           const comuneroEncontrado = comunerosRegistrados.find(
             c => `${c.nombre} ${c.apellidos}`.toLowerCase() === nombreCompleto.toLowerCase()
           );
@@ -74,21 +80,41 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
             comuneroId: comuneroEncontrado ? comuneroEncontrado.id : '',
             nombreCompleto: nombreCompleto,
             certificado: 'CERT-EXISTENTE', 
-            porcentajePosesion: Math.floor(100 / parcelaAEditar.propietarios.length),
-            calidadAgraria: 'Ejidatario',
-            actoJuridico: 'Asignación',
-            vigencia: 'Vigente'
+            porcentajePosesion: multiples 
+              ? Math.floor(100 / parcelaAEditar.propietarios.length) 
+              : 100,
+            calidadAgraria: 'Ejidatario' as const,
+            actoJuridico: 'Asignación' as const,
+            vigencia: 'Vigente' as const
           };
         });
         setTitulares(filasMapeadas);
+
+        // Inicializar las búsquedas visibles de cada fila para que muestren los nombres ya asignados
+        const busquedasIniciales: { [key: number]: string } = {};
+        filasMapeadas.forEach((f, idx) => {
+          busquedasIniciales[idx] = f.nombreCompleto;
+        });
+        setBusquedas(busquedasIniciales);
       }
     } else {
+      // ➕ Modo Creación: Valores limpios por defecto
       const numeroAleatorio = Math.floor(100 + Math.random() * 900);
       setFolioInterno(`P-${numeroAleatorio}`);
+      setNumeroParcela('');
+      setSuperficie(0);
+      setEstadoPredialActual('Pagar');
+      setHistorialPropietarios([]);
+      setHistorialPrediales([]);
+      setTieneMultiplesTitulares(false);
+      setTitulares([
+        { comuneroId: '', nombreCompleto: '', certificado: '', porcentajePosesion: 100, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }
+      ]);
+      setBusquedas({});
     }
   }, [parcelaAEditar, comunerosRegistrados]);
 
-  // Cerrar buscadores al hacer click fuera
+  // Cerrar buscadores al hacer click fuera de ellos
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       Object.keys(dropdownRefs.current).forEach((key) => {
@@ -128,7 +154,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
     setHistorialPropietarios(prev => prev.filter((_, i) => i !== index));
   };
 
-  const actualizarPropietarioHistorico = (index: number, campo: keyof PropietarioHistoricoFila, valor: string) => {
+const actualizarPropietarioHistorico = (index: number, campo: keyof PropietarioHistorico, valor: string) => {
     setHistorialPropietarios(prev => prev.map((item, i) => i === index ? { ...item, [campo]: valor } : item));
   };
 
@@ -142,7 +168,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
     setHistorialPrediales(prev => prev.filter((_, i) => i !== index));
   };
 
-  const actualizarPredialHistorico = (index: number, campo: keyof PredialHistoricoFila, valor: any) => {
+const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico, valor: any)=> {
     setHistorialPrediales(prev => prev.map((item, i) => i === index ? { ...item, [campo]: valor } : item));
   };
 
@@ -171,7 +197,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
     }
 
     if (titulares.some(t => t.nombreCompleto.trim() === '')) {
-      alert("Por favor, selecciona o ingrese un nombre para cada titular activo.");
+      alert("Por favor, selecciona o ingresa un nombre para cada titular activo.");
       return;
     }
 
@@ -207,7 +233,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
               <span className="p-1.5 bg-[#006837]/10 text-[#006837] rounded-lg">
                 <Landmark className="w-4 h-4" />
               </span>
-              {parcelaAEditar ? 'Modificar Expediente de Parcela Ejidal' : 'Alta Integral de Parcela Ejidal (Con Históricos)'}
+              {esEdicion ? 'Modificar Expediente de Parcela Ejidal' : 'Alta Integral de Parcela Ejidal (Con Históricos)'}
             </h3>
             <p className="text-xs text-gray-400 font-medium mt-0.5">Buscador avanzado para +1500 registros, tracto sucesivo cronológico e historial hacendario.</p>
           </div>
@@ -498,7 +524,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
           <button type="button" onClick={onClose} className="w-full sm:w-1/2 py-2.5 sm:py-3 border border-gray-200 rounded-xl font-bold text-gray-500 bg-white hover:bg-gray-50">Cancelar</button>
           <button type="submit" className="w-full sm:w-1/2 py-2.5 sm:py-3 bg-[#006837] hover:bg-[#00522b] text-white rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-xs">
             <Save className="w-4 h-4" /> 
-            {parcelaAEditar ? 'Guardar Cambios del Expediente' : 'Registrar Expediente Completo'}
+            {esEdicion ? 'Guardar Cambios del Expediente' : 'Registrar Expediente Completo'}
           </button>
         </div>
       </form>
