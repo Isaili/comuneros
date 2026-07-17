@@ -151,7 +151,7 @@ export default function IncomeChart() {
   const dataActual = matrizDatos[filtroFecha][filtroIngreso];
 
   return (
-    <div className="bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex-1 min-w-0">
+    <div className="bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.01)] flex-1 min-w-0">
       {/* Encabezado y Controles */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
         <div className="min-w-0">
@@ -171,7 +171,7 @@ export default function IncomeChart() {
             <select
               value={filtroIngreso}
               onChange={(e) => setFiltroIngreso(e.target.value as TipoIngreso)}
-              className="w-full appearance-none bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200 rounded-xl px-3 py-1.5 pr-8 text-xs font-semibold text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1E4D3A]/10 focus:border-[#1E4D3A] cursor-pointer"
+              className="w-full appearance-none bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200 rounded-xl px-3 py-1.5 pr-8 text-xs font-semibold text-gray-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#1E4D3A]/5 focus:border-[#1E4D3A] cursor-pointer"
             >
               <option value="todos">Todos los ingresos</option>
               <option value="predial">Por predial</option>
@@ -185,7 +185,7 @@ export default function IncomeChart() {
             <select
               value={filtroFecha}
               onChange={(e) => setFiltroFecha(e.target.value as RangoFecha)}
-              className="w-full appearance-none bg-white hover:bg-gray-50 transition-colors border border-gray-200 rounded-xl px-3 py-1.5 pl-8 pr-8 text-xs font-medium text-gray-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1E4D3A]/10 focus:border-[#1E4D3A] cursor-pointer"
+              className="w-full appearance-none bg-white hover:bg-gray-50 transition-colors border border-gray-200 rounded-xl px-3 py-1.5 pl-8 pr-8 text-xs font-medium text-gray-600 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#1E4D3A]/5 focus:border-[#1E4D3A] cursor-pointer"
             >
               <option value="bimestres">Últimos 6 bimestres</option>
               <option value="anioActual">Año actual (2026)</option>

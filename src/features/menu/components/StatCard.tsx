@@ -16,7 +16,7 @@ export default function StatCard({ title, value, subtext, icon: Icon, iconBg, ic
       
       {/* Fila Superior: Icono y Título */}
       <div className="flex items-center gap-2 mb-2 min-w-0">
-        <div className={`p-1.5 rounded-lg shrink-0 transition-transform duration-200 group-hover:scale-105 ${iconBg} ${iconColor}`}>
+        <div className={`p-1.5 rounded-full shrink-0 transition-transform duration-200 group-hover: ${iconBg} ${iconColor}`}>
           <Icon className="w-4 h-4" />
         </div>
         <span className="text-[11px] font-bold text-gray-400 tracking-wide truncate uppercase">

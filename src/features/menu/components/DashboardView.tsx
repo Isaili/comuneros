@@ -46,50 +46,48 @@ export default function DashboardView() {
       </div>
 
       {/* Grid de Tarjetas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 sm:rounded-2xl min-w-0">
         <StatCard 
           title="Comuneros registrados" 
           value="428" 
           subtext="↗ 12 más que el mes pasado" 
           icon={Users}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-700"
+          iconBg="bg-[#E6F2E9]"
+          iconColor="text-[#1F4D3C]"
         />
         <StatCard 
           title="Parcelas registradas" 
           value="512" 
           subtext="↗ 8 nuevas este mes" 
           icon={FileText}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-700"
+          iconBg="bg-[#E6F2E9]"
+          iconColor="text-[#1F4D3C]"
         />
         <StatCard 
           title="Lotes Registrados" 
           value="37" 
           subtext="$ 148,500 en adeudo" 
           icon={Landmark}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-700"
+          iconBg="bg-[#E6F2E9]"
+          iconColor="text-[#1F4D3C]"
         />
         <StatCard 
           title="Ingresos del periodo" 
           value="$286,400" 
           subtext="↑ $18,650 vs. mes pasado" 
           icon={CircleDollarSign}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-700"
+          iconBg="bg-[#E6F2E9]"
+          iconColor="text-[#1F4D3C]"
         />
       </div>
 
-      {/* Distribución del Dashboard */}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        {/* BLOQUE DE LA GRÁFICA */}
         <div className="lg:col-span-2 flex flex-col gap-6 min-w-0">
           <IncomeChart />
         </div>
 
-        {/* BLOQUE DE ASAMBLEAS */}
         <div className="flex flex-col gap-6 h-full min-w-0">
           <NextAssembly />
           <AssemblyHistory />

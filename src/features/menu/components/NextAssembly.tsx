@@ -7,7 +7,7 @@ export default function NextAssembly() {
       
       {/* Encabezado: Ícono y Etiqueta superior */}
       <div className="flex items-center gap-2 mb-2 min-w-0">
-        <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 shrink-0 transition-transform duration-200 group-hover:scale-105">
+        <div className="p-1.5 rounded-full bg-[#E6F2E9] text-[#1F4D3C] shrink-0 transition-transform duration-200">
           <Calendar className="w-4 h-4" />
         </div>
         <span className="text-[11px] font-bold text-gray-400 tracking-wide truncate uppercase">
@@ -26,7 +26,7 @@ export default function NextAssembly() {
             Último domingo · Cada 2 meses
           </p>
           
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100/50 group-hover:bg-emerald-100/60 transition-colors shrink-0">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#E2F7E9] text-[#166534] border border-emerald-100/50 group-hover:bg-emerald-100/60 transition-colors shrink-0">
             QR Activo
           </span>
         </div>
