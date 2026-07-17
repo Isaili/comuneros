@@ -23,13 +23,10 @@ export default function DashboardView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-200/60 min-w-0">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight font-serif">
+            <h1 className="text-2xl sm:text-2xl font-extrabold text-gray-900 tracking-tight font-serif">
               ¡Bienvenido, <span className="text-[#1E4D3A]">Mario</span>!
             </h1>
-            {/* Indicador de actualización en tiempo real */}
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100/50 uppercase tracking-wider animate-pulse self-center">
-              ● En vivo
-            </span>
+
           </div>
           <p className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide">
             Resumen actualizado del estado de la Comisaría Ejidal.
