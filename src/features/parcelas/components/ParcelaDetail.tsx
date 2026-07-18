@@ -137,7 +137,7 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
                 </thead>
                 <tbody className="divide-y divide-gray-50 font-bold text-gray-800">
                   {listaPropietarios.map((propietario, index) => {
-                    // 🛡️ CONTROL ANTICAÍDAS: Si no es una cadena válida, provee un fallback
+                    //  CONTROL ANTICAÍDAS: Si no es una cadena válida, provee un fallback
                     const nombreSanitario = typeof propietario === 'string' ? propietario : 'Titular Desconocido';
                     
                     const porcentajeCalculado = Math.floor(100 / listaPropietarios.length);
