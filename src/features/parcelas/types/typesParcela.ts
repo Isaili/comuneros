@@ -1,5 +1,3 @@
-// src/features/parcelas/types/typesParcela.ts
-
 export interface PropietarioHistorico {
   nombre: string;
   certificado: string;
