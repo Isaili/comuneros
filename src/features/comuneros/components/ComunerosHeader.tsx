@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, SlidersHorizontal, Calendar } from 'lucide-react';
+import { Search, Plus, SlidersHorizontal, Calendar, Users } from 'lucide-react';
 
 interface HeaderProps {
   onAddClick: () => void;
@@ -25,13 +25,17 @@ export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchCha
 
   return (
     <div className="space-y-6">
-      {/* Fila de Bienvenida y Fecha */}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+          <span className="p-1.5 bg-slate-100 rounded-lg text-slate-700 shrink-0">
+            <Users className="w-5 h-5" />
+          </span>
             Comuneros
           </h1>
-          <p className="text-sm text-gray-500">Gestiona la información de todos los comuneros ejidales.</p>
+          <p className="text-sm text-gray-500 mt-1">Gestiona la información de todos los comuneros ejidales.</p>
         </div>
         
         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm text-xs font-semibold text-gray-700 self-start sm:self-auto">
