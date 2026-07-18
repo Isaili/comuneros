@@ -4,11 +4,11 @@ import React, { useMemo, useState } from 'react';
 import { MultasHeader } from '../components/MultasHeader';
 import { MultasList } from '../components/MultasList';
 import { MultaDetail } from '../components/MultaDetail';
-import { PagarMultaModal } from '../components/modals/PagarMultaModal';
-import { ReciboPagoModal } from '../components/modals/ReciboPagoModal';
+import { PagarMultaModal } from './modals/PagarMultaModal';
+import { ReciboPagoModal } from './modals/ReciboPagoModal';
 import { AgregarMultaForm } from '../components/AgregarMultaForm';
-import { EditarMultaForm } from '../components/modals/Editarmultaform';
-import { ConfirmarEliminarModal } from '../components/modals/Confirmareliminarmodal';
+import { EditarMultaForm } from './modals/Editarmultaform';
+import { ConfirmarEliminarModal } from './modals/Confirmareliminarmodal';
 import { Multa, TipoMulta, EstadoMulta } from '../types/types';
 import { multasMock } from '../mocks/multasMock';
 
@@ -66,7 +66,7 @@ export default function MultasAsistenciasFeature() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
+    <div className="flex-1 min-w-0 p-4 sm:p-8 pt-20 lg:pt-8 space-y-8 overflow-y-auto h-screen bg-[#FAFAFA]">
       <MultasHeader
         onBusquedaChange={setBusqueda}
         filtroTipo={filtroTipo}

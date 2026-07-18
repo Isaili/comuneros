@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { X, CheckCircle2, Printer } from 'lucide-react';
-import { Multa } from '../types/types';
+import { Multa } from '../../types/types';
 
 interface ReciboPagoModalProps {
   multa: Multa;

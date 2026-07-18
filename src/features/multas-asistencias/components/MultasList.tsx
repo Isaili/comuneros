@@ -1,20 +1,36 @@
 "use client";
 
-import React from 'react';
-import { ChevronLeft, ChevronRight, UserX, FileWarning, MoreHorizontal } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, UserX, FileWarning, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { Multa } from '../types/types';
 
 interface ListProps {
   multas: Multa[];
   selectedId: string;
   onSelect: (multa: Multa) => void;
-  onPagarClick: (multa: Multa) => void;
+  onEditarClick: (multa: Multa) => void;
+  onEliminarClick: (multa: Multa) => void;
 }
 
 const formatoMoneda = (valor: number) =>
   valor.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 });
 
-export const MultasList: React.FC<ListProps> = ({ multas, selectedId, onSelect, onPagarClick }) => {
+export const MultasList: React.FC<ListProps> = ({ multas, selectedId, onSelect, onEditarClick, onEliminarClick }) => {
+  const [menuAbiertoId, setMenuAbiertoId] = useState<string | null>(null);
+  const menuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuAbiertoId) return;
+      const ref = menuRefs.current[menuAbiertoId];
+      if (ref && !ref.contains(event.target as Node)) {
+        setMenuAbiertoId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuAbiertoId]);
+
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col justify-between min-h-[600px]">
       <div>
@@ -33,7 +49,7 @@ export const MultasList: React.FC<ListProps> = ({ multas, selectedId, onSelect, 
                 <th className="pb-3 px-2.5 text-xs">Fecha</th>
                 <th className="pb-3 px-2.5 text-xs">Cantidad</th>
                 <th className="pb-3 px-2.5 text-xs">Estado</th>
-                <th className="pb-3 px-2.5 text-center w-24 text-xs">Acciones</th>
+                <th className="pb-3 px-2.5 text-center w-16 text-xs">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-700 font-medium">
@@ -92,15 +108,43 @@ export const MultasList: React.FC<ListProps> = ({ multas, selectedId, onSelect, 
                     </td>
 
                     <td className="py-3.5 px-2.5 text-center" onClick={(e) => e.stopPropagation()}>
-                      {m.estado === 'pendiente' && (
+                      <div
+                        className="relative inline-block"
+                        ref={(el) => {
+                          menuRefs.current[m.id] = el;
+                        }}
+                      >
                         <button
-                          onClick={() => onPagarClick(m)}
-                          className="p-2 border border-gray-100 rounded-lg hover:border-[#1E4D3A]/30 hover:bg-[#1E4D3A]/5 text-[#1E4D3A] transition-all"
-                          title="Registrar pago"
+                          onClick={() => setMenuAbiertoId(menuAbiertoId === m.id ? null : m.id)}
+                          className="p-2 border border-gray-100 rounded-lg hover:border-gray-300 hover:bg-gray-50 text-gray-500 transition-all"
+                          title="Más acciones"
                         >
-                          <MoreHorizontal className="w-3.5 h-3.5" />
+                          <MoreVertical className="w-3.5 h-3.5" />
                         </button>
-                      )}
+
+                        {menuAbiertoId === m.id && (
+                          <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden">
+                            <button
+                              onClick={() => {
+                                onEditarClick(m);
+                                setMenuAbiertoId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-gray-500" /> Editar
+                            </button>
+                            <button
+                              onClick={() => {
+                                onEliminarClick(m);
+                                setMenuAbiertoId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 border-t border-gray-50 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

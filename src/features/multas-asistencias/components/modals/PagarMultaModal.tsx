@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Landmark, AlertCircle, Banknote } from 'lucide-react';
-import { Multa } from '../types/types';
+import { Multa } from '../../types/types';
 
 interface PagarMultaModalProps {
   multa: Multa;
