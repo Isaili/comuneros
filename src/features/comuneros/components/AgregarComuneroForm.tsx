@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Calendar, MapPin, Phone, Mail, X, Save, Camera, Upload, RotateCcw } from 'lucide-react';
+import { User, X, Save, Camera, Upload, RotateCcw } from 'lucide-react';
 import * as Yup from 'yup';
 import { Comunero } from '../types/types'; 
 
@@ -29,11 +29,6 @@ const comuneroValidationSchema = Yup.object().shape({
     .optional()
     .nullable()
     .transform((value, originalValue) => (originalValue === '' ? null : value)),
-  correo: Yup.string()
-    .email('Ingresa un correo electrónico válido')
-    .optional()
-    .nullable()
-    .transform((value, originalValue) => (originalValue === '' ? null : value)),
   tipoComunero: Yup.string()
     .oneOf(['comunero', 'avecindado'], 'Selecciona un tipo de miembro válido')
     .required('El tipo de miembro es obligatorio'),
@@ -44,15 +39,11 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
   onGuardar,
   comuneroAEditar = null
 }) => {
-  // Determinamos si estamos editando
   const esEdicion = !!comuneroAEditar;
 
-  // Inicializamos el estado. Si hay un comunero para editar, formateamos sus fechas de dd/mm/aaaa a aaaa-mm-dd para el input tipo date
   const formatearFechaParaInput = (fechaStr: string | undefined): string => {
     if (!fechaStr) return '';
-    // Si ya viene en formato YYYY-MM-DD (del Date Picker original)
     if (fechaStr.includes('-')) return fechaStr;
-    // Si viene en formato DD/MM/YYYY
     const partes = fechaStr.split('/');
     if (partes.length === 3) {
       return `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
@@ -68,7 +59,6 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
     direccion: '',
     colonia: '',
     telefono: '',
-    correo: '',
     tipoComunero: 'comunero',
   });
 
@@ -79,18 +69,16 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Efecto para rellenar el formulario si entra en modo edición
   useEffect(() => {
     if (comuneroAEditar) {
       setFormData({
         nombre: comuneroAEditar.nombre,
         apellidos: comuneroAEditar.apellidos,
         fechaNacimiento: formatearFechaParaInput(comuneroAEditar.fechaNacimiento),
-        fechaIngreso: formatearFechaParaInput(comuneroAEditar.fechaRegistro || comuneroAEditar.fechaNacimiento), // respaldo si no trae
+        fechaIngreso: formatearFechaParaInput(comuneroAEditar.fechaRegistro || comuneroAEditar.fechaNacimiento),
         direccion: comuneroAEditar.direccion || '',
         colonia: comuneroAEditar.colonia || '',
         telefono: comuneroAEditar.telefono || '',
-        correo: comuneroAEditar.correo || '',
         tipoComunero: comuneroAEditar.tipo || 'comunero',
       });
       if (comuneroAEditar.fotografia) {
@@ -107,7 +95,6 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
     }
   };
 
-  // Cámara y Archivo logic...
   const startCamera = async () => {
     setIsCameraActive(true);
     setFotografia(null);
@@ -165,7 +152,6 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
     try {
       await comuneroValidationSchema.validate(formData, { abortEarly: false });
       
-      // Si estamos editando mantenemos el ID original, de lo contrario creamos uno nuevo temporal
       onGuardar({
         id: esEdicion ? comuneroAEditar.id : Date.now().toString(),
         ...formData,
@@ -190,7 +176,6 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
         onSubmit={handleSubmit}
         className="bg-white w-full max-w-2xl rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-scale-up"
       >
-        {/* Cabecera dinámica */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
           <div>
             <h3 className="text-sm sm:text-base font-black text-gray-900 flex items-center gap-2">
@@ -212,10 +197,8 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
           </button>
         </div>
 
-        {/* Cuerpo del Formulario */}
         <div className="p-5 overflow-y-auto space-y-4 text-gray-700 font-semibold text-xs">
           
-          {/* FOTOGRAFÍA */}
           <div className="flex flex-col items-center justify-center bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
             <h4 className="text-gray-500 font-bold self-start">Fotografía de Perfil</h4>
             
@@ -246,7 +229,6 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
           </div>
 
-          {/* Formulario (Campos idénticos) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-gray-500 font-bold block">Nombre(s) <span className="text-red-500">*</span></label>
@@ -341,22 +323,8 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
               />
               {errors.telefono && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.telefono}</p>}
             </div>
-
-            <div className="space-y-1.5">
-              <label className="text-gray-500 font-bold block">Correo Electrónico</label>
-              <input
-                type="text"
-                name="correo"
-                value={formData.correo}
-                onChange={handleChange}
-                placeholder="correo@ejemplo.com"
-                className={`w-full px-3 py-2.5 border rounded-xl ${errors.correo ? 'border-red-500' : 'border-gray-200'}`}
-              />
-              {errors.correo && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.correo}</p>}
-            </div>
           </div>
 
-          {/* Tipo de Miembro */}
           <div className="space-y-2">
             <label className="text-gray-500 font-bold block">Tipo de Miembro <span className="text-red-500">*</span></label>
             <div className="grid grid-cols-2 gap-3">
@@ -383,7 +351,6 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
 
         </div>
 
-        {/* Botones de acción dinámicos */}
         <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex flex-col-reverse sm:flex-row items-center gap-2 shrink-0">
           <button
             type="button"

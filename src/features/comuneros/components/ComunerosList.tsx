@@ -24,7 +24,6 @@ export const ComunerosList: React.FC<ListProps> = ({ comuneros, selectedId, onSe
               <tr className="text-gray-400 font-bold text-xs uppercase tracking-wider border-b border-gray-100">
                 <th className="py-3 px-2">Nombre</th>
                 <th className="py-3 px-2">Tipo</th>
-                {/* 💡 Restaurados a la normalidad para que siempre se muestren */}
                 <th className="py-3 px-2">Fecha de nacimiento</th>
                 <th className="py-3 px-2">Estado civil</th>
                 <th className="py-3 px-2">Colonia</th>
@@ -40,7 +39,6 @@ export const ComunerosList: React.FC<ListProps> = ({ comuneros, selectedId, onSe
                     selectedId === c.id ? 'bg-[#006837]/5' : 'hover:bg-gray-50'
                   }`}
                 >
-                  {/* Nombre */}
                   <td className="py-3 px-2 flex items-center gap-3">
                     <img src={c.fotografia} alt={c.nombre} className="w-10 h-10 rounded-xl object-cover border border-gray-100 shadow-sm" />
                     <div>
@@ -51,7 +49,6 @@ export const ComunerosList: React.FC<ListProps> = ({ comuneros, selectedId, onSe
                     </div>
                   </td>
 
-                  {/* Tipo */}
                   <td className="py-3 px-2 whitespace-nowrap">
                     {c.tipo === 'comunero' ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
@@ -66,7 +63,6 @@ export const ComunerosList: React.FC<ListProps> = ({ comuneros, selectedId, onSe
                     )}
                   </td>
 
-                  {/* 💡 Listos y visibles sin restricciones */}
                   <td className="py-3 px-2 text-gray-600 font-medium whitespace-nowrap">
                     {c.fechaNacimiento}
                   </td>
@@ -74,10 +70,8 @@ export const ComunerosList: React.FC<ListProps> = ({ comuneros, selectedId, onSe
                     {c.estadoCivil}
                   </td>
                   
-                  {/* Colonia */}
                   <td className="py-3 px-2 text-gray-600 font-medium">{c.colonia}</td>
                   
-                  {/* Acciones */}
                   <td className="py-3 px-2 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1.5">
                       <button onClick={() => onEdit(c.id)} className="p-2 border border-gray-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600 transition-all">
@@ -95,7 +89,6 @@ export const ComunerosList: React.FC<ListProps> = ({ comuneros, selectedId, onSe
         </div>
       </div>
 
-      {/* Paginación */}
       <div className="flex items-center justify-center gap-2 pt-6 border-t border-gray-50 text-xs font-bold text-gray-600">
         <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400"><ChevronLeft className="w-4 h-4" /></button>
         <button className="w-8 h-8 rounded-lg bg-[#006837] text-white flex items-center justify-center">1</button>

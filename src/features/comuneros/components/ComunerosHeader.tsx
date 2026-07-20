@@ -12,7 +12,6 @@ export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchCha
   const [fechaActual, setFechaActual] = useState<string>('');
 
   useEffect(() => {
-    // Genera la fecha en tiempo real en el cliente
     const opciones: Intl.DateTimeFormatOptions = {
       weekday: 'long',
       year: 'numeric',
@@ -21,13 +20,11 @@ export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchCha
     };
     
     const fecha = new Date().toLocaleDateString('es-ES', opciones);
-    // Capitaliza la primera letra (ej: "domingo" -> "Domingo")
     setFechaActual(fecha.charAt(0).toUpperCase() + fecha.slice(1));
   }, []);
 
   return (
     <div className="space-y-6">
-      {/* Fila Superior: Título y Fecha */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight font-serif flex items-center gap-2">
@@ -50,9 +47,7 @@ export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchCha
         </div>
       </div>
 
-      {/* Fila de Herramientas: Solo Búsqueda y Acción */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent">
-        {/* Barra de Búsqueda Solitaria */}
         <div className="relative w-full sm:w-[320px]">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input 
@@ -63,7 +58,6 @@ export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchCha
           />
         </div>
 
-        {/* Botón Agregar Comunero */}
         <button 
           onClick={onAddClick}
           className="bg-[#006837] hover:bg-[#00522b] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 transform hover:-translate-y-0.5 w-full sm:w-auto"
