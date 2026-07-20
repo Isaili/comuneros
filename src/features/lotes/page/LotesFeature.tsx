@@ -9,7 +9,6 @@ import { AgregarLoteForm } from '../components/AgregarLoteForm';
 import { Lote as LoteCompleto } from '../types/typesLotes';
 import { Comunero } from '../../comuneros/types/types';
 
-//jola//
 const MOCK_LOTES: LoteSimplificado[] = [
   { id: 'l1', numero: 'L-001', folio: 'L-001', superficie: '300.00 m²', propietarios: ['José Antonio Hernández López'], estadoPredial: 'Pagado' },
   { id: 'l2', numero: 'L-002', folio: 'L-002', superficie: '250.00 m²', propietarios: ['María G. Pérez Martínez'], estadoPredial: 'Pagado' },
