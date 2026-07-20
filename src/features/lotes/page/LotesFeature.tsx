@@ -5,7 +5,6 @@ import { LotesHeader } from '../components/LotesHeader';
 import { LotesList, Lote as LoteSimplificado } from '../components/LotesList';
 import { LoteDetail } from '../components/LoteDetail';
 
-// 🔌 IMPORTACIONES DE NUESTROS COMPONENTES Y TIPOS DE LOTES INTEGRALES
 import { AgregarLoteForm } from '../components/AgregarLoteForm';
 import { Lote as LoteCompleto } from '../types/typesLotes';
 import { Comunero } from '../../comuneros/types/types';
@@ -63,9 +62,7 @@ const MOCK_COMUNEROS: Comunero[] = [
 ];
 
 export const LotesFeature: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState<'parcelas' | 'lotes'>('lotes');
   const [lotes, setLotes] = useState<LoteSimplificado[]>(MOCK_LOTES);
-  
   const [selectedLote, setSelectedLote] = useState<LoteSimplificado | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -78,13 +75,10 @@ export const LotesFeature: React.FC = () => {
     l.propietarios.some((prop: string) => prop.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // 🔄 Transforma el lote simplificado al tipo complejo requerido por el Formulario
   const activarEdicionDeLote = (loteSimplificado: LoteSimplificado) => {
-    setSelectedLote(null); // Asegura cerrar la vista de detalle si estaba abierta
+    setSelectedLote(null);
 
     const superficieNumerica = parseFloat(loteSimplificado.superficie) || 200;
-    
-    // Proponer unas medidas proporcionales basadas en un largo estándar de 20 metros
     const largoCalculado = 20;
     const anchoCalculado = superficieNumerica / largoCalculado;
 
@@ -109,7 +103,6 @@ export const LotesFeature: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  // 🗑️ Acción opcional de borrado (para completar el ciclo de vida del CRUD en el mock)
   const handleEliminarLote = (loteAEliminar: LoteSimplificado) => {
     if (confirm(`¿Está seguro que desea eliminar el registro del Lote ${loteAEliminar.numero}?`)) {
       setLotes(prev => prev.filter(l => l.id !== loteAEliminar.id));
@@ -130,10 +123,8 @@ export const LotesFeature: React.FC = () => {
     };
 
     if (loteEdicionCompleto) {
-      // 📝 MODO EDICIÓN
       setLotes(prev => prev.map(l => l.folio === loteEdicionCompleto.folioInterno ? loteAdaptado : l));
     } else {
-      // 🆕 MODO CREACIÓN
       setLotes(prev => [loteAdaptado, ...prev]);
     }
 
@@ -149,10 +140,7 @@ export const LotesFeature: React.FC = () => {
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
       
-      {/* 1. Encabezado */}
       <LotesHeader 
-        activeTab={currentTab}
-        setActiveTab={setCurrentTab}
         onSearchChange={setSearchTerm} 
         onAddClick={() => {
           setLoteEdicionCompleto(null); 
@@ -160,31 +148,23 @@ export const LotesFeature: React.FC = () => {
         }}
       />
 
-      {/* Switcher de vistas principal */}
-      {currentTab === 'lotes' ? (
-        <div className="w-full">
-          {filteredLotes.length > 0 ? (
-            <LotesList 
-              lotes={filteredLotes}
-              selectedId={selectedLote?.id ?? ""} 
-              onSelect={setSelectedLote}
-              onEdit={activarEdicionDeLote} // ✏️ CONECTADO DIRECTAMENTE AL BOTÓN DE LA TABLA
-              onDelete={handleEliminarLote}  // 🗑️ CONECTADO DIRECTAMENTE AL BOTÓN DE LA TABLA
-            />
-          ) : (
-            <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-12 text-center text-gray-400 font-medium text-xs sm:text-sm shadow-sm">
-              No se encontraron lotes que coincidan con la búsqueda.
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="bg-white border border-gray-100 rounded-2xl p-8 sm:p-12 text-center text-gray-400 font-semibold text-xs sm:text-sm shadow-sm animate-fade-in">
-          Redireccionando al panel de Parcelas...
-        </div>
-      )}
+      <div className="w-full">
+        {filteredLotes.length > 0 ? (
+          <LotesList 
+            lotes={filteredLotes}
+            selectedId={selectedLote?.id ?? ""} 
+            onSelect={setSelectedLote}
+            onEdit={activarEdicionDeLote}
+            onDelete={handleEliminarLote}
+          />
+        ) : (
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-12 text-center text-gray-400 font-medium text-xs sm:text-sm shadow-sm">
+            No se encontraron lotes que coincidan con la búsqueda.
+          </div>
+        )}
+      </div>
 
-      {/* VENTANA MODAL COMPACTA: Detalles del lote */}
-      {currentTab === 'lotes' && selectedLote && (
+      {selectedLote && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-fade-in">
           <div className="absolute inset-0" onClick={() => setSelectedLote(null)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto z-10 animate-slide-up">
@@ -212,7 +192,6 @@ export const LotesFeature: React.FC = () => {
         </div>
       )}
 
-      {/* 3. MODAL REUTILIZADO PARA ALTA Y EDICIÓN */}
       {isAddModalOpen && (
         <AgregarLoteForm 
           comunerosRegistrados={MOCK_COMUNEROS} 
