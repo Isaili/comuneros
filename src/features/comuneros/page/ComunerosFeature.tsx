@@ -80,17 +80,13 @@ const MOCK_COMUNEROS: Comunero[] = [
 export const ComunerosFeature: React.FC = () => {
   const [comuneros, setComuneros] = useState<Comunero[]>(MOCK_COMUNEROS);
   
-  // Estados para modales y búsquedas
   const [selectedComunero, setSelectedComunero] = useState<Comunero | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // 💡 NUEVO: Estado para saber a quién estamos editando
   const [comuneroAEditar, setComuneroAEditar] = useState<Comunero | null>(null);
 
   const handleSearch = (text: string) => setSearchTerm(text);
   
-  // Abrir el modal de creación (limpiando cualquier edición previa)
   const handleAddComunero = () => {
     setComuneroAEditar(null);
     setIsAddModalOpen(true);
@@ -98,13 +94,22 @@ export const ComunerosFeature: React.FC = () => {
 
   // Función unificada para guardar (crear o actualizar) un miembro
   const handleGuardarNuevoComunero = (datosFormulario: any) => {
-    const esEdicion = comuneros.some(c => c.id === datosFormulario.id);
+    // 💡 CAMBIO: ya no confiamos en si el form mandó un id "falso" (Date.now()).
+    // Ahora decidimos si es edición según si comuneroAEditar existe en el estado,
+    // no según lo que traiga datosFormulario. El form solo manda id cuando
+    // realmente estás editando (viene de comuneroAEditar?.id).
+    const esEdicion = !!comuneroAEditar;
 
     if (esEdicion) {
-      // 💡 MODO EDICIÓN: Buscamos el elemento y reemplazamos sus campos sin perder terrenos, folios ni QR
+      // TODO backend: aquí en vez de setComuneros(prev => prev.map(...)) directo,
+      // vas a hacer algo como:
+      //
+      //   await api.put(`/comuneros/${comuneroAEditar.id}`, datosFormulario);
+      //   // luego, si la respuesta es exitosa, actualizas el estado local igual que abajo,
+      //   // o mejor, usas lo que el backend te devuelva (por si normaliza algún campo).
+      //
       setComuneros(prev => prev.map(c => {
-        if (c.id === datosFormulario.id) {
-          // Formatear la fecha del input tipo date (YYYY-MM-DD) al formato de vista habitual (DD/MM/YYYY) si es necesario
+        if (c.id === comuneroAEditar!.id) {
           let fechaNacimientoFormateada = datosFormulario.fechaNacimiento;
           if (datosFormulario.fechaNacimiento.includes('-')) {
             const partes = datosFormulario.fechaNacimiento.split('-');
@@ -132,17 +137,24 @@ export const ComunerosFeature: React.FC = () => {
         return c;
       }));
 
-      // Si el comunero editado estaba abierto en la vista de detalle, actualizamos su vista
-      if (selectedComunero?.id === datosFormulario.id) {
-        setSelectedComunero(null); // Reseteamos el detalle para que reciba los nuevos cambios cuando vuelvan a hacer clic
+      if (selectedComunero?.id === comuneroAEditar!.id) {
+        setSelectedComunero(null);
       }
 
     } else {
-      // ➕ MODO REGISTRO NUEVO: Generamos folio único e inicializamos terrenos vacíos
+      // TODO backend: aquí es donde cambia más. En vez de generar folioGenerado
+      // y el id en el cliente, vas a hacer algo como:
+      //
+      //   const response = await api.post('/comuneros', datosFormulario);
+      //   const comuneroCreado = response.data; // el backend regresa id, folio, qrCode reales
+      //   setComuneros(prev => [comuneroCreado, ...prev]);
+      //
+      // Por ahora seguimos generando folio/id localmente porque no hay backend real:
       const numeroFolio = Math.floor(1000 + Math.random() * 9000);
       const folioGenerado = `COM-${numeroFolio}`;
+      const idGenerado = Date.now().toString(); // 💡 el id ahora se genera aquí, en un solo lugar,
+                                                  // no en el formulario — más fácil de reemplazar después
 
-      // Formateamos fecha nacimiento de YYYY-MM-DD a DD/MM/YYYY
       let fechaNacimientoFormateada = datosFormulario.fechaNacimiento;
       if (datosFormulario.fechaNacimiento.includes('-')) {
         const partes = datosFormulario.fechaNacimiento.split('-');
@@ -150,7 +162,7 @@ export const ComunerosFeature: React.FC = () => {
       }
 
       const comuneroFormateado: Comunero = {
-        id: datosFormulario.id,
+        id: idGenerado,
         nombre: datosFormulario.nombre,
         apellidos: datosFormulario.apellidos,
         tipo: datosFormulario.tipoComunero as 'comunero' | 'avecindado',
@@ -172,12 +184,10 @@ export const ComunerosFeature: React.FC = () => {
       setComuneros(prev => [comuneroFormateado, ...prev]);
     }
 
-    // Cerramos el modal y limpiamos estados
     setIsAddModalOpen(false);
     setComuneroAEditar(null);
   };
 
-  // 💡 MODO EDICIÓN: Activamos el formulario enviando el objeto del comunero seleccionado
   const handleEdit = (id: string) => {
     const comuneroBuscado = comuneros.find(c => c.id === id);
     if (comuneroBuscado) {
@@ -188,6 +198,7 @@ export const ComunerosFeature: React.FC = () => {
   
   const handleDelete = (id: string) => {
     if (confirm("¿Estás seguro de que deseas eliminar este registro?")) {
+      // TODO backend: aquí iría await api.delete(`/comuneros/${id}`) antes de actualizar el estado local
       setComuneros(prev => prev.filter(c => c.id !== id));
       if (selectedComunero?.id === id) setSelectedComunero(null);
     }
@@ -200,13 +211,11 @@ export const ComunerosFeature: React.FC = () => {
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
       
-      {/* Encabezado Principal */}
       <ComunerosHeader 
         onAddClick={handleAddComunero} 
         onSearchChange={handleSearch} 
       />
 
-      {/* Lista de Comuneros a Ancho Completo */}
       <div className="w-full">
         {filteredComuneros.length > 0 ? (
           <ComunerosList 
@@ -223,7 +232,6 @@ export const ComunerosFeature: React.FC = () => {
         )}
       </div>
 
-      {/* MODAL PARA DETALLE DEL COMUNERO */}
       {selectedComunero && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-fade-in">
           <div className="absolute inset-0" onClick={() => setSelectedComunero(null)} />
@@ -241,8 +249,8 @@ export const ComunerosFeature: React.FC = () => {
               <ComuneroDetail 
                 comunero={selectedComunero} 
                 onEdit={(id) => {
-                  setSelectedComunero(null); // Cerramos el expediente
-                  handleEdit(id);           // Abrimos el editor
+                  setSelectedComunero(null);
+                  handleEdit(id);
                 }}
                 onDelete={handleDelete}
               />
@@ -251,7 +259,6 @@ export const ComunerosFeature: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL PARA AGREGAR / EDITAR COMUNERO */}
       {isAddModalOpen && (
         <AgregarComuneroForm 
           onClose={() => {
@@ -259,7 +266,7 @@ export const ComunerosFeature: React.FC = () => {
             setComuneroAEditar(null);
           }}
           onGuardar={handleGuardarNuevoComunero}
-          comuneroAEditar={comuneroAEditar} // 💡 Conectamos el prop de edición
+          comuneroAEditar={comuneroAEditar}
         />
       )}
 

@@ -48,15 +48,16 @@ export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchCha
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent">
-        <div className="relative w-full sm:w-[320px]">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input 
-            type="text" 
-            placeholder="Buscar por nombre o apellido..." 
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#006837] focus:ring-1 focus:ring-[#006837] transition-all"
-          />
-        </div>
+  <div className="relative w-full sm:w-[320px]">
+    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+    <input 
+      type="text" 
+      placeholder="Buscar por nombre o apellido..." 
+      onChange={(e) => onSearchChange(e.target.value)}
+      className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#006837] focus:ring-1 focus:ring-[#006837] transition-all placeholder-gray-500 text-gray-900"
+    />
+  </div>
+
 
         <button 
           onClick={onAddClick}
