@@ -30,7 +30,7 @@ export default function DashboardView() {
             ¡Bienvenido, <span className="text-[#006837]">Mario</span>!
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide mt-1">
-            Resumen actualizado del estado de la Comisaría Ejidal.
+            Resumen actualizado del estado de la Comisaría Comunal.
           </p>
         </div>
         
