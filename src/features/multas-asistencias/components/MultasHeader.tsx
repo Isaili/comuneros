@@ -1,15 +1,24 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Dispatch, SetStateAction } from 'react';
 import { Search, Plus, CircleDollarSign, Calendar } from 'lucide-react';
+import { TipoMulta, EstadoMulta } from '../types/types';
 
 interface HeaderProps {
   onBusquedaChange: (texto: string) => void;
+  filtroTipo?: TipoMulta | 'todos';
+  onFiltroTipoChange?: Dispatch<SetStateAction<TipoMulta | 'todos'>>;
+  filtroEstado?: EstadoMulta | 'todos';
+  onFiltroEstadoChange?: Dispatch<SetStateAction<EstadoMulta | 'todos'>>;
   onAgregarClick: () => void;
 }
 
 export const MultasHeader: React.FC<HeaderProps> = ({
   onBusquedaChange,
+  filtroTipo,
+  onFiltroTipoChange,
+  filtroEstado,
+  onFiltroEstadoChange,
   onAgregarClick,
 }) => {
   const [fechaActual, setFechaActual] = useState<string>('');

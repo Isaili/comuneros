@@ -5,7 +5,7 @@ export interface Terreno {
   certificado?: string; 
   superficie: string;
   ubicacion: string;
-  hectareasPosesion: number; 
+  hectareasPosesion?: number; 
   pagoPredial?: number;        
 }
 
