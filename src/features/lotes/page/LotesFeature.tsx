@@ -251,13 +251,13 @@ export const LotesFeature: React.FC = () => {
                   onClick={() => activarTraspasoDeLote(selectedLote)}
                   className="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100/80 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
                 >
-                  🔄 Traspasar
+                   Traspasar
                 </button>
                 <button
                   onClick={() => activarEdicionDeLote(selectedLote)}
                   className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100/80 rounded-lg text-xs font-bold transition-colors"
                 >
-                  ✏️ Editar
+                  Editar
                 </button>
                 <button 
                   onClick={() => setSelectedLote(null)}
