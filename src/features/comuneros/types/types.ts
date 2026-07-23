@@ -5,7 +5,7 @@ export interface Terreno {
   certificado?: string; 
   superficie: string;
   ubicacion: string;
-  porcentajePosesion?: number; 
+  hectareasPosesion: number; 
   pagoPredial?: number;        
 }
 
@@ -20,7 +20,6 @@ export interface Comunero {
   direccion: string;
   colonia: string;
   telefono: string;
-  correo: string;
   fechaRegistro: string;
   folioComunero: string;
   fotografia: string;

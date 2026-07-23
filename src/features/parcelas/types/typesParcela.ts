@@ -18,7 +18,7 @@ export interface TitularFila {
   comuneroId: string;
   nombreCompleto: string;
   certificado: string;
-  porcentajePosesion: number;
+  hectareasPosesion: number;
   calidadAgraria: 'Ejidatario' | 'Avecindado' | 'Posesionario' | string;
   actoJuridico: 'Asignación' | 'Cesión de derechos' | 'Sucesión' | string;
   vigencia: 'Vigente' | string;
@@ -26,17 +26,16 @@ export interface TitularFila {
 
 //  INTERFAZ DEFINITIVA PARA LA PARCELA
 export interface Parcela {
-  id: string;                         // Requerido para listados y edición
-  folioInterno?: string;              // Opcional para soportar mockups antiguos, requerido en nuevos
-  numero: string;                     // Número de parcela (ej: P-001 o Parcela 155)
-  superficie: string;                 // Con formato (ej: "2.50 ha")
-  fechaRegistro?: string;             // Opcional para retrocompatibilidad
-  observaciones?: string;             // Opcional
+  id: string;
+  folioInterno?: string;
+  numero: string;
+  superficie: string;
+  fechaRegistro?: string;
+  observaciones?: string;
   estadoPredial: 'Pagado' | 'Pagar';
-  titularesCount: number;             // Total de co-propietarios actuales
-  propietarios: string[];             // Nombres completos de los titulares vigentes
-  
-  // Historiales opcionales unificados
+  titularesCount: number;
+  propietarios: string[];
+  titularesDetalle?: TitularFila[];   
   historialPropietarios?: PropietarioHistorico[]; 
   historialPrediales?: PredialHistorico[];
 }

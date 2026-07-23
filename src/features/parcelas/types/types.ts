@@ -1,3 +1,5 @@
+import { TitularFila } from "./typesParcela";
+
 export interface PropietarioHistorico {
   nombre: string;
   certificado: string;
@@ -20,6 +22,7 @@ export interface Parcela {
   titularesCount: number;
   propietarios: string[];
   estadoPredial: 'Pagado' | 'Pagar';
+  titularesDetalle?: TitularFila[]; 
   
   historialPropietarios?: PropietarioHistorico[];
   historialPrediales?: PredialHistorico[];

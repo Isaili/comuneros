@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Calendar, MapPin, Phone, Mail, X, Save, Camera, Upload, RotateCcw } from 'lucide-react';
+import { User, Calendar, MapPin, Phone, X, Save, Camera, Upload, RotateCcw } from 'lucide-react';
 import * as Yup from 'yup';
 import { Comunero } from '../types/types'; 
 
@@ -26,11 +26,6 @@ const comuneroValidationSchema = Yup.object().shape({
   colonia: Yup.string().required('La colonia o barrio es obligatoria'),
   telefono: Yup.string()
     .matches(/^[0-9]{10}$/, 'El teléfono debe tener exactamente 10 dígitos numéricos')
-    .optional()
-    .nullable()
-    .transform((value, originalValue) => (originalValue === '' ? null : value)),
-  correo: Yup.string()
-    .email('Ingresa un correo electrónico válido')
     .optional()
     .nullable()
     .transform((value, originalValue) => (originalValue === '' ? null : value)),
@@ -64,14 +59,13 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
     direccion: '',
     colonia: '',
     telefono: '',
-    correo: '',
     tipoComunero: 'comunero',
   });
 
   const [fotografia, setFotografia] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false); // 💡 útil ya para deshabilitar el botón mientras el backend responde
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +80,6 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
         direccion: comuneroAEditar.direccion || '',
         colonia: comuneroAEditar.colonia || '',
         telefono: comuneroAEditar.telefono || '',
-        correo: comuneroAEditar.correo || '',
         tipoComunero: comuneroAEditar.tipo || 'comunero',
       });
       if (comuneroAEditar.fotografia) {
@@ -162,17 +155,8 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
 
       setIsSubmitting(true);
 
-      // 💡 CAMBIO: usamos optional chaining en vez de esEdicion ? comuneroAEditar.id : ...
-      // así TypeScript no se queja de que comuneroAEditar pueda ser null,
-      // y si no hay comuneroAEditar, mandamos undefined en vez de generar el ID aquí.
-      //
-      // TODO backend: cuando conectes la API real, en modo creación NO debes
-      // generar el id en el cliente (Date.now() era un parche temporal para el mock).
-      // Deja que el backend lo asigne y lo devuelva en la respuesta del POST.
-      // Aquí simplemente mandamos undefined; es ComunerosFeature quien decide
-      // qué hacer con eso (ver comentario allá).
       onGuardar({
-        id: comuneroAEditar?.id, // undefined si es registro nuevo
+        id: comuneroAEditar?.id,
         ...formData,
         fotografia: fotografia || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'
       });
@@ -331,32 +315,17 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-gray-500 font-bold block">Teléfono de Contacto</label>
-              <input
-                type="tel"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-                placeholder="Ej. 961 123 4567"
-                className={`w-full px-3 py-2.5 border rounded-xl ${errors.telefono ? 'border-red-500' : 'border-gray-200'}`}
-              />
-              {errors.telefono && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.telefono}</p>}
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-gray-500 font-bold block">Correo Electrónico</label>
-              <input
-                type="text"
-                name="correo"
-                value={formData.correo}
-                onChange={handleChange}
-                placeholder="correo@ejemplo.com"
-                className={`w-full px-3 py-2.5 border rounded-xl ${errors.correo ? 'border-red-500' : 'border-gray-200'}`}
-              />
-              {errors.correo && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.correo}</p>}
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-gray-500 font-bold block">Teléfono de Contacto</label>
+            <input
+              type="tel"
+              name="telefono"
+              value={formData.telefono}
+              onChange={handleChange}
+              placeholder="Ej. 961 123 4567"
+              className={`w-full px-3 py-2.5 border rounded-xl ${errors.telefono ? 'border-red-500' : 'border-gray-200'}`}
+            />
+            {errors.telefono && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.telefono}</p>}
           </div>
 
           <div className="space-y-2">

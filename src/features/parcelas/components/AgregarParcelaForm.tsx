@@ -40,7 +40,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
 
   // 2. Estado para Titulares Activos
   const [titulares, setTitulares] = useState<TitularFila[]>([
-    { comuneroId: '', nombreCompleto: '', certificado: '', porcentajePosesion: 100, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }
+    { comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: 0, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }
   ]);
 
   // 3. Historiales
@@ -50,7 +50,7 @@ const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>
   // Estados de control para el buscador con lupa por fila
   const [busquedas, setBusquedas] = useState<{ [key: number]: string }>({});
   const [menusAbiertos, setMenusAbiertos] = useState<{ [key: number]: boolean }>({});
-  const [errorPorcentaje, setErrorPorcentaje] = useState<string>('');
+  const [errorHectareas, setErrorHectareas] = useState<string>('');
   const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
   // 🔄 Efecto de rellenado automático para Edición vs Creación
@@ -80,9 +80,9 @@ const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>
             comuneroId: comuneroEncontrado ? comuneroEncontrado.id : '',
             nombreCompleto: nombreCompleto,
             certificado: 'CERT-EXISTENTE', 
-            porcentajePosesion: multiples 
-              ? Math.floor(100 / parcelaAEditar.propietarios.length) 
-              : 100,
+            hectareasPosesion: multiples 
+              ? Number((isNaN(numSuperficie) ? 0 : numSuperficie) / parcelaAEditar.propietarios.length).toFixed(4) as unknown as number
+              : (isNaN(numSuperficie) ? 0 : numSuperficie),
             calidadAgraria: 'Ejidatario' as const,
             actoJuridico: 'Asignación' as const,
             vigencia: 'Vigente' as const
@@ -108,7 +108,7 @@ const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>
       setHistorialPrediales([]);
       setTieneMultiplesTitulares(false);
       setTitulares([
-        { comuneroId: '', nombreCompleto: '', certificado: '', porcentajePosesion: 100, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }
+        { comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: 0, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }
       ]);
       setBusquedas({});
     }
@@ -128,6 +128,18 @@ const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 🔄 Cuando es "Un solo Titular", las hectáreas poseídas siempre son el 100% de la superficie
+  useEffect(() => {
+    if (!tieneMultiplesTitulares) {
+      setTitulares(prev => {
+        if (prev.length === 0) return prev;
+        const copia = [...prev];
+        copia[0] = { ...copia[0], hectareasPosesion: superficie };
+        return copia;
+      });
+    }
+  }, [superficie, tieneMultiplesTitulares]);
+
   const costoPorHectarea = 5;
   const pagoPredialCalculado = superficie * costoPorHectarea;
 
@@ -135,12 +147,13 @@ const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>
     setTieneMultiplesTitulares(multiple);
     setBusquedas({});
     if (!multiple) {
-      setTitulares([{ comuneroId: '', nombreCompleto: '', certificado: '', porcentajePosesion: 100, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }]);
-      setErrorPorcentaje('');
+      setTitulares([{ comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: superficie, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }]);
+      setErrorHectareas('');
     } else {
+      const mitad = Number((superficie / 2).toFixed(4));
       setTitulares([
-        { comuneroId: '', nombreCompleto: '', certificado: '', porcentajePosesion: 50, calidadAgraria: 'Ejidatario', actoJuridico: 'Cesión de derechos', vigencia: 'Vigente' },
-        { comuneroId: '', nombreCompleto: '', certificado: '', porcentajePosesion: 50, calidadAgraria: 'Ejidatario', actoJuridico: 'Cesión de derechos', vigencia: 'Vigente' }
+        { comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: mitad, calidadAgraria: 'Ejidatario', actoJuridico: 'Cesión de derechos', vigencia: 'Vigente' },
+        { comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: mitad, calidadAgraria: 'Ejidatario', actoJuridico: 'Cesión de derechos', vigencia: 'Vigente' }
       ]);
     }
   };
@@ -190,9 +203,11 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const sumaPorcentajes = titulares.reduce((acc, curr) => acc + Number(curr.porcentajePosesion), 0);
-    if (sumaPorcentajes !== 100) {
-      setErrorPorcentaje(`La suma de los porcentajes de posesión debe ser exactamente 100%. Actualmente es del ${sumaPorcentajes}%.`);
+    const sumaHectareas = titulares.reduce((acc, curr) => acc + Number(curr.hectareasPosesion), 0);
+    const diferencia = Math.abs(sumaHectareas - superficie);
+
+    if (diferencia > 0.0001) {
+      setErrorHectareas(`La suma de las hectáreas poseídas debe ser exactamente igual a la superficie total (${superficie.toFixed(4)} ha). Actualmente suma ${sumaHectareas.toFixed(4)} ha.`);
       return;
     }
 
@@ -201,7 +216,7 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
       return;
     }
 
-    setErrorPorcentaje('');
+    setErrorHectareas('');
 
     const nuevaParcela = {
       folioInterno,
@@ -303,7 +318,7 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
             <div className="flex items-center justify-between">
               <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider text-emerald-800">1. Titulares Activos Vigentes</h4>
               {tieneMultiplesTitulares && (
-                <button type="button" onClick={() => setTitulares(p => [...p, { comuneroId: '', nombreCompleto: '', certificado: '', porcentajePosesion: 0, calidadAgraria: 'Ejidatario', actoJuridico: 'Cesión de derechos', vigencia: 'Vigente' }])} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#006837]/10 text-[#006837] rounded-lg hover:bg-[#006837]/20">
+                <button type="button" onClick={() => setTitulares(p => [...p, { comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: 0, calidadAgraria: 'Ejidatario', actoJuridico: 'Cesión de derechos', vigencia: 'Vigente' }])} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#006837]/10 text-[#006837] rounded-lg hover:bg-[#006837]/20">
                   <Plus className="w-3.5 h-3.5 stroke-[3]" /> Agregar Co-titular
                 </button>
               )}
@@ -315,7 +330,7 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
                   <tr className="bg-slate-50 text-gray-400 font-black uppercase border-b border-gray-100">
                     <th className="p-3">Buscar Comunero (Nombre o Folio) *</th>
                     <th className="p-3 w-[140px]">Nº Certificado *</th>
-                    <th className="p-3 w-[100px]">% Posesión</th>
+                    <th className="p-3 w-[130px]">Hectáreas Poseídas</th>
                     <th className="p-3 w-[130px]">Calidad Agraria</th>
                     <th className="p-3 w-[140px]">Acto de Adquisición</th>
                     {tieneMultiplesTitulares && <th className="p-3 w-[50px] text-center">Quitar</th>}
@@ -379,7 +394,21 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
                         </td>
 
                         <td className="p-2"><input type="text" required placeholder="CERT-XXXX" value={titular.certificado} onChange={(e) => handleActualizarTitular(index, 'certificado', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg text-gray-800 outline-none" /></td>
-                        <td className="p-2"><div className="relative"><input type="number" required disabled={!tieneMultiplesTitulares} value={titular.porcentajePosesion} onChange={(e) => handleActualizarTitular(index, 'porcentajePosesion', Number(e.target.value))} className="w-full pr-5 pl-2 py-2 border border-gray-200 rounded-lg text-gray-800 disabled:bg-slate-50" /><span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400">%</span></div></td>
+                        <td className="p-2">
+                          <div className="relative">
+                            <input
+                              type="number"
+                              step="0.0001"
+                              min="0"
+                              required
+                              disabled={!tieneMultiplesTitulares}
+                              value={titular.hectareasPosesion}
+                              onChange={(e) => handleActualizarTitular(index, 'hectareasPosesion', Number(e.target.value))}
+                              className="w-full pr-8 pl-2 py-2 border border-gray-200 rounded-lg text-gray-800 disabled:bg-slate-50"
+                            />
+                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">ha</span>
+                          </div>
+                        </td>
                         <td className="p-2">
                           <select value={titular.calidadAgraria} onChange={(e) => handleActualizarTitular(index, 'calidadAgraria', e.target.value)} className="w-full px-1 py-2 bg-white border border-gray-200 rounded-lg outline-none">
                             <option value="Ejidatario">Ejidatario(a)</option>
@@ -405,7 +434,7 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
                 </tbody>
               </table>
             </div>
-            {errorPorcentaje && <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2.5 rounded-xl"><AlertCircle className="w-4 h-4" /><span className="text-[11px] font-bold">{errorPorcentaje}</span></div>}
+            {errorHectareas && <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2.5 rounded-xl"><AlertCircle className="w-4 h-4" /><span className="text-[11px] font-bold">{errorHectareas}</span></div>}
           </div>
 
           {/* SECCIÓN 2: TRACTO SUCESIVO */}

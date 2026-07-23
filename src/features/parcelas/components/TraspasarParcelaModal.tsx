@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRightLeft, X, Search, Check, ChevronDown, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { ArrowRightLeft, X, Search, Check, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { Parcela } from '../types/types';
 import { Comunero } from '../../comuneros/types/types';
 
@@ -9,7 +9,7 @@ interface AdquirenteFila {
   comuneroId: string;
   nombreCompleto: string;
   certificado: string;
-  porcentajePosesion: number;
+  hectareasPosesion: number;
 }
 
 interface TraspasarProps {
@@ -17,7 +17,7 @@ interface TraspasarProps {
   comunerosRegistrados: Comunero[];
   onClose: () => void;
   onConfirmar: (datosTraspaso: {
-    nuevosPropietarios: { nombre: string; certificado: string; porcentaje: number }[];
+    nuevosPropietarios: { nombre: string; certificado: string; hectareas: number }[];
     actoJuridico: string;
     fecha: string;
   }) => void;
@@ -31,7 +31,10 @@ export const TraspasarParcelaModal: React.FC<TraspasarProps> = ({
 }) => {
   const [actoJuridico, setActoJuridico] = useState('Cesión de derechos');
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [errorPorcentaje, setErrorPorcentaje] = useState<string>('');
+  const [errorHectareas, setErrorHectareas] = useState<string>('');
+
+  // Extraer el valor numérico de la superficie (ej. "12.5 ha" -> 12.5)
+  const superficieTotal = parseFloat(parcela.superficie.replace(/[^0-9.]/g, '')) || 0;
 
   // 👥 Lista dinámica de nuevos adquirentes
   const [adquirentes, setAdquirentes] = useState<AdquirenteFila[]>([
@@ -39,7 +42,7 @@ export const TraspasarParcelaModal: React.FC<TraspasarProps> = ({
       comuneroId: '', 
       nombreCompleto: '', 
       certificado: `CERT-${Math.floor(1000 + Math.random() * 9000)}`, 
-      porcentajePosesion: 100 
+      hectareasPosesion: superficieTotal 
     }
   ]);
 
@@ -69,7 +72,7 @@ export const TraspasarParcelaModal: React.FC<TraspasarProps> = ({
         comuneroId: '',
         nombreCompleto: '',
         certificado: `CERT-${Math.floor(1000 + Math.random() * 9000)}`,
-        porcentajePosesion: 0
+        hectareasPosesion: 0
       }
     ]);
   };
@@ -91,20 +94,24 @@ export const TraspasarParcelaModal: React.FC<TraspasarProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 1. Validar que los porcentajes sumen 100%
-    const sumaPorcentajes = adquirentes.reduce((acc, curr) => acc + Number(curr.porcentajePosesion), 0);
-    if (sumaPorcentajes !== 100) {
-      setErrorPorcentaje(`La suma de posesión debe ser exactamente 100%. Actualmente es del ${sumaPorcentajes}%.`);
+    // 1. Validar que la suma de hectáreas no supere la superficie total de la parcela
+    const sumaHectareas = adquirentes.reduce((acc, curr) => acc + Number(curr.hectareasPosesion), 0);
+    
+    // Margen de tolerancia para decimales en flotantes
+    if (Math.abs(sumaHectareas - superficieTotal) > 0.001) {
+      setErrorHectareas(
+        `La suma de hectáreas distribuidas debe coincidir exactamente con la superficie total de la parcela (${superficieTotal} ha). Actualmente suma ${sumaHectareas.toFixed(2)} ha.`
+      );
       return;
     }
 
-    // 2. Validar que no haya filas vacías
+    // 2. Validar que no haya filas sin comunero asignado
     if (adquirentes.some(a => a.comuneroId === '')) {
       alert("Por favor, asigne un comunero válido a cada fila de adquirente.");
       return;
     }
 
-    setErrorPorcentaje('');
+    setErrorHectareas('');
 
     // Formatear fecha a DD/MM/YYYY
     const [year, month, day] = fecha.split('-');
@@ -114,7 +121,7 @@ export const TraspasarParcelaModal: React.FC<TraspasarProps> = ({
       nuevosPropietarios: adquirentes.map(a => ({
         nombre: a.nombreCompleto,
         certificado: a.certificado,
-        porcentaje: a.porcentajePosesion
+        hectareas: a.hectareasPosesion
       })),
       actoJuridico,
       fecha: fechaFormateada
@@ -139,7 +146,9 @@ export const TraspasarParcelaModal: React.FC<TraspasarProps> = ({
             </span>
             <div>
               <h3 className="text-sm font-bold text-gray-900">Traspasar Cesión de Derechos — Parcela {parcela.numero}</h3>
-              <p className="text-[10px] text-gray-500">Titulares actuales: {parcela.propietarios.join(', ')}</p>
+              <p className="text-[10px] text-gray-500">
+                Titulares actuales: {parcela.propietarios.join(', ')} • Superficie Total: <strong className="text-emerald-800">{superficieTotal} ha</strong>
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
@@ -198,8 +207,8 @@ export const TraspasarParcelaModal: React.FC<TraspasarProps> = ({
                 <thead>
                   <tr className="bg-slate-50 text-gray-400 font-black uppercase border-b border-gray-100 text-[10px]">
                     <th className="p-3">Buscar Comunero/Avecindado *</th>
-                    <th className="p-3 w-[150px]">Nº Certificado Emmitido *</th>
-                    <th className="p-3 w-[100px]">% Posesión *</th>
+                    <th className="p-3 w-[150px]">Nº Certificado Emitido *</th>
+                    <th className="p-3 w-[120px]">Superficie (ha) *</th>
                     {adquirentes.length > 1 && <th className="p-3 w-[50px] text-center">Quitar</th>}
                   </tr>
                 </thead>
@@ -274,19 +283,20 @@ export const TraspasarParcelaModal: React.FC<TraspasarProps> = ({
                           />
                         </td>
 
-                        {/* PORCENTAJE */}
+                        {/* HECTÁREAS */}
                         <td className="p-2">
                           <div className="relative">
                             <input
                               type="number"
-                              min="1"
-                              max="100"
+                              step="0.01"
+                              min="0.01"
+                              max={superficieTotal}
                               required
-                              value={adq.porcentajePosesion}
-                              onChange={(e) => actualizarAdquirente(index, 'porcentajePosesion', Number(e.target.value))}
-                              className="w-full pr-5 pl-2 py-2 border border-gray-200 rounded-lg text-gray-800 text-center outline-none"
+                              value={adq.hectareasPosesion}
+                              onChange={(e) => actualizarAdquirente(index, 'hectareasPosesion', Number(e.target.value))}
+                              className="w-full pr-7 pl-2 py-2 border border-gray-200 rounded-lg text-gray-800 text-center outline-none font-bold"
                             />
-                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">ha</span>
                           </div>
                         </td>
 
@@ -309,17 +319,17 @@ export const TraspasarParcelaModal: React.FC<TraspasarProps> = ({
               </table>
             </div>
             
-            {errorPorcentaje && (
+            {errorHectareas && (
               <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2.5 rounded-xl">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                <span className="text-[11px] font-bold">{errorPorcentaje}</span>
+                <span className="text-[11px] font-bold">{errorHectareas}</span>
               </div>
             )}
           </div>
 
           {/* Advertencia Legal */}
           <div className="bg-amber-50 text-amber-800 p-3 rounded-xl text-[10px] font-medium leading-tight shrink-0">
-            ⚠️ <strong>Nota Registral:</strong> Los titulares actuales pasarán al Tracto Sucesivo Histórico. La titularidad vigente se fragmentará proindiviso según los porcentajes definidos arriba.
+            ⚠️ <strong>Nota Registral:</strong> Los titulares actuales pasarán al Tracto Sucesivo Histórico. La titularidad vigente se fragmentará según las hectáreas definidas asignadas a cada titular.
           </div>
 
           {/* Acciones */}

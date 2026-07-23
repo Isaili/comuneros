@@ -48,6 +48,12 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
   // Garantizar que siempre tengamos un arreglo base sobre el cual trabajar
   const listaPropietarios = Array.isArray(parcela.propietarios) ? parcela.propietarios : [];
 
+  // Superficie total de la parcela, como número, para usarla en el fallback de reparto equitativo
+  const superficieTotal = Number(parcela.superficie.replace(' ha', '')) || 0;
+
+  // Detalle real de titulares (con hectáreas) si viene desde el formulario de alta/edición
+  const titularesDetalle = parcela.titularesDetalle;
+
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-5 space-y-4 w-full max-h-[720px] overflow-y-auto scrollbar-thin">
       
@@ -129,7 +135,7 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
                   <tr className="text-gray-400 font-bold border-b border-gray-100">
                     <th className="pb-1.5 font-semibold">Titular</th>
                     <th className="pb-1.5 font-semibold">Certificado</th>
-                    <th className="pb-1.5 font-semibold">% Posesión</th>
+                    <th className="pb-1.5 font-semibold">Hectáreas</th>
                     <th className="pb-1.5 font-semibold">Calidad agraria</th>
                     <th className="pb-1.5 font-semibold">Acto jurídico</th>
                     <th className="pb-1.5 font-semibold">Vigencia</th>
@@ -139,12 +145,16 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
                   {listaPropietarios.map((propietario, index) => {
                     //  CONTROL ANTICAÍDAS: Si no es una cadena válida, provee un fallback
                     const nombreSanitario = typeof propietario === 'string' ? propietario : 'Titular Desconocido';
-                    
-                    const porcentajeCalculado = Math.floor(100 / listaPropietarios.length);
-                    const esUltimo = index === listaPropietarios.length - 1;
-                    const porcentajeFinal = esUltimo 
-                      ? 100 - (porcentajeCalculado * (listaPropietarios.length - 1)) 
-                      : porcentajeCalculado;
+
+                    // Si tenemos el detalle real (guardado por el formulario), usamos sus hectáreas y certificado.
+                    // Si no, repartimos la superficie total equitativamente como fallback de compatibilidad.
+                    const detalle = titularesDetalle?.[index];
+                    const hectareasMostradas = detalle
+                      ? detalle.hectareasPosesion
+                      : (listaPropietarios.length > 0 ? superficieTotal / listaPropietarios.length : 0);
+                    const certificadoMostrado = detalle?.certificado ?? `CERT-${1580 + index * 137}`;
+                    const calidadMostrada = detalle?.calidadAgraria ?? 'Ejidatario';
+                    const actoMostrado = detalle?.actoJuridico ?? 'Cesión de derechos';
 
                     const palabrasNombre = nombreSanitario.split(' ');
                     const primerNombre = palabrasNombre[0] || '—';
@@ -163,10 +173,10 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
                             <p className="text-[9px] font-medium text-gray-400 -mt-0.5 truncate max-w-[120px]">{apellidos}</p>
                           </div>
                         </td>
-                        <td className="py-2 font-mono font-medium text-gray-500 whitespace-nowrap">CERT-{1580 + index * 137}</td>
-                        <td className="py-2 font-black text-gray-900">{porcentajeFinal}%</td>
-                        <td className="py-2 font-medium text-gray-600 whitespace-nowrap">Ejidatario(a)</td>
-                        <td className="py-2 font-medium text-gray-600 whitespace-nowrap">Cesión de derechos</td>
+                        <td className="py-2 font-mono font-medium text-gray-500 whitespace-nowrap">{certificadoMostrado}</td>
+                        <td className="py-2 font-black text-gray-900 whitespace-nowrap">{hectareasMostradas.toFixed(2)} ha</td>
+                        <td className="py-2 font-medium text-gray-600 whitespace-nowrap">{calidadMostrada}</td>
+                        <td className="py-2 font-medium text-gray-600 whitespace-nowrap">{actoMostrado}</td>
                         <td className="py-2 text-gray-400 font-normal leading-tight whitespace-nowrap">01/01/2015<br/><span className="text-[9px]">—</span></td>
                       </tr>
                     );
