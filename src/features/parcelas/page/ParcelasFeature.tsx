@@ -9,8 +9,26 @@ import { AgregarParcelaForm } from '../components/AgregarParcelaForm';
 import { TraspasarParcelaModal } from '../components/TraspasarParcelaModal'; 
 import { Comunero } from '../../comuneros/types/types'; 
 
-//  CORRECCIÓN: Importamos el tipo Parcela avanzado para que coincida exactamente con el Formulario
-import { Parcela } from '../types/typesParcela'; 
+import { Parcela, PropietarioHistorico } from '../types/typesParcela'; 
+
+// Tipamos la payload que entrega el TraspasarParcelaModal
+interface DatosTraspasoPayload {
+  nuevosPropietarios?: Array<{
+    nombre?: string;
+    nombreCompleto?: string;
+    certificado?: string;
+    porcentaje?: number;
+  }>;
+  adquirentes?: Array<{
+    nombre?: string;
+    nombreCompleto?: string;
+    certificado?: string;
+    porcentaje?: number;
+  }>;
+  actoJuridico?: string;
+  motivo?: string;
+  fecha?: string;
+}
 
 const MOCK_PARCELAS: Parcela[] = [
   { id: '1', numero: 'P-001', superficie: '2.50 ha', titularesCount: 2, propietarios: ['José Antonio Hernández López', 'María Guadalupe Pérez Martínez'], estadoPredial: 'Pagado', historialPropietarios: [], historialPrediales: [] },
@@ -30,7 +48,6 @@ const MOCK_COMUNEROS_REGISTRADOS: Comunero[] = [
     direccion: 'Calle Miguel Hidalgo #123',
     colonia: 'Santa Ana',
     telefono: '961 123 4567',
-    correo: 'jose.hernandez@email.com',
     fechaRegistro: '10 de enero de 2010',
     folioComunero: 'COM-0042',
     fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
@@ -49,7 +66,6 @@ const MOCK_COMUNEROS_REGISTRADOS: Comunero[] = [
     direccion: 'Calle Miguel Hidalgo #123',
     colonia: 'Centro',
     telefono: '961 123 4567',
-    correo: 'jose.hernandez@email.com',
     fechaRegistro: '10 de enero de 2010',
     folioComunero: 'COM-0043',
     fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
@@ -68,7 +84,6 @@ const MOCK_COMUNEROS_REGISTRADOS: Comunero[] = [
     direccion: 'Av. Central Oriente #45',
     colonia: 'San José',
     telefono: '961 987 6543',
-    correo: 'maria.perez@email.com',
     fechaRegistro: '15 de marzo de 2014',
     folioComunero: 'COM-0089',
     fotografia: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200',
@@ -87,25 +102,24 @@ export const ParcelasFeature: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [parcelaATraspasar, setParcelaATraspasar] = useState<Parcela | null>(null);
-  
-  // 🔄 NUEVO ESTADO: Guarda la parcela que se quiere editar (con el tipo de typesParcela ya unificado)
   const [parcelaAEditar, setParcelaAEditar] = useState<Parcela | null>(null);
 
-  // 🛠️ FUNCIÓN DE GUARDAR: Ahora maneja "Creación" y "Actualización"
-  const handleGuardarParcela = (datosFormulario: any) => {
-    const superficieNumerica = Number(datosFormulario.superficie.replace(/[^\d.]/g, ''));
-    const formatoSuperficie = isNaN(superficieNumerica) ? '0.00 ha' : `${superficieNumerica.toFixed(2)} ha`;
+  const handleGuardarParcela = (datosFormulario: Partial<Parcela> & { titulares?: Array<{ nombreCompleto: string }> }) => {
+    const rawSuperficie = datosFormulario.superficie || '';
+    const superficieNumerica = Number(rawSuperficie.replace(/[^\d.]/g, ''));
+    const formatoSuperficie = isNaN(superficieNumerica) || superficieNumerica === 0 
+      ? '0.00 ha' 
+      : `${superficieNumerica.toFixed(2)} ha`;
 
     if (parcelaAEditar) {
-      // 🔄 MODO EDICIÓN: Buscamos la parcela por ID y reemplazamos sus campos
       setParcelas(prev => prev.map(p => {
         if (p.id === parcelaAEditar.id) {
           return {
             ...p,
             numero: datosFormulario.numero || datosFormulario.folioInterno || p.numero,
-            superficie: datosFormulario.superficie.includes('ha') ? datosFormulario.superficie : formatoSuperficie,
+            superficie: rawSuperficie.includes('ha') ? rawSuperficie : formatoSuperficie,
             titularesCount: datosFormulario.titularesCount || datosFormulario.titulares?.length || p.titularesCount,
-            propietarios: datosFormulario.propietarios || (datosFormulario.titulares?.map((t: any) => t.nombreCompleto) ?? p.propietarios),
+            propietarios: datosFormulario.propietarios || (datosFormulario.titulares?.map(t => t.nombreCompleto) ?? p.propietarios),
             estadoPredial: datosFormulario.estadoPredial || p.estadoPredial,
             historialPropietarios: datosFormulario.historialPropietarios || p.historialPropietarios,
             historialPrediales: datosFormulario.historialPrediales || p.historialPrediales
@@ -113,15 +127,14 @@ export const ParcelasFeature: React.FC = () => {
         }
         return p;
       }));
-      setParcelaAEditar(null); // Reseteamos el estado de edición
+      setParcelaAEditar(null);
     } else {
-      // ➕ MODO CREACIÓN: Agregar nueva parcela
       const nuevaParcelaFormateada: Parcela = {
         id: Date.now().toString(),
         numero: datosFormulario.numero || datosFormulario.folioInterno || 'P-000',
         superficie: formatoSuperficie,
         titularesCount: datosFormulario.titularesCount || datosFormulario.titulares?.length || 1,
-        propietarios: datosFormulario.propietarios || (datosFormulario.titulares?.map((t: any) => t.nombreCompleto) ?? ['Sin propietario asignado']),
+        propietarios: datosFormulario.propietarios || (datosFormulario.titulares?.map(t => t.nombreCompleto) ?? ['Sin propietario asignado']),
         estadoPredial: datosFormulario.estadoPredial || 'Pagar',
         historialPropietarios: datosFormulario.historialPropietarios || [],
         historialPrediales: datosFormulario.historialPrediales || []
@@ -129,48 +142,52 @@ export const ParcelasFeature: React.FC = () => {
       setParcelas(prev => [nuevaParcelaFormateada, ...prev]);
     }
 
-    setIsAddModalOpen(false); // Cerramos el modal
+    setIsAddModalOpen(false);
   };
 
-  // 🔄 Acción para cuando se da clic en "Editar" desde la lista
   const handleEditarClick = (parcela: Parcela) => {
     setParcelaAEditar(parcela);
-    setIsAddModalOpen(true); // Abrimos el mismo modal/formulario
+    setIsAddModalOpen(true);
   };
 
-  // Reseteo seguro al cerrar el modal de agregar/editar
   const handleCloseForm = () => {
     setIsAddModalOpen(false);
-    setParcelaAEditar(null); // Limpiamos la edición para que la próxima vez abra vacío
+    setParcelaAEditar(null);
   };
 
-  const handleEjecutarTraspaso = (datosTraspaso: {
-    nuevosPropietarios: { nombre: string; certificado: string; porcentaje: number }[];
-    actoJuridico: string;
-    fecha: string;
-  }) => {
+  // Función ajustada con contrato estricto
+  const handleEjecutarTraspaso = (datosTraspaso: DatosTraspasoPayload) => {
     if (!parcelaATraspasar) return;
 
-    const adquirentesValidos = datosTraspaso.nuevosPropietarios.filter(
-      n => n && typeof n.nombre === 'string' && n.nombre.trim() !== ''
-    );
+    const listaNuevos = datosTraspaso.nuevosPropietarios || datosTraspaso.adquirentes || [];
+
+    const adquirentesValidos = listaNuevos
+      .map(n => ({
+        nombre: n.nombre || n.nombreCompleto || '',
+        certificado: n.certificado || 'CERT-S/N',
+        porcentaje: n.porcentaje ?? 100
+      }))
+      .filter(n => n.nombre.trim() !== '');
 
     if (adquirentesValidos.length === 0) {
       alert("Error: Debe seleccionar adquirentes válidos para guardar.");
       return;
     }
 
+    const fechaOperacion = datosTraspaso.fecha || new Date().toLocaleDateString('es-MX');
+    const acto = datosTraspaso.actoJuridico || datosTraspaso.motivo || 'Cesión de derechos';
+
     setParcelas(prev => prev.map(p => {
       if (p.id !== parcelaATraspasar.id) return p;
 
-      const fechaOrigen = "01/01/2018"; 
+      const fechaOrigen = "01/01/2018";
 
-      const dueñosSalientesHistoricos = (p.propietarios || []).map(nombreProp => ({
+      const dueñosSalientesHistoricos: PropietarioHistorico[] = (p.propietarios || []).map(nombreProp => ({
         nombre: nombreProp,
         certificado: "CERT-ANTECEDENTE",
         fechaAdquisicion: fechaOrigen,
-        fechaCesion: datosTraspaso.fecha,
-        actoJuridico: datosTraspaso.actoJuridico,
+        fechaCesion: fechaOperacion,
+        actoJuridico: acto,
         adquirente: adquirentesValidos.map(n => `${n.nombre} (${n.porcentaje}%)`).join(', ')
       }));
 
@@ -179,19 +196,19 @@ export const ParcelasFeature: React.FC = () => {
         ...(p.historialPropietarios || [])
       ];
 
-      const nuevosRegistrosCronologicos = adquirentesValidos.map(a => ({
+      const nuevosRegistrosCronologicos: PropietarioHistorico[] = adquirentesValidos.map(a => ({
         nombre: a.nombre,
         certificado: a.certificado,
-        fechaAdquisicion: datosTraspaso.fecha,
+        fechaAdquisicion: fechaOperacion,
         fechaCesion: "— (Actual)",
-        actoJuridico: datosTraspaso.actoJuridico,
+        actoJuridico: acto,
         adquirente: "Titular Activo"
       }));
 
       return {
         ...p,
-        propietarios: adquirentesValidos.map(n => n.nombre), 
-        titularesCount: adquirentesValidos.length, 
+        propietarios: adquirentesValidos.map(n => n.nombre),
+        titularesCount: adquirentesValidos.length,
         historialPropietarios: [...nuevosRegistrosCronologicos, ...historialActualizado]
       };
     }));
@@ -211,7 +228,7 @@ export const ParcelasFeature: React.FC = () => {
       <ParcelasHeader 
         onSearchChange={setSearchTerm} 
         onAddClick={() => {
-          setParcelaAEditar(null); // Asegura que se abra vacío si es "Agregar"
+          setParcelaAEditar(null);
           setIsAddModalOpen(true);
         }}
       />
@@ -223,7 +240,7 @@ export const ParcelasFeature: React.FC = () => {
             selectedId={selectedParcela?.id ?? ""} 
             onSelect={setSelectedParcela}
             onTraspasar={setParcelaATraspasar}
-            onEditar={handleEditarClick} // 🔄 PASADO AQUÍ AL COMPONENTE HIJO
+            onEditar={handleEditarClick}
           />
         ) : (
           <div className="bg-white border border-gray-100 rounded-2xl p-8 sm:p-12 text-center text-gray-400 font-medium text-sm shadow-sm">
@@ -252,17 +269,15 @@ export const ParcelasFeature: React.FC = () => {
         </div>
       )}
 
-      {/* 💡 MODAL DINÁMICO: Agregar/Editar nueva Parcela */}
       {isAddModalOpen && (
         <AgregarParcelaForm 
           comunerosRegistrados={comuneros}
           onClose={handleCloseForm}
           onGuardar={handleGuardarParcela}
-          parcelaAEditar={parcelaAEditar} // 🔄 Enviamos la parcela que se va a editar como prop
+          parcelaAEditar={parcelaAEditar}
         />
       )}
 
-      {/* 💡 MODAL: Traspasar derechos */}
       {parcelaATraspasar && (
         <TraspasarParcelaModal 
           parcela={parcelaATraspasar}

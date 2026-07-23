@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Trash2, ArrowRightLeft } from 'lucide-react';
 
 export interface Lote {
   id: string;
@@ -18,6 +18,7 @@ interface ListProps {
   onSelect: (lote: Lote) => void;
   onEdit?: (lote: Lote) => void;
   onDelete?: (lote: Lote) => void;
+  onTraspasar?: (lote: Lote) => void;
 }
 
 export const LotesList: React.FC<ListProps> = ({ 
@@ -25,7 +26,8 @@ export const LotesList: React.FC<ListProps> = ({
   selectedId, 
   onSelect, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onTraspasar 
 }) => {
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col justify-between min-h-[600px] w-full">
@@ -101,6 +103,16 @@ export const LotesList: React.FC<ListProps> = ({
                     {/* Acciones */}
                     <td className="py-3 px-2 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* Botón Traspasar Lote */}
+                        <button 
+                          onClick={() => onTraspasar?.(l)}
+                          className="p-2 border border-gray-100 rounded-lg hover:border-amber-200 hover:bg-amber-50 text-amber-600 transition-all"
+                          title="Traspasar titularidad de lote"
+                        >
+                          <ArrowRightLeft className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Botón Editar Lote */}
                         <button 
                           onClick={() => onEdit?.(l)}
                           className="p-2 border border-gray-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600 transition-all"
@@ -108,6 +120,8 @@ export const LotesList: React.FC<ListProps> = ({
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
+
+                        {/* Botón Eliminar Lote */}
                         <button 
                           onClick={() => onDelete?.(l)}
                           className="p-2 border border-gray-100 rounded-lg hover:border-red-200 hover:bg-red-50 text-red-500 transition-all"
