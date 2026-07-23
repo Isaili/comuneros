@@ -19,16 +19,15 @@ const MOCK_COMUNEROS: Comunero[] = [
     direccion: 'Calle Miguel Hidalgo #123',
     colonia: 'Santa Ana',
     telefono: '961 123 4567',
-    correo: 'jose.hernandez@email.com',
     fechaRegistro: '10 de enero de 2010',
     folioComunero: 'COM-0042',
     fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0042',
     activo: true,
     terrenos: [
-      { tipo: 'Parcela', numero: 155, folio: 'P-0155', certificado: 'CERT-15857', superficie: '2.50 ha', ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Parcela', numero: 257, folio: 'P-0627', certificado: 'CERT-23565', superficie: '1.75 ha', ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Lote', numero: 85, folio: 'L-008', superficie: '300 m²', ubicacion: 'Barrio San José' }
+      { tipo: 'Parcela', numero: 155, folio: 'P-0155', certificado: 'CERT-15857', superficie: '2.50 ha', hectareasPosesion: 2.50, ubicacion: 'Ejido Copainalá' },
+      { tipo: 'Parcela', numero: 257, folio: 'P-0627', certificado: 'CERT-23565', superficie: '1.75 ha', hectareasPosesion: 1.75, ubicacion: 'Ejido Copainalá' },
+      { tipo: 'Lote', numero: 85, folio: 'L-008', superficie: '300 m²', hectareasPosesion: 0.03, ubicacion: 'Barrio San José' }
     ]
   },
   {
@@ -42,16 +41,15 @@ const MOCK_COMUNEROS: Comunero[] = [
     direccion: 'Calle Miguel Hidalgo #123',
     colonia: 'Centro',
     telefono: '961 123 4567',
-    correo: 'jose.hernandez@email.com',
     fechaRegistro: '10 de enero de 2010',
     folioComunero: 'COM-0042',
     fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0042',
     activo: true,
     terrenos: [
-      { tipo: 'Parcela', numero: 15, folio: 'P-015', certificado: 'CERT-1587', superficie: '2.50 ha', ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Parcela', numero: 27, folio: 'P-027', certificado: 'CERT-2365', superficie: '1.75 ha', ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Lote', numero: 8, folio: 'L-008', superficie: '300 m²', ubicacion: 'Barrio San José' }
+      { tipo: 'Parcela', numero: 15, folio: 'P-015', certificado: 'CERT-1587', superficie: '2.50 ha', hectareasPosesion: 2.50, ubicacion: 'Ejido Copainalá' },
+      { tipo: 'Parcela', numero: 27, folio: 'P-027', certificado: 'CERT-2365', superficie: '1.75 ha', hectareasPosesion: 1.75, ubicacion: 'Ejido Copainalá' },
+      { tipo: 'Lote', numero: 8, folio: 'L-008', superficie: '300 m²', hectareasPosesion: 0.03, ubicacion: 'Barrio San José' }
     ]
   },
   {
@@ -65,14 +63,13 @@ const MOCK_COMUNEROS: Comunero[] = [
     direccion: 'Av. Central Oriente #45',
     colonia: 'San José',
     telefono: '961 987 6543',
-    correo: 'maria.perez@email.com',
     fechaRegistro: '15 de marzo de 2014',
     folioComunero: 'COM-0089',
     fotografia: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200',
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0089',
     activo: true,
     terrenos: [
-      { tipo: 'Parcela', numero: 4, folio: 'P-004', certificado: 'CERT-0921', superficie: '3.10 ha', ubicacion: 'Ejido Copainalá' }
+      { tipo: 'Parcela', numero: 4, folio: 'P-004', certificado: 'CERT-0921', superficie: '3.10 ha', hectareasPosesion: 3.10, ubicacion: 'Ejido Copainalá' }
     ]
   }
 ];
@@ -94,20 +91,9 @@ export const ComunerosFeature: React.FC = () => {
 
   // Función unificada para guardar (crear o actualizar) un miembro
   const handleGuardarNuevoComunero = (datosFormulario: any) => {
-    // 💡 CAMBIO: ya no confiamos en si el form mandó un id "falso" (Date.now()).
-    // Ahora decidimos si es edición según si comuneroAEditar existe en el estado,
-    // no según lo que traiga datosFormulario. El form solo manda id cuando
-    // realmente estás editando (viene de comuneroAEditar?.id).
     const esEdicion = !!comuneroAEditar;
 
     if (esEdicion) {
-      // TODO backend: aquí en vez de setComuneros(prev => prev.map(...)) directo,
-      // vas a hacer algo como:
-      //
-      //   await api.put(`/comuneros/${comuneroAEditar.id}`, datosFormulario);
-      //   // luego, si la respuesta es exitosa, actualizas el estado local igual que abajo,
-      //   // o mejor, usas lo que el backend te devuelva (por si normaliza algún campo).
-      //
       setComuneros(prev => prev.map(c => {
         if (c.id === comuneroAEditar!.id) {
           let fechaNacimientoFormateada = datosFormulario.fechaNacimiento;
@@ -142,18 +128,9 @@ export const ComunerosFeature: React.FC = () => {
       }
 
     } else {
-      // TODO backend: aquí es donde cambia más. En vez de generar folioGenerado
-      // y el id en el cliente, vas a hacer algo como:
-      //
-      //   const response = await api.post('/comuneros', datosFormulario);
-      //   const comuneroCreado = response.data; // el backend regresa id, folio, qrCode reales
-      //   setComuneros(prev => [comuneroCreado, ...prev]);
-      //
-      // Por ahora seguimos generando folio/id localmente porque no hay backend real:
       const numeroFolio = Math.floor(1000 + Math.random() * 9000);
       const folioGenerado = `COM-${numeroFolio}`;
-      const idGenerado = Date.now().toString(); // 💡 el id ahora se genera aquí, en un solo lugar,
-                                                  // no en el formulario — más fácil de reemplazar después
+      const idGenerado = Date.now().toString();
 
       let fechaNacimientoFormateada = datosFormulario.fechaNacimiento;
       if (datosFormulario.fechaNacimiento.includes('-')) {
@@ -172,7 +149,6 @@ export const ComunerosFeature: React.FC = () => {
         direccion: datosFormulario.direccion || 'Sin dirección registrada',
         colonia: datosFormulario.colonia,
         telefono: datosFormulario.telefono || '',
-        correo: datosFormulario.correo || '',
         fechaRegistro: new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }),
         folioComunero: folioGenerado,
         fotografia: datosFormulario.fotografia,
@@ -198,7 +174,6 @@ export const ComunerosFeature: React.FC = () => {
   
   const handleDelete = (id: string) => {
     if (confirm("¿Estás seguro de que deseas eliminar este registro?")) {
-      // TODO backend: aquí iría await api.delete(`/comuneros/${id}`) antes de actualizar el estado local
       setComuneros(prev => prev.filter(c => c.id !== id));
       if (selectedComunero?.id === id) setSelectedComunero(null);
     }
