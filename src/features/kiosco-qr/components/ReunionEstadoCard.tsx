@@ -72,7 +72,7 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
       {reunionActiva ? (
         <button
           onClick={onCerrarClick}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-3 text-sm font-bold shadow-sm transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
         >
           <DoorClosed className="w-4 h-4" /> Cerrar reunión
         </button>

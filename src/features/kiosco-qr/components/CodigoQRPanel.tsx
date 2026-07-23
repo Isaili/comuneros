@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { QrCode, RefreshCcw, Smartphone } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { QrCode, Smartphone } from 'lucide-react';
 
 interface CodigoQRPanelProps {
   activo: boolean;
@@ -9,35 +9,11 @@ interface CodigoQRPanelProps {
   onSimularEscaneo: () => void;
 }
 
-const INTERVALO_ROTACION = 20; 
-
 export const CodigoQRPanel: React.FC<CodigoQRPanelProps> = ({ activo, reunionId, onSimularEscaneo }) => {
-  const [token, setToken] = useState(0);
-  const [segundosRestantes, setSegundosRestantes] = useState(INTERVALO_ROTACION);
-
-  useEffect(() => {
-    if (!activo) return;
-
-    setToken(Date.now());
-    setSegundosRestantes(INTERVALO_ROTACION);
-
-    const rotacion = setInterval(() => {
-      setToken(Date.now());
-      setSegundosRestantes(INTERVALO_ROTACION);
-    }, INTERVALO_ROTACION * 1000);
-
-    const countdown = setInterval(() => {
-      setSegundosRestantes((s) => (s > 0 ? s - 1 : 0));
-    }, 1000);
-
-    return () => {
-      clearInterval(rotacion);
-      clearInterval(countdown);
-    };
-  }, [activo]);
-
-  const payload = encodeURIComponent(`asistencia://reunion/${reunionId ?? 'sin-reunion'}?token=${token}`);
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&data=${payload}`;
+  const qrSrc = useMemo(() => {
+    const payload = encodeURIComponent(`asistencia://reunion/${reunionId ?? 'sin-reunion'}`);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&data=${payload}`;
+  }, [reunionId]);
 
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 flex flex-col items-center">
@@ -58,10 +34,9 @@ export const CodigoQRPanel: React.FC<CodigoQRPanelProps> = ({ activo, reunionId,
       <div className="relative w-full max-w-xs aspect-square rounded-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
         {activo ? (
           <img
-            key={token}
             src={qrSrc}
             alt="Código QR de asistencia"
-            className="w-[80%] h-[80%] object-contain bg-white rounded-xl p-3 animate-fade-in"
+            className="w-[80%] h-[80%] object-contain bg-white rounded-xl p-3"
           />
         ) : (
           <div className="flex flex-col items-center gap-2 text-gray-400 px-6 text-center">
@@ -70,12 +45,6 @@ export const CodigoQRPanel: React.FC<CodigoQRPanelProps> = ({ activo, reunionId,
           </div>
         )}
       </div>
-
-      {activo && (
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 mt-3">
-          <RefreshCcw className="w-3 h-3" /> El código se renueva en {segundosRestantes}s
-        </div>
-      )}
 
       <p className="text-[11px] text-gray-400 font-medium mt-3 text-center max-w-xs flex items-center justify-center gap-1.5">
         {activo ? (
@@ -87,6 +56,7 @@ export const CodigoQRPanel: React.FC<CodigoQRPanelProps> = ({ activo, reunionId,
         )}
       </p>
 
+      {/* Mira este boton va a ser temporal, es para simular el escaneo del código QR */}
       {activo && (
         <button
           onClick={onSimularEscaneo}

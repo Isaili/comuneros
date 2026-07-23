@@ -22,7 +22,7 @@ export const NotificacionCierre: React.FC<NotificacionCierreProps> = ({ nombreRe
       <div className="flex-1 min-w-0">
         <p className="text-sm font-black text-gray-900">Reunión cerrada</p>
         <p className="text-xs text-gray-500 font-medium mt-0.5">
-          "{nombreReunion}" fue cerrada manualmente. El escáner ha sido desactivado.
+          "{nombreReunion}" fue cerrada manualmente. El código QR ha sido desactivado.
         </p>
       </div>
       <button onClick={onCerrar} className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 shrink-0">

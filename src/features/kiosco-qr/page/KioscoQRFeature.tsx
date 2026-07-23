@@ -9,6 +9,7 @@ import { AsistentesEnVivoGrid } from '../components/AsistentesEnVivoGrid';
 import { ComuneroPanel } from '../components/ComuneroPanel';
 import { NotificacionCierre } from '../components/NotificacionCierre';
 import { ConfirmarCierreReunionModal } from '../components/modals/ConfirmarCierreReunionModal';
+import { AvisoProximoCierre } from '../components/Avisoproximocierre';
 import { Reunion, AsistenteRegistro } from '../types/types';
 import { reunionesMock } from '../mocks/reunionesMock';
 import { comunerosMock } from '../mocks/comunerosMock';
@@ -19,6 +20,7 @@ export default function KioscoQRFeature() {
   const [asistentes, setAsistentes] = useState<AsistenteRegistro[]>([]);
   const [comuneroSeleccionado, setComuneroSeleccionado] = useState<AsistenteRegistro | null>(null);
   const [modalCerrar, setModalCerrar] = useState(false);
+  const [avisoProximoCierre, setAvisoProximoCierre] = useState<string | null>(null);
   const [notificacionCierre, setNotificacionCierre] = useState<string | null>(null);
 
   const reunionActiva = useMemo(
@@ -117,6 +119,9 @@ export default function KioscoQRFeature() {
 
       {notificacionCierre && (
         <NotificacionCierre nombreReunion={notificacionCierre} onCerrar={() => setNotificacionCierre(null)} />
+      )}
+      {avisoProximoCierre && (
+        <AvisoProximoCierre nombreReunion={avisoProximoCierre} onCerrar={() => setAvisoProximoCierre(null)} />
       )}
     </div>
   );
