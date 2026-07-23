@@ -7,6 +7,7 @@ import { Reunion } from '../types/types';
 interface ReunionEstadoCardProps {
   reunionProxima: Reunion | null;
   reunionActiva: Reunion | null;
+  esLaMasCercana: boolean;
   totalAsistentes: number;
   onAbrirClick: () => void;
   onCerrarClick: () => void;
@@ -18,6 +19,7 @@ const formatoFecha = (fecha: string) =>
 export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
   reunionProxima,
   reunionActiva,
+  esLaMasCercana,
   totalAsistentes,
   onAbrirClick,
   onCerrarClick,
@@ -36,14 +38,22 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 sm:p-8 space-y-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <span
-            className={`inline-flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-md ${
-              reunionActiva ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+        <span
+        className={`inline-flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-md ${
+            reunionActiva
+            ? 'bg-emerald-50 text-emerald-700'
+            : esLaMasCercana
+            ? 'bg-amber-50 text-amber-700'
+            : 'bg-[#E2DFDE] text-[#474746]'
+        }`}
+        >
+        <span
+            className={`w-1.5 h-1.5 rounded-full ${
+            reunionActiva ? 'bg-emerald-500 animate-pulse' : esLaMasCercana ? 'bg-amber-500' : 'bg-[#474746]'
             }`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${reunionActiva ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-            {reunionActiva ? 'Reunión en curso' : 'Próxima reunión'}
-          </span>
+        />
+        {reunionActiva ? 'Reunión en curso' : esLaMasCercana ? 'Próxima reunión' : 'Reunión seleccionada'}
+        </span>
           <h2 className="text-xl sm:text-2xl font-black text-gray-900 mt-2">{reunion.nombre}</h2>
         </div>
 
