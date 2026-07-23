@@ -2,15 +2,24 @@
 
 import React, { useEffect, useState } from 'react';
 import { Search, Plus, CircleDollarSign, Calendar } from 'lucide-react';
+import { TipoMulta, EstadoMulta } from '../types/types';
 
 interface HeaderProps {
   onBusquedaChange: (texto: string) => void;
   onAgregarClick: () => void;
+  filtroTipo: TipoMulta | 'todos';
+  filtroEstado: EstadoMulta | 'todos';
+  onFiltroTipoChange: (tipo: TipoMulta | 'todos') => void;
+  onFiltroEstadoChange: (estado: EstadoMulta | 'todos') => void;
 }
 
 export const MultasHeader: React.FC<HeaderProps> = ({
   onBusquedaChange,
   onAgregarClick,
+  filtroTipo,
+  onFiltroTipoChange,
+  filtroEstado,
+  onFiltroEstadoChange
 }) => {
   const [fechaActual, setFechaActual] = useState<string>('');
 

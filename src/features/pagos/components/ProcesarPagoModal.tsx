@@ -146,7 +146,7 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
 
                 <div className="pt-2 flex flex-col items-center">
                   <Receipt className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-600 mb-2" />
-                  <h4 className="text-xs sm:text-sm font-black text-gray-900">TESORERÍA EJIDAL</h4>
+                  <h4 className="text-xs sm:text-sm font-black text-gray-900">TESORERÍA COMUNAL</h4>
                   <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase mt-0.5">Recibo de pago predial</p>
                 </div>
 

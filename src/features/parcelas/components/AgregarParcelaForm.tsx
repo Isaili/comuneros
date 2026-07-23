@@ -248,7 +248,7 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
               <span className="p-1.5 bg-[#006837]/10 text-[#006837] rounded-lg">
                 <Landmark className="w-4 h-4" />
               </span>
-              {esEdicion ? 'Modificar Expediente de Parcela Ejidal' : 'Alta Integral de Parcela Ejidal (Con Históricos)'}
+              {esEdicion ? 'Modificar Expediente de Parcela Comunal' : 'Alta Integral de Parcela Comunal (Con Históricos)'}
             </h3>
             <p className="text-xs text-gray-400 font-medium mt-0.5">Buscador avanzado para +1500 registros, tracto sucesivo cronológico e historial hacendario.</p>
           </div>
