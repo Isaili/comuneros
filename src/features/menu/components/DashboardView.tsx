@@ -22,7 +22,7 @@ export default function DashboardView() {
   }, []);
 
   return (
-    <div className="w-full min-h-screen bg-[#FAFAFA] px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 text-gray-800">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

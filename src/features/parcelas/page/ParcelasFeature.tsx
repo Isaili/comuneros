@@ -223,7 +223,7 @@ export const ParcelasFeature: React.FC = () => {
   );
 
   return (
-    <div className="space-y-5 sm:space-y-6 animate-fade-in w-full px-2 py-2 max-w-[1600px] mx-auto relative">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
       
       <ParcelasHeader 
         onSearchChange={setSearchTerm} 

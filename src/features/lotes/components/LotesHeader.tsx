@@ -52,7 +52,7 @@ export const LotesHeader: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mt-6">
         <div className="relative flex-1 w-full sm:max-w-[320px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input 
