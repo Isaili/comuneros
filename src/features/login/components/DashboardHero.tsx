@@ -14,16 +14,6 @@ const stats = [
   { icon: ShieldCheck, label: 'CERTIFICADOS', value: '96', suffix: 'Emitidos', trend: [2, 4, 3, 6, 5, 7, 6] },
 ];
 
-const sidebarNav = [
-  { icon: Home, label: 'Inicio' },
-  { icon: Users, label: 'Comuneros' },
-  { icon: Map, label: 'Parcelas' },
-  { icon: FileText, label: 'Actas' },
-  { icon: ShieldCheck, label: 'Certificados' },
-  { icon: BookOpen, label: 'Historial jurídico' },
-  { icon: BarChart3, label: 'Reportes' },
-];
-
 const avisos = [
   {
     icon: Users,
@@ -127,7 +117,7 @@ export default function DashboardHero() {
           </div>
 
           {/* VISTA PREVIA Y AVISOS */}
-          <PreviewAndAlerts sidebarNav={sidebarNav} avisos={avisos} />
+          <PreviewAndAlerts avisos={avisos} />
 
         </div>
 
