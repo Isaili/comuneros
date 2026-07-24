@@ -25,9 +25,10 @@ const MOCK_COMUNEROS: Comunero[] = [
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0042',
     activo: true,
     terrenos: [
-      { tipo: 'Parcela', numero: 155, folio: 'P-0155', certificado: 'CERT-15857', superficie: '2.50 ha', hectareasPosesion: 2.50, ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Parcela', numero: 257, folio: 'P-0627', certificado: 'CERT-23565', superficie: '1.75 ha', hectareasPosesion: 1.75, ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Lote', numero: 85, folio: 'L-008', superficie: '300 m²', hectareasPosesion: 0.03, ubicacion: 'Barrio San José' }
+
+      { tipo: 'Parcela', numero: 155, folio: 'P-0155', certificado: 'CERT-15857', superficie: '2.50 ha', ubicacion: 'Ejido Copainalá', hectareasPosesion: 2.5 },
+      { tipo: 'Parcela', numero: 257, folio: 'P-0627', certificado: 'CERT-23565', superficie: '1.75 ha', ubicacion: 'Ejido Copainalá', hectareasPosesion: 1.75 },
+      { tipo: 'Lote', numero: 85, folio: 'L-008', superficie: '300 m²', ubicacion: 'Barrio San José', hectareasPosesion: 0.03 }
     ]
   },
   {
@@ -47,9 +48,12 @@ const MOCK_COMUNEROS: Comunero[] = [
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0042',
     activo: true,
     terrenos: [
+
       { tipo: 'Parcela', numero: 15, folio: 'P-015', certificado: 'CERT-1587', superficie: '2.50 ha', hectareasPosesion: 2.50, ubicacion: 'Ejido Copainalá' },
       { tipo: 'Parcela', numero: 27, folio: 'P-027', certificado: 'CERT-2365', superficie: '1.75 ha', hectareasPosesion: 1.75, ubicacion: 'Ejido Copainalá' },
       { tipo: 'Lote', numero: 8, folio: 'L-008', superficie: '300 m²', hectareasPosesion: 0.03, ubicacion: 'Barrio San José' }
+
+  
     ]
   },
   {
@@ -69,7 +73,10 @@ const MOCK_COMUNEROS: Comunero[] = [
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0089',
     activo: true,
     terrenos: [
+
       { tipo: 'Parcela', numero: 4, folio: 'P-004', certificado: 'CERT-0921', superficie: '3.10 ha', hectareasPosesion: 3.10, ubicacion: 'Ejido Copainalá' }
+
+     
     ]
   }
 ];

@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { KioscoHeader } from '../components/KioscoHeader';
 import { ReunionEstadoCard } from '../components/ReunionEstadoCard';
 import { ProximasReunionesList } from '../components/ProximasReunionesList';
-import { CodigoQRPanel } from '../components/CodigoQRPanel';
+import { EscanerQrPanel } from '../components/EscanerQRPanel';
 import { AsistentesEnVivoGrid } from '../components/AsistentesEnVivoGrid';
 import { ComuneroPanel } from '../components/ComuneroPanel';
 import { NotificacionCierre } from '../components/NotificacionCierre';
@@ -27,6 +27,7 @@ export default function KioscoQRFeature() {
   const [modalCrear, setModalCrear] = useState(false);
   const [avisoProximoCierre, setAvisoProximoCierre] = useState<string | null>(null);
   const [notificacionCierre, setNotificacionCierre] = useState<string | null>(null);
+  const [salidasHabilitadas, setSalidasHabilitadas] = useState(false);
 
   const reunionActiva = useMemo(
     () => reuniones.find((r) => r.id === reunionActivaId) ?? null,
@@ -59,6 +60,7 @@ export default function KioscoQRFeature() {
     setReunionActivaId(reunionProxima.id);
     setAsistentes([]);
     setComuneroSeleccionado(null);
+    setSalidasHabilitadas(false); 
   };
 
   const confirmarCierre = () => {
@@ -69,6 +71,7 @@ export default function KioscoQRFeature() {
     setReunionActivaId(null);
     setReunionSeleccionadaId(null);
     setComuneroSeleccionado(null);
+    setSalidasHabilitadas(false);
   };
 
   const seleccionarReunionDestacada = (reunionId: string) => {
@@ -85,19 +88,26 @@ export default function KioscoQRFeature() {
     setModalCrear(false);
   };
 
+  const habilitarSalidas = () => {
+    setSalidasHabilitadas(true);
+  };
+
   const simularEscaneo = () => {
     if (!reunionActiva) return;
 
-    const yaDentro = asistentes.find((a) => !a.horaSalida);
-    const disponibles = comunerosMock.filter((c) => !asistentes.some((a) => a.comuneroId === c.id && !a.horaSalida));
+    if (salidasHabilitadas) {
+      const dentro = asistentes.filter((a) => !a.horaSalida);
+      if (dentro.length === 0) return; 
 
-    if (yaDentro && Math.random() < 0.3) {
-      const actualizado: AsistenteRegistro = { ...yaDentro, horaSalida: new Date().toISOString() };
+      const elegido = dentro[Math.floor(Math.random() * dentro.length)];
+      const actualizado: AsistenteRegistro = { ...elegido, horaSalida: new Date().toISOString() };
       setAsistentes((prev) => prev.map((a) => (a.id === actualizado.id ? actualizado : a)));
       setComuneroSeleccionado(actualizado);
       return;
     }
 
+    
+    const disponibles = comunerosMock.filter((c) => !asistentes.some((a) => a.comuneroId === c.id && !a.horaSalida));
     const comunero = disponibles[Math.floor(Math.random() * disponibles.length)] ?? comunerosMock[0];
     const nuevoRegistro: AsistenteRegistro = {
       id: `${comunero.id}-${Date.now()}`,
@@ -122,12 +132,19 @@ export default function KioscoQRFeature() {
             reunionActiva={reunionActiva}
             esLaMasCercana={esLaMasCercana}
             totalAsistentes={asistentes.length}
+            salidasHabilitadas={salidasHabilitadas}
             onAbrirClick={abrirReunion}
             onCerrarClick={() => setModalCerrar(true)}
+            onHabilitarSalidasClick={habilitarSalidas}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <CodigoQRPanel activo={!!reunionActiva} reunionId={reunionActiva?.id} onSimularEscaneo={simularEscaneo} />
+            <EscanerQrPanel
+              activo={!!reunionActiva}
+              reunionId={reunionActiva?.id}
+              salidasHabilitadas={salidasHabilitadas}
+              onSimularEscaneo={simularEscaneo}
+            />
             <AsistentesEnVivoGrid asistentes={asistentes} onSeleccionar={setComuneroSeleccionado} />
           </div>
 
