@@ -7,6 +7,7 @@ import { ComunerosFeature } from '../../comuneros/page/ComunerosFeature';
 import { ParcelasFeature } from '../../parcelas/page/ParcelasFeature';
 import { LotesFeature } from '../../lotes/page/LotesFeature';
 import MultasAsistenciasFeature from '../../multas-asistencias/page/MultasAsistenciasFeature';
+import KioscoQRFeature from '../../kiosco-qr/page/KioscoQRFeature';
 
 import { PredialPagos } from '../../pagos/page/PredialPagos';
 
@@ -53,8 +54,12 @@ export const PreviewPage: React.FC = () => {
           <MultasAsistenciasFeature />
         )}
 
+        {currentView === 'kiosco-qr' && (
+          <KioscoQRFeature />
+        )}
+
         {/* OTRAS VISTAS EN CONSTRUCCIÓN */}
-        {!['dashboard', 'comuneros', 'parcelas', 'lotes', 'pagos', 'multas-asistencias'].includes(currentView) && (
+        {!['dashboard', 'comuneros', 'parcelas', 'lotes', 'pagos', 'multas-asistencias', 'kiosco-qr'].includes(currentView) && (
           <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 font-medium capitalize animate-fade-in">
             Sección de <span className="font-bold text-gray-700">{currentView.replace('-', ' ')}</span> en desarrollo.
           </div>

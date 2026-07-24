@@ -63,7 +63,7 @@ export const PagosPredialSection: React.FC = () => {
             Módulo de Pagos Prediales
           </h2>
           <p className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide mt-1">
-            Administración, cálculo de recargos y cobro de derechos ejidales.
+            Administración, cálculo de recargos y cobro de derechos comunales.
           </p>
         </div>
 

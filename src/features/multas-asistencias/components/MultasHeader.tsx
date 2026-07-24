@@ -7,9 +7,9 @@ import { TipoMulta, EstadoMulta } from '../types/types';
 interface HeaderProps {
   onBusquedaChange: (texto: string) => void;
   filtroTipo?: TipoMulta | 'todos';
-  onFiltroTipoChange?: Dispatch<SetStateAction<TipoMulta | 'todos'>>;
+  onFiltroTipoChange?: Dispatch<SetStateAction<TipoMulta | 'todos'>> | ((tipo: TipoMulta | 'todos') => void);
   filtroEstado?: EstadoMulta | 'todos';
-  onFiltroEstadoChange?: Dispatch<SetStateAction<EstadoMulta | 'todos'>>;
+  onFiltroEstadoChange?: Dispatch<SetStateAction<EstadoMulta | 'todos'>> | ((estado: EstadoMulta | 'todos') => void);
   onAgregarClick: () => void;
 }
 
@@ -19,7 +19,7 @@ export const MultasHeader: React.FC<HeaderProps> = ({
   onFiltroTipoChange,
   filtroEstado,
   onFiltroEstadoChange,
-  onAgregarClick,
+  onAgregarClick
 }) => {
   const [fechaActual, setFechaActual] = useState<string>('');
 

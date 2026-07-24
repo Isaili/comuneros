@@ -36,7 +36,7 @@ export const ParcelasHeader: React.FC<HeaderProps> = ({ onSearchChange, onAddCli
             Analista de Parcelas
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide mt-1">
-            Consulta y administra la información de todas las parcelas ejidales.
+            Consulta y administra la información de todas las parcelas comunales.
           </p>
         </div>
         

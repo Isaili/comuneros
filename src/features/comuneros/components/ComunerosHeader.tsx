@@ -34,7 +34,7 @@ export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchCha
             Comuneros
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide mt-1">
-            Gestiona la información de todos los comuneros ejidales.
+            Gestiona la información de todos los comuneros.
           </p>
         </div>
         
