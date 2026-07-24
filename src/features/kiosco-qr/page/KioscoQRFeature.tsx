@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { KioscoHeader } from '../components/KioscoHeader';
 import { ReunionEstadoCard } from '../components/ReunionEstadoCard';
 import { ProximasReunionesList } from '../components/ProximasReunionesList';
-import { CodigoQRPanel } from '../components/CodigoQRPanel';
+import { EscanerQrPanel } from '../components/EscanerQRPanel';
 import { AsistentesEnVivoGrid } from '../components/AsistentesEnVivoGrid';
 import { ComuneroPanel } from '../components/ComuneroPanel';
 import { NotificacionCierre } from '../components/NotificacionCierre';
@@ -126,10 +126,10 @@ export default function KioscoQRFeature() {
             onCerrarClick={() => setModalCerrar(true)}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <CodigoQRPanel activo={!!reunionActiva} reunionId={reunionActiva?.id} onSimularEscaneo={simularEscaneo} />
-            <AsistentesEnVivoGrid asistentes={asistentes} onSeleccionar={setComuneroSeleccionado} />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <EscanerQrPanel activo={!!reunionActiva} reunionId={reunionActiva?.id} onSimularEscaneo={simularEscaneo} />
+        <AsistentesEnVivoGrid asistentes={asistentes} onSeleccionar={setComuneroSeleccionado} />
+        </div>
 
           <ProximasReunionesList
             reuniones={reunionesProgramadas}
