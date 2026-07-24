@@ -1,15 +1,21 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ScanLine, Camera, QrCode, CameraOff, Smartphone } from 'lucide-react';
+import { ScanLine, Camera, QrCode, CameraOff, Smartphone, LogIn } from 'lucide-react';
 
 interface EscanerQrPanelProps {
   activo: boolean;
   reunionId?: string;
+  salidasHabilitadas: boolean;
   onSimularEscaneo: () => void;
 }
 
-export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({ activo, reunionId, onSimularEscaneo }) => {
+export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
+  activo,
+  reunionId,
+  salidasHabilitadas,
+  onSimularEscaneo,
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [errorCamara, setErrorCamara] = useState<string | null>(null);
@@ -28,7 +34,7 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({ activo, reunionI
     const iniciarCamara = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }, 
+          video: { facingMode: 'environment' },
           audio: false,
         });
         if (cancelado) {
@@ -91,15 +97,13 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({ activo, reunionI
             )}
 
             {camaraLista && (
-              <>
-                <div className="relative z-10 w-[70%] h-[70%]">
-                  <span className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg" />
-                  <span className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg" />
-                  <span className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg" />
-                  <span className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-400 rounded-br-lg" />
-                  <div className="absolute inset-x-0 h-0.5 bg-emerald-400/90 shadow-[0_0_8px_2px_rgba(52,211,153,0.6)] animate-scan-line" />
-                </div>
-              </>
+              <div className="relative z-10 w-[70%] h-[70%]">
+                <span className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg" />
+                <span className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg" />
+                <span className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg" />
+                <span className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-400 rounded-br-lg" />
+                <div className="absolute inset-x-0 h-0.5 bg-emerald-400/90 shadow-[0_0_8px_2px_rgba(52,211,153,0.6)] animate-scan-line" />
+              </div>
             )}
           </>
         ) : (
@@ -112,21 +116,34 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({ activo, reunionI
 
       <p className="text-[11px] text-gray-400 font-medium mt-3 text-center max-w-xs flex items-center justify-center gap-1.5">
         {activo ? (
-          <>
-            <Smartphone className="w-3.5 h-3.5 shrink-0" /> Escanea este código con tu teléfono para registrar tu entrada o salida.
-          </>
+          salidasHabilitadas ? (
+            <>
+              <Smartphone className="w-3.5 h-3.5 shrink-0" /> Escanea tu código para registrar tu salida.
+            </>
+          ) : (
+            <>
+              <LogIn className="w-3.5 h-3.5 shrink-0" /> Escanea tu código para registrar tu entrada.
+            </>
+          )
         ) : (
-          'El código se mostrará automáticamente cuando la reunión esté abierta.'
+          'El escáner se activará automáticamente cuando la reunión esté abierta.'
         )}
       </p>
 
-      {/* Mira este boton va a ser temporal, es para simular el escaneo del código QR */}
       {activo && (
         <button
           onClick={onSimularEscaneo}
           className="mt-4 w-full max-w-xs flex items-center justify-center gap-1.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors"
         >
-          <Smartphone className="w-3.5 h-3.5" /> Simular escaneo desde celular (demo)
+          {salidasHabilitadas ? (
+            <>
+              <Smartphone className="w-3.5 h-3.5" /> Simular escaneo (entrada o salida)
+            </>
+          ) : (
+            <>
+              <LogIn className="w-3.5 h-3.5" /> Simular escaneo (solo entrada)
+            </>
+          )}
         </button>
       )}
     </div>

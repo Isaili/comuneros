@@ -19,16 +19,15 @@ const MOCK_COMUNEROS: Comunero[] = [
     direccion: 'Calle Miguel Hidalgo #123',
     colonia: 'Santa Ana',
     telefono: '961 123 4567',
-    correo: 'jose.hernandez@email.com',
     fechaRegistro: '10 de enero de 2010',
     folioComunero: 'COM-0042',
     fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0042',
     activo: true,
     terrenos: [
-      { tipo: 'Parcela', numero: 155, folio: 'P-0155', certificado: 'CERT-15857', superficie: '2.50 ha', ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Parcela', numero: 257, folio: 'P-0627', certificado: 'CERT-23565', superficie: '1.75 ha', ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Lote', numero: 85, folio: 'L-008', superficie: '300 m²', ubicacion: 'Barrio San José' }
+      { tipo: 'Parcela', numero: 155, folio: 'P-0155', certificado: 'CERT-15857', superficie: '2.50 ha', ubicacion: 'Ejido Copainalá', hectareasPosesion: 2.5 },
+      { tipo: 'Parcela', numero: 257, folio: 'P-0627', certificado: 'CERT-23565', superficie: '1.75 ha', ubicacion: 'Ejido Copainalá', hectareasPosesion: 1.75 },
+      { tipo: 'Lote', numero: 85, folio: 'L-008', superficie: '300 m²', ubicacion: 'Barrio San José', hectareasPosesion: 0.03 }
     ]
   },
   {
@@ -42,16 +41,15 @@ const MOCK_COMUNEROS: Comunero[] = [
     direccion: 'Calle Miguel Hidalgo #123',
     colonia: 'Centro',
     telefono: '961 123 4567',
-    correo: 'jose.hernandez@email.com',
     fechaRegistro: '10 de enero de 2010',
     folioComunero: 'COM-0042',
     fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0042',
     activo: true,
     terrenos: [
-      { tipo: 'Parcela', numero: 15, folio: 'P-015', certificado: 'CERT-1587', superficie: '2.50 ha', ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Parcela', numero: 27, folio: 'P-027', certificado: 'CERT-2365', superficie: '1.75 ha', ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Lote', numero: 8, folio: 'L-008', superficie: '300 m²', ubicacion: 'Barrio San José' }
+      { tipo: 'Parcela', numero: 15, folio: 'P-015', certificado: 'CERT-1587', superficie: '2.50 ha', ubicacion: 'Ejido Copainalá', hectareasPosesion: 2.5 },
+      { tipo: 'Parcela', numero: 27, folio: 'P-027', certificado: 'CERT-2365', superficie: '1.75 ha', ubicacion: 'Ejido Copainalá', hectareasPosesion: 1.75 },
+      { tipo: 'Lote', numero: 8, folio: 'L-008', superficie: '300 m²', ubicacion: 'Barrio San José', hectareasPosesion: 0.03 }
     ]
   },
   {
@@ -65,14 +63,13 @@ const MOCK_COMUNEROS: Comunero[] = [
     direccion: 'Av. Central Oriente #45',
     colonia: 'San José',
     telefono: '961 987 6543',
-    correo: 'maria.perez@email.com',
     fechaRegistro: '15 de marzo de 2014',
     folioComunero: 'COM-0089',
     fotografia: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200',
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0089',
     activo: true,
     terrenos: [
-      { tipo: 'Parcela', numero: 4, folio: 'P-004', certificado: 'CERT-0921', superficie: '3.10 ha', ubicacion: 'Ejido Copainalá' }
+      { tipo: 'Parcela', numero: 4, folio: 'P-004', certificado: 'CERT-0921', superficie: '3.10 ha', ubicacion: 'Ejido Copainalá', hectareasPosesion: 3.1 }
     ]
   }
 ];
@@ -172,7 +169,6 @@ export const ComunerosFeature: React.FC = () => {
         direccion: datosFormulario.direccion || 'Sin dirección registrada',
         colonia: datosFormulario.colonia,
         telefono: datosFormulario.telefono || '',
-        correo: datosFormulario.correo || '',
         fechaRegistro: new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }),
         folioComunero: folioGenerado,
         fotografia: datosFormulario.fotografia,

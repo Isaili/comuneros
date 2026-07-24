@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Calendar, MapPin, Clock, Users, DoorOpen, DoorClosed } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, DoorOpen, DoorClosed, LogOut } from 'lucide-react';
 import { Reunion } from '../types/types';
 
 interface ReunionEstadoCardProps {
@@ -9,8 +9,10 @@ interface ReunionEstadoCardProps {
   reunionActiva: Reunion | null;
   esLaMasCercana: boolean;
   totalAsistentes: number;
+  salidasHabilitadas: boolean;
   onAbrirClick: () => void;
   onCerrarClick: () => void;
+  onHabilitarSalidasClick: () => void;
 }
 
 const formatoFecha = (fecha: string) =>
@@ -21,8 +23,10 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
   reunionActiva,
   esLaMasCercana,
   totalAsistentes,
+  salidasHabilitadas,
   onAbrirClick,
   onCerrarClick,
+  onHabilitarSalidasClick,
 }) => {
   const reunion = reunionActiva ?? reunionProxima;
 
@@ -38,22 +42,35 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 sm:p-8 space-y-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-        <span
-        className={`inline-flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-md ${
-            reunionActiva
-            ? 'bg-emerald-50 text-emerald-700'
-            : esLaMasCercana
-            ? 'bg-amber-50 text-amber-700'
-            : 'bg-[#E2DFDE] text-[#474746]'
-        }`}
-        >
-        <span
-            className={`w-1.5 h-1.5 rounded-full ${
-            reunionActiva ? 'bg-emerald-500 animate-pulse' : esLaMasCercana ? 'bg-amber-500' : 'bg-[#474746]'
-            }`}
-        />
-        {reunionActiva ? 'Reunión en curso' : esLaMasCercana ? 'Próxima reunión' : 'Reunión seleccionada'}
-        </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-md ${
+                reunionActiva
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : esLaMasCercana
+                  ? 'bg-amber-50 text-amber-700'
+                  : 'bg-[#E2DFDE] text-[#474746]'
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  reunionActiva ? 'bg-emerald-500 animate-pulse' : esLaMasCercana ? 'bg-amber-500' : 'bg-[#474746]'
+                }`}
+              />
+              {reunionActiva ? 'Reunión en curso' : esLaMasCercana ? 'Próxima reunión' : 'Reunión seleccionada'}
+            </span>
+
+            {reunionActiva && (
+              <span
+                className={`inline-flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-md ${
+                  salidasHabilitadas ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                <LogOut className="w-3 h-3" />
+                {salidasHabilitadas ? 'Salidas habilitadas' : 'Solo entradas'}
+              </span>
+            )}
+          </div>
           <h2 className="text-xl sm:text-2xl font-black text-gray-900 mt-2">{reunion.nombre}</h2>
         </div>
 
@@ -80,12 +97,22 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
       </div>
 
       {reunionActiva ? (
-        <button
-          onClick={onCerrarClick}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
-        >
-          <DoorClosed className="w-4 h-4" /> Cerrar reunión
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          {!salidasHabilitadas && (
+            <button
+              onClick={onHabilitarSalidasClick}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
+            >
+              <LogOut className="w-4 h-4" /> Habilitar salidas
+            </button>
+          )}
+          <button
+            onClick={onCerrarClick}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
+          >
+            <DoorClosed className="w-4 h-4" /> Cerrar reunión
+          </button>
+        </div>
       ) : (
         <button
           onClick={onAbrirClick}
