@@ -10,8 +10,8 @@ import SessionFooter from './SessionFooter';
 const stats = [
   { icon: Users, label: 'COMUNEROS', value: '342', suffix: 'Registrados', trend: [4, 6, 3, 7, 5, 8, 6] },
   { icon: Map, label: 'PARCELAS ACTIVAS', value: '289', suffix: 'Registradas', trend: [3, 5, 4, 6, 8, 5, 7] },
-  { icon: FileText, label: 'ACTAS Y ACUERDOS', value: '128', suffix: 'Registradas', trend: [5, 3, 6, 4, 7, 6, 8] },
-  { icon: ShieldCheck, label: 'CERTIFICADOS', value: '96', suffix: 'Emitidos', trend: [2, 4, 3, 6, 5, 7, 6] },
+  { icon: FileText, label: 'LOTES REGISTRADOS', value: '128', suffix: 'Registradas', trend: [5, 3, 6, 4, 7, 6, 8] },
+  { icon: ShieldCheck, label: 'MULTAS', value: '96', suffix: 'Emitidas', trend: [2, 4, 3, 6, 5, 7, 6] },
 ];
 
 const avisos = [
