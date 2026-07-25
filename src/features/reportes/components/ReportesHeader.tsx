@@ -20,7 +20,7 @@ export const ReportesHeader: React.FC = () => {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-[#111827] flex items-center gap-2">
+        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight font-serif flex items-center gap-2">
           <span className="p-1.5 bg-slate-100 rounded-lg text-slate-700 shrink-0">
             <BarChart3 className="w-5 h-5" />
           </span>

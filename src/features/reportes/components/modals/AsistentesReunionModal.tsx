@@ -66,12 +66,7 @@ export const AsistentesReunionModal: React.FC<AsistentesReunionModalProps> = ({ 
             ))}
           </div>
         </div>
-
-        <div className="p-4 border-t border-gray-100 bg-slate-50/50 flex items-center justify-end shrink-0">
-          <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-200 hover:bg-gray-100 rounded-lg text-sm font-bold text-gray-600 transition-colors">
-            Cerrar
-          </button>
-        </div>
+        
       </div>
     </div>
   );

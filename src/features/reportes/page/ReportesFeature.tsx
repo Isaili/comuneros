@@ -34,7 +34,7 @@ export default function ReportesFeature() {
   const totalPeriodo = ingresosPredial + ingresosMultas;
 
   return (
-    <div className="flex-1 min-w-0 p-4 sm:p-8 pt-20 lg:pt-8 space-y-6 overflow-y-auto h-screen bg-[#FAFAFA]">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
       <ReportesHeader />
 
       <ResumenIngresosCards

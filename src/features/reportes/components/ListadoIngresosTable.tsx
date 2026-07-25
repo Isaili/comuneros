@@ -49,9 +49,9 @@ export const ListadoIngresosTable: React.FC<ListadoIngresosTableProps> = ({ ingr
         </div>
       </div>
 
-      <div className="overflow-x-auto scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="max-h-[420px] overflow-y-auto overflow-x-auto scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
         <table className="w-full text-left text-sm border-collapse min-w-[560px]">
-          <thead>
+          <thead className="sticky top-0 bg-white z-10">
             <tr className="text-gray-400 font-bold uppercase tracking-wider border-b border-gray-100">
               <th className="pb-3 px-2.5 text-xs">Fecha</th>
               <th className="pb-3 px-2.5 text-xs">Tipo</th>
