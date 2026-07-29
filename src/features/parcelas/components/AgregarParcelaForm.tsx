@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Plus, Trash2, Calculator, Landmark, FileText, Calendar, AlertCircle, Search, History, DollarSign, Check, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Save, Plus, Trash2, Calculator, Landmark, FileText, Calendar, History, DollarSign } from 'lucide-react';
 
 import { Comunero } from '../../comuneros/types/types';
 
-// Importaciones modularizadas desde tu archivo de tipos de parcelas
+
 import { 
   Parcela, 
-  TitularFila, 
   PropietarioHistorico, 
   PredialHistorico      
 } from '../types/typesParcela';
@@ -26,37 +25,25 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
   onGuardar,
   parcelaAEditar
 }) => {
-  // Determinar si estamos editando o agregando nuevo
+  
   const esEdicion = !!parcelaAEditar;
 
-  // 1. Estados principales de la Parcela
+  
   const [superficie, setSuperficie] = useState<number>(0);
-  const [tieneMultiplesTitulares, setTieneMultiplesTitulares] = useState<boolean>(false);
   const [numeroParcela, setNumeroParcela] = useState<string>('');
   const [fechaRegistro, setFechaRegistro] = useState<string>(new Date().toISOString().split('T')[0]);
   const [observaciones, setObservaciones] = useState<string>('');
   const [folioInterno, setFolioInterno] = useState<string>('');
   const [estadoPredialActual, setEstadoPredialActual] = useState<'Pagado' | 'Pagar'>('Pagar');
 
-  // 2. Estado para Titulares Activos
-  const [titulares, setTitulares] = useState<TitularFila[]>([
-    { comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: 0, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }
-  ]);
 
-  // 3. Historiales
-const [historialPropietarios, setHistorialPropietarios] = useState<PropietarioHistorico[]>([]);
-const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>([]);
+  const [historialPropietarios, setHistorialPropietarios] = useState<PropietarioHistorico[]>([]);
+  const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>([]);
 
-  // Estados de control para el buscador con lupa por fila
-  const [busquedas, setBusquedas] = useState<{ [key: number]: string }>({});
-  const [menusAbiertos, setMenusAbiertos] = useState<{ [key: number]: boolean }>({});
-  const [errorHectareas, setErrorHectareas] = useState<string>('');
-  const dropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
-
-  // 🔄 Efecto de rellenado automático para Edición vs Creación
+  
   useEffect(() => {
     if (parcelaAEditar) {
-      // Limpiamos la unidad "ha" para dejar solo el valor numérico
+    
       const numSuperficie = Number(parcelaAEditar.superficie.replace(' ha', ''));
       
       setFolioInterno(parcelaAEditar.id ? `P-${parcelaAEditar.id}` : 'P-000');
@@ -65,40 +52,8 @@ const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>
       setEstadoPredialActual(parcelaAEditar.estadoPredial as 'Pagado' | 'Pagar');
       setHistorialPropietarios(parcelaAEditar.historialPropietarios || []);
       setHistorialPrediales(parcelaAEditar.historialPrediales || []);
-      
-      if (parcelaAEditar.propietarios && parcelaAEditar.propietarios.length > 0) {
-        const multiples = parcelaAEditar.propietarios.length > 1;
-        setTieneMultiplesTitulares(multiples);
-        
-        // Mapeamos los propietarios existentes a la estructura de filas de la tabla
-        const filasMapeadas = parcelaAEditar.propietarios.map((nombreCompleto, idx) => {
-          const comuneroEncontrado = comunerosRegistrados.find(
-            c => `${c.nombre} ${c.apellidos}`.toLowerCase() === nombreCompleto.toLowerCase()
-          );
-          
-          return {
-            comuneroId: comuneroEncontrado ? comuneroEncontrado.id : '',
-            nombreCompleto: nombreCompleto,
-            certificado: 'CERT-EXISTENTE', 
-            hectareasPosesion: multiples 
-              ? Number((isNaN(numSuperficie) ? 0 : numSuperficie) / parcelaAEditar.propietarios.length).toFixed(4) as unknown as number
-              : (isNaN(numSuperficie) ? 0 : numSuperficie),
-            calidadAgraria: 'Ejidatario' as const,
-            actoJuridico: 'Asignación' as const,
-            vigencia: 'Vigente' as const
-          };
-        });
-        setTitulares(filasMapeadas);
-
-        // Inicializar las búsquedas visibles de cada fila para que muestren los nombres ya asignados
-        const busquedasIniciales: { [key: number]: string } = {};
-        filasMapeadas.forEach((f, idx) => {
-          busquedasIniciales[idx] = f.nombreCompleto;
-        });
-        setBusquedas(busquedasIniciales);
-      }
     } else {
-      // ➕ Modo Creación: Valores limpios por defecto
+     
       const numeroAleatorio = Math.floor(100 + Math.random() * 900);
       setFolioInterno(`P-${numeroAleatorio}`);
       setNumeroParcela('');
@@ -106,57 +61,11 @@ const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>
       setEstadoPredialActual('Pagar');
       setHistorialPropietarios([]);
       setHistorialPrediales([]);
-      setTieneMultiplesTitulares(false);
-      setTitulares([
-        { comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: 0, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }
-      ]);
-      setBusquedas({});
     }
-  }, [parcelaAEditar, comunerosRegistrados]);
-
-  // Cerrar buscadores al hacer click fuera de ellos
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      Object.keys(dropdownRefs.current).forEach((key) => {
-        const index = Number(key);
-        if (dropdownRefs.current[index] && !dropdownRefs.current[index]?.contains(event.target as Node)) {
-          setMenusAbiertos(prev => ({ ...prev, [index]: false }));
-        }
-      });
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // 🔄 Cuando es "Un solo Titular", las hectáreas poseídas siempre son el 100% de la superficie
-  useEffect(() => {
-    if (!tieneMultiplesTitulares) {
-      setTitulares(prev => {
-        if (prev.length === 0) return prev;
-        const copia = [...prev];
-        copia[0] = { ...copia[0], hectareasPosesion: superficie };
-        return copia;
-      });
-    }
-  }, [superficie, tieneMultiplesTitulares]);
+  }, [parcelaAEditar]);
 
   const costoPorHectarea = 5;
   const pagoPredialCalculado = superficie * costoPorHectarea;
-
-  const handleToggleMultiples = (multiple: boolean) => {
-    setTieneMultiplesTitulares(multiple);
-    setBusquedas({});
-    if (!multiple) {
-      setTitulares([{ comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: superficie, calidadAgraria: 'Ejidatario', actoJuridico: 'Asignación', vigencia: 'Vigente' }]);
-      setErrorHectareas('');
-    } else {
-      const mitad = Number((superficie / 2).toFixed(4));
-      setTitulares([
-        { comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: mitad, calidadAgraria: 'Ejidatario', actoJuridico: 'Cesión de derechos', vigencia: 'Vigente' },
-        { comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: mitad, calidadAgraria: 'Ejidatario', actoJuridico: 'Cesión de derechos', vigencia: 'Vigente' }
-      ]);
-    }
-  };
 
   // --- LÓGICA DE PROPIETARIOS HISTÓRICOS ---
   const agregarPropietarioHistorico = () => {
@@ -167,7 +76,7 @@ const [historialPrediales, setHistorialPrediales] = useState<PredialHistorico[]>
     setHistorialPropietarios(prev => prev.filter((_, i) => i !== index));
   };
 
-const actualizarPropietarioHistorico = (index: number, campo: keyof PropietarioHistorico, valor: string) => {
+  const actualizarPropietarioHistorico = (index: number, campo: keyof PropietarioHistorico, valor: string) => {
     setHistorialPropietarios(prev => prev.map((item, i) => i === index ? { ...item, [campo]: valor } : item));
   };
 
@@ -181,42 +90,14 @@ const actualizarPropietarioHistorico = (index: number, campo: keyof PropietarioH
     setHistorialPrediales(prev => prev.filter((_, i) => i !== index));
   };
 
-const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico, valor: any)=> {
+  const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico, valor: any) => {
     setHistorialPrediales(prev => prev.map((item, i) => i === index ? { ...item, [campo]: valor } : item));
-  };
-
-  // --- LÓGICA DE SELECCIÓN CON FILTRADO ---
-  const handleActualizarTitular = (index: number, campo: keyof TitularFila, valor: any) => {
-    setTitulares(prev => {
-      const copia = [...prev];
-      if (campo === 'comuneroId') {
-        const comuneroObj = comunerosRegistrados.find(c => c.id === valor);
-        copia[index].comuneroId = valor;
-        copia[index].nombreCompleto = comuneroObj ? `${comuneroObj.nombre} ${comuneroObj.apellidos}` : '';
-      } else {
-        copia[index] = { ...copia[index], [campo]: valor };
-      }
-      return copia;
-    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const sumaHectareas = titulares.reduce((acc, curr) => acc + Number(curr.hectareasPosesion), 0);
-    const diferencia = Math.abs(sumaHectareas - superficie);
-
-    if (diferencia > 0.0001) {
-      setErrorHectareas(`La suma de las hectáreas poseídas debe ser exactamente igual a la superficie total (${superficie.toFixed(4)} ha). Actualmente suma ${sumaHectareas.toFixed(4)} ha.`);
-      return;
-    }
-
-    if (titulares.some(t => t.nombreCompleto.trim() === '')) {
-      alert("Por favor, selecciona o ingresa un nombre para cada titular activo.");
-      return;
-    }
-
-    setErrorHectareas('');
+    // Ya no se exige titular al registrar/editar la parcela.
 
     const nuevaParcela = {
       folioInterno,
@@ -225,9 +106,9 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
       fechaRegistro,
       observaciones,
       estadoPredial: estadoPredialActual,
-      titularesCount: titulares.length,
-      propietarios: titulares.map(t => t.nombreCompleto),
-      titularesDetalle: titulares,
+      titularesCount: parcelaAEditar?.titularesDetalle?.length || 0,
+      propietarios: parcelaAEditar?.propietarios || [],
+      titularesDetalle: parcelaAEditar?.titularesDetalle || [],
       historialPropietarios,
       historialPrediales
     };
@@ -248,9 +129,11 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
               <span className="p-1.5 bg-[#006837]/10 text-[#006837] rounded-lg">
                 <Landmark className="w-4 h-4" />
               </span>
-              {esEdicion ? 'Modificar Expediente de Parcela Comunal' : 'Alta Integral de Parcela Comunal (Con Históricos)'}
+              {esEdicion ? 'Modificar Expediente de Parcela Comunal' : 'Alta de Parcela Comunal (Con Históricos)'}
             </h3>
-            <p className="text-xs text-gray-400 font-medium mt-0.5">Buscador avanzado para +1500 registros, tracto sucesivo cronológico e historial hacendario.</p>
+            <p className="text-xs text-gray-400 font-medium mt-0.5">
+              Registro físico y fiscal de la parcela. La asignación de titular(es) se realiza por separado, desde el expediente.
+            </p>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100"><X className="w-4 h-4" /></button>
         </div>
@@ -298,7 +181,7 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
             </div>
           </div>
 
-          {/* Tasa predial y Control de Titulares */}
+          {/* Tasa predial calculada + aviso de titular pendiente */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-[#006837]/5 p-4 rounded-xl border border-[#006837]/10">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-[#006837]/10 text-[#006837] rounded-xl"><Calculator className="w-5 h-5" /></div>
@@ -307,141 +190,24 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
                 <p className="text-base font-black text-gray-900">${pagoPredialCalculado.toFixed(2)} MXN</p>
               </div>
             </div>
-            <div className="flex justify-end gap-3">
-              <button type="button" onClick={() => handleToggleMultiples(false)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!tieneMultiplesTitulares ? 'bg-[#006837] text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>Un solo Titular</button>
-              <button type="button" onClick={() => handleToggleMultiples(true)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${tieneMultiplesTitulares ? 'bg-[#006837] text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>Múltiples Titulares</button>
-            </div>
-          </div>
-
-          {/* SECCIÓN 1: TITULARES ACTIVOS */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider text-emerald-800">1. Titulares Activos Vigentes</h4>
-              {tieneMultiplesTitulares && (
-                <button type="button" onClick={() => setTitulares(p => [...p, { comuneroId: '', nombreCompleto: '', certificado: '', hectareasPosesion: 0, calidadAgraria: 'Ejidatario', actoJuridico: 'Cesión de derechos', vigencia: 'Vigente' }])} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#006837]/10 text-[#006837] rounded-lg hover:bg-[#006837]/20">
-                  <Plus className="w-3.5 h-3.5 stroke-[3]" /> Agregar Co-titular
-                </button>
+            <div className="text-right">
+              {(parcelaAEditar?.titularesDetalle?.length || 0) > 0 ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+                  {parcelaAEditar!.titularesDetalle!.length} titular(es) asignado(s)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
+                  Sin titular asignado — se asigna después de guardar
+                </span>
               )}
             </div>
-
-            <div className="border border-gray-100 rounded-xl shadow-xs overflow-visible bg-white">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 text-gray-400 font-black uppercase border-b border-gray-100">
-                    <th className="p-3">Buscar Comunero (Nombre o Folio) *</th>
-                    <th className="p-3 w-[140px]">Nº Certificado *</th>
-                    <th className="p-3 w-[130px]">Hectáreas Poseídas</th>
-                    <th className="p-3 w-[130px]">Calidad Agraria</th>
-                    <th className="p-3 w-[140px]">Acto de Adquisición</th>
-                    {tieneMultiplesTitulares && <th className="p-3 w-[50px] text-center">Quitar</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {titulares.map((titular, index) => {
-                    const query = busquedas[index] ?? titular.nombreCompleto;
-                    const filteredComuneros = comunerosRegistrados.filter(c => 
-                      `${c.nombre} ${c.apellidos}`.toLowerCase().includes(query.toLowerCase()) ||
-                      c.folioComunero.toLowerCase().includes(query.toLowerCase())
-                    ).slice(0, 5);
-
-                    return (
-                      <tr key={index} className="hover:bg-slate-50/30">
-                        <td className="p-2 relative overflow-visible">
-                          <div ref={el => { dropdownRefs.current[index] = el; }} className="relative w-full">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                            <input
-                              type="text"
-                              required
-                              placeholder="🔎 Escriba para buscar..."
-                              value={query}
-                              onFocus={() => setMenusAbiertos(prev => ({ ...prev, [index]: true }))}
-                              onChange={(e) => {
-                                setBusquedas(prev => ({ ...prev, [index]: e.target.value }));
-                                setMenusAbiertos(prev => ({ ...prev, [index]: true }));
-                                if (!e.target.value) handleActualizarTitular(index, 'comuneroId', '');
-                              }}
-                              className="w-full pl-8 pr-7 py-2 bg-white border border-gray-200 rounded-lg text-gray-800 font-bold outline-none focus:border-[#006837]"
-                            />
-                            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                            
-                            {menusAbiertos[index] && (
-                              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
-                                {filteredComuneros.length > 0 ? (
-                                  filteredComuneros.map(c => (
-                                    <button
-                                      key={c.id}
-                                      type="button"
-                                      onClick={() => {
-                                        handleActualizarTitular(index, 'comuneroId', c.id);
-                                        setBusquedas(prev => ({ ...prev, [index]: `${c.nombre} ${c.apellidos}` }));
-                                        setMenusAbiertos(prev => ({ ...prev, [index]: false }));
-                                      }}
-                                      className="w-full text-left px-3 py-2 hover:bg-emerald-50 text-gray-700 font-semibold flex items-center justify-between border-b border-gray-50 last:border-0"
-                                    >
-                                      <div>
-                                        <p className="text-gray-900 text-xs font-bold">{c.nombre} {c.apellidos}</p>
-                                        <p className="text-[10px] text-gray-400 font-medium">{c.tipo.toUpperCase()} • Folio: {c.folioComunero}</p>
-                                      </div>
-                                      {titular.comuneroId === c.id && <Check className="w-4 h-4 text-[#006837]" />}
-                                    </button>
-                                  ))
-                                ) : (
-                                  <div className="p-3 text-center text-gray-400 text-[11px] font-medium">Ningún comunero coincide con el término.</div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="p-2"><input type="text" required placeholder="CERT-XXXX" value={titular.certificado} onChange={(e) => handleActualizarTitular(index, 'certificado', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg text-gray-800 outline-none" /></td>
-                        <td className="p-2">
-                          <div className="relative">
-                            <input
-                              type="number"
-                              step="0.0001"
-                              min="0"
-                              required
-                              disabled={!tieneMultiplesTitulares}
-                              value={titular.hectareasPosesion}
-                              onChange={(e) => handleActualizarTitular(index, 'hectareasPosesion', Number(e.target.value))}
-                              className="w-full pr-8 pl-2 py-2 border border-gray-200 rounded-lg text-gray-800 disabled:bg-slate-50"
-                            />
-                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">ha</span>
-                          </div>
-                        </td>
-                        <td className="p-2">
-                          <select value={titular.calidadAgraria} onChange={(e) => handleActualizarTitular(index, 'calidadAgraria', e.target.value)} className="w-full px-1 py-2 bg-white border border-gray-200 rounded-lg outline-none">
-                            <option value="Ejidatario">Ejidatario(a)</option>
-                            <option value="Avecindado">Avecindado(a)</option>
-                            <option value="Posesionario">Posesionario(a)</option>
-                          </select>
-                        </td>
-                        <td className="p-2">
-                          <select value={titular.actoJuridico} onChange={(e) => handleActualizarTitular(index, 'actoJuridico', e.target.value)} className="w-full px-1 py-2 bg-white border border-gray-200 rounded-lg outline-none">
-                            <option value="Asignación">Asignación Directa</option>
-                            <option value="Cesión de derechos">Cesión de derechos</option>
-                            <option value="Sucesión">Sucesión hereditaria</option>
-                          </select>
-                        </td>
-                        {tieneMultiplesTitulares && (
-                          <td className="p-2 text-center">
-                            <button type="button" disabled={titulares.length <= 1} onClick={() => setTitulares(p => p.filter((_, i) => i !== index))} className="p-2 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-40"><Trash2 className="w-3.5 h-3.5" /></button>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {errorHectareas && <div className="flex items-center gap-2 text-red-600 bg-red-50 p-2.5 rounded-xl"><AlertCircle className="w-4 h-4" /><span className="text-[11px] font-bold">{errorHectareas}</span></div>}
           </div>
 
-          {/* SECCIÓN 2: TRACTO SUCESIVO */}
+          {/* SECCIÓN 1: TRACTO SUCESIVO */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider flex items-center gap-1 text-amber-800">
-                <History className="w-4 h-4" /> 2. Historial Registral de Dueños Anteriores (Tracto Sucesivo)
+                <History className="w-4 h-4" /> 1. Historial Registral de Dueños Anteriores (Tracto Sucesivo)
               </h4>
               <button type="button" onClick={agregarPropietarioHistorico} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg hover:bg-amber-100/60">
                 <Plus className="w-3.5 h-3.5 stroke-[3]" /> Registrar Dueño Pasado
@@ -491,11 +257,11 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
             </div>
           </div>
 
-          {/* SECCIÓN 3: HISTORIAL DE PREDIALES PASADOS */}
+          {/* SECCIÓN 2: HISTORIAL DE PREDIALES PASADOS */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider flex items-center gap-1 text-red-800">
-                <DollarSign className="w-4 h-4" /> 3. Historial Fiscal Hacendario (Años Anteriores)
+                <DollarSign className="w-4 h-4" /> 2. Historial Fiscal Hacendario (Años Anteriores)
               </h4>
               <button type="button" onClick={agregarPredialHistorico} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-800 border border-red-200 rounded-lg hover:bg-red-100/60">
                 <Plus className="w-3.5 h-3.5 stroke-[3]" /> Cargar Año Anterior
@@ -553,7 +319,7 @@ const actualizarPredialHistorico = (index: number, campo: keyof PredialHistorico
           <button type="button" onClick={onClose} className="w-full sm:w-1/2 py-2.5 sm:py-3 border border-gray-200 rounded-xl font-bold text-gray-500 bg-white hover:bg-gray-50">Cancelar</button>
           <button type="submit" className="w-full sm:w-1/2 py-2.5 sm:py-3 bg-[#006837] hover:bg-[#00522b] text-white rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-xs">
             <Save className="w-4 h-4" /> 
-            {esEdicion ? 'Guardar Cambios del Expediente' : 'Registrar Expediente Completo'}
+            {esEdicion ? 'Guardar Cambios del Expediente' : 'Registrar Parcela'}
           </button>
         </div>
       </form>
