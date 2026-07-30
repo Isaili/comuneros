@@ -5,8 +5,6 @@ import { ReportesHeader } from '../components/ReportesHeader';
 import { ResumenIngresosCards } from '../components/ResumenIngresosCards';
 import { IngresosDiariosChart } from '../components/IngresosDiariosChart';
 import { ListadoIngresosTable } from '../components/ListadoIngresosTable';
-import { HistorialReunionesList } from '../components/HistorialReunionesList';
-import { AsistentesReunionModal } from '../components/modals/AsistentesReunionModal';
 import { ReunionHistorial } from '../types/types';
 import { ingresosMock } from '../mocks/ingresosMock';
 import { reunionesHistorialMock } from '../mocks/reunionesHistorialMock';
@@ -46,18 +44,11 @@ export default function ReportesFeature() {
 
       <IngresosDiariosChart ingresos={ingresosMock} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="gap-6 items-start">
         <div className="lg:col-span-2 min-w-0">
           <ListadoIngresosTable ingresos={ingresosMock} />
         </div>
-        <div className="min-w-0">
-          <HistorialReunionesList reuniones={reunionesHistorialMock} onSeleccionar={setReunionSeleccionada} />
-        </div>
       </div>
-
-      {reunionSeleccionada && (
-        <AsistentesReunionModal reunion={reunionSeleccionada} onClose={() => setReunionSeleccionada(null)} />
-      )}
     </div>
   );
 }

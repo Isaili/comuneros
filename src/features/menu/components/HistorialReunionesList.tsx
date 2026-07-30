@@ -34,7 +34,7 @@ export const HistorialReunionesList: React.FC<HistorialReunionesListProps> = ({ 
                   <p className="font-bold text-gray-900 text-xs truncate">{r.nombre}</p>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[11px] font-semibold text-gray-500">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-gray-400" /> {formatoFecha(r.fecha)}
+                      <Calendar className="w-3 h-3 text-[#1E4D3A]" /> {formatoFecha(r.fecha)}
                     </span>
                     <span className="flex items-center gap-1 truncate">
                       <MapPin className="w-3 h-3 text-gray-400 shrink-0" /> {r.lugar}
