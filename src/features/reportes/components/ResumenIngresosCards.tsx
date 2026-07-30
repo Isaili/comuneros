@@ -1,14 +1,13 @@
 "use client";
 
 import React from 'react';
-import { CircleDollarSign, Landmark, Gavel, TrendingUp } from 'lucide-react';
+import { CircleDollarSign, Landmark, Gavel } from 'lucide-react';
 import StatCard from '../../menu/components/StatCard';
 
 interface ResumenIngresosCardsProps {
   ingresosHoy: number;
   ingresosPredial: number;
   ingresosMultas: number;
-  totalPeriodo: number;
 }
 
 const formatoMoneda = (valor: number) =>
@@ -18,10 +17,9 @@ export const ResumenIngresosCards: React.FC<ResumenIngresosCardsProps> = ({
   ingresosHoy,
   ingresosPredial,
   ingresosMultas,
-  totalPeriodo,
 }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 min-w-0">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
       <StatCard
         title="Ingresos de hoy"
         value={formatoMoneda(ingresosHoy)}
@@ -43,14 +41,6 @@ export const ResumenIngresosCards: React.FC<ResumenIngresosCardsProps> = ({
         value={formatoMoneda(ingresosMultas)}
         subtext="Acumulado últimos 8 días"
         icon={Gavel}
-        iconBg="bg-[#E6F2E9]"
-        iconColor="text-[#1F4D3C]"
-      />
-      <StatCard
-        title="Total del periodo"
-        value={formatoMoneda(totalPeriodo)}
-        subtext="Predial + multas"
-        icon={TrendingUp}
         iconBg="bg-[#E6F2E9]"
         iconColor="text-[#1F4D3C]"
       />
