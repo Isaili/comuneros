@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Menu,
   X,
+  Monitor
 } from "lucide-react";
 
 // Estructura de navegación mapeada por 'view' en lugar de URLs físicas
@@ -25,7 +26,7 @@ const menuItems = [
   { name: "Multas y Asistencias", view: "multas-asistencias", icon: CircleDollarSign },
   { name: "Reportes", view: "reportes", icon: ClipboardList },
   { name: "Kiosco QR", view: "kiosco-qr", icon: QrCode },
-  { name: "Seguridad", view: "seguridad", icon: ShieldCheck },
+  { name: "Bienvenida Comunero", view: "Pantalla de Asistencia", icon: Monitor },
 ];
 
 // Definición estricta de las propiedades que controlan la SPA

@@ -3,11 +3,11 @@ export type EstadoReunion = 'programada' | 'en_curso' | 'finalizada';
 export interface Reunion {
   id: string;
   nombre: string;
-  fecha: string; 
+  fecha: string;
   horaInicio: string;
   lugar: string;
   estado: EstadoReunion;
-  duracionMinutos: number; 
+  toleranciaMinutos: number; 
 }
 
 export interface ComuneroKiosco {
@@ -23,6 +23,6 @@ export interface AsistenteRegistro {
   nombre: string;
   folio: string;
   fotografia: string;
-  horaEntrada: string; 
-  horaSalida?: string; 
+  horaEntrada: string;
+  horaSalida?: string;
 }

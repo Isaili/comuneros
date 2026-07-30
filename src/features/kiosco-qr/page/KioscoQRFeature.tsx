@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { KioscoHeader } from '../components/KioscoHeader';
 import { ReunionEstadoCard } from '../components/ReunionEstadoCard';
 import { ProximasReunionesList } from '../components/ProximasReunionesList';
@@ -14,8 +14,11 @@ import { AvisoProximoCierre } from '../components/Avisoproximocierre';
 import { Reunion, AsistenteRegistro } from '../types/types';
 import { reunionesMock } from '../mocks/reunionesMock';
 import { comunerosMock } from '../mocks/comunerosMock';
+import { crearCanalAsistencia, publicarEvento, guardarSnapshot } from '../../bienvenida-comunero/model/asistenciaChannel';
 
 const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`).getTime();
+
+const INTERVALO_REVISION_MS = 15_000;
 
 export default function KioscoQRFeature() {
   const [reuniones, setReuniones] = useState<Reunion[]>(reunionesMock);
@@ -29,10 +32,21 @@ export default function KioscoQRFeature() {
   const [notificacionCierre, setNotificacionCierre] = useState<string | null>(null);
   const [salidasHabilitadas, setSalidasHabilitadas] = useState(false);
 
+  const canalRef = useRef<BroadcastChannel | null>(null);
+
+  useEffect(() => {
+    canalRef.current = crearCanalAsistencia();
+    return () => canalRef.current?.close();
+  }, []);
+
   const reunionActiva = useMemo(
     () => reuniones.find((r) => r.id === reunionActivaId) ?? null,
     [reuniones, reunionActivaId]
   );
+
+  useEffect(() => {
+    guardarSnapshot({ reunionActiva, asistentes });
+  }, [reunionActiva, asistentes]);
 
   const reunionesProgramadas = useMemo(
     () =>
@@ -54,17 +68,49 @@ export default function KioscoQRFeature() {
 
   const esLaMasCercana = reunionProxima?.id === reunionMasCercana?.id;
 
-  const abrirReunion = () => {
-    if (!reunionProxima) return;
-    setReuniones((prev) => prev.map((r) => (r.id === reunionProxima.id ? { ...r, estado: 'en_curso' } : r)));
-    setReunionActivaId(reunionProxima.id);
+  const abrirReunionEspecifica = (reunion: Reunion) => {
+    setReuniones((prev) => prev.map((r) => (r.id === reunion.id ? { ...r, estado: 'en_curso' } : r)));
+    setReunionActivaId(reunion.id);
+    setReunionSeleccionadaId(null);
     setAsistentes([]);
     setComuneroSeleccionado(null);
-    setSalidasHabilitadas(false); 
+    setSalidasHabilitadas(false);
+
+    publicarEvento(canalRef.current, {
+      tipo: 'reunion_abierta',
+      timestamp: new Date().toISOString(),
+      reunion: { ...reunion, estado: 'en_curso' },
+    });
   };
+
+  const abrirReunion = () => {
+    if (!reunionProxima) return;
+    abrirReunionEspecifica(reunionProxima);
+  };
+
+  useEffect(() => {
+    const revisarHorario = () => {
+      if (reunionActivaId) return;
+      if (!reunionMasCercana) return;
+      if (Date.now() >= fechaHoraTimestamp(reunionMasCercana)) {
+        abrirReunionEspecifica(reunionMasCercana);
+      }
+    };
+
+    revisarHorario();
+    const interval = setInterval(revisarHorario, INTERVALO_REVISION_MS);
+    return () => clearInterval(interval);
+  }, [reunionActivaId, reunionMasCercana?.id]);
 
   const confirmarCierre = () => {
     if (!reunionActiva) return;
+
+    publicarEvento(canalRef.current, {
+      tipo: 'reunion_cerrada',
+      timestamp: new Date().toISOString(),
+      reunion: reunionActiva,
+    });
+
     setReuniones((prev) => prev.map((r) => (r.id === reunionActiva.id ? { ...r, estado: 'finalizada' } : r)));
     setNotificacionCierre(reunionActiva.nombre);
     setModalCerrar(false);
@@ -97,16 +143,22 @@ export default function KioscoQRFeature() {
 
     if (salidasHabilitadas) {
       const dentro = asistentes.filter((a) => !a.horaSalida);
-      if (dentro.length === 0) return; 
+      if (dentro.length === 0) return;
 
       const elegido = dentro[Math.floor(Math.random() * dentro.length)];
       const actualizado: AsistenteRegistro = { ...elegido, horaSalida: new Date().toISOString() };
       setAsistentes((prev) => prev.map((a) => (a.id === actualizado.id ? actualizado : a)));
       setComuneroSeleccionado(actualizado);
+
+      publicarEvento(canalRef.current, {
+        tipo: 'salida',
+        timestamp: actualizado.horaSalida!,
+        reunion: reunionActiva,
+        asistente: actualizado,
+      });
       return;
     }
 
-    
     const disponibles = comunerosMock.filter((c) => !asistentes.some((a) => a.comuneroId === c.id && !a.horaSalida));
     const comunero = disponibles[Math.floor(Math.random() * disponibles.length)] ?? comunerosMock[0];
     const nuevoRegistro: AsistenteRegistro = {
@@ -119,6 +171,13 @@ export default function KioscoQRFeature() {
     };
     setAsistentes((prev) => [...prev, nuevoRegistro]);
     setComuneroSeleccionado(nuevoRegistro);
+
+    publicarEvento(canalRef.current, {
+      tipo: 'entrada',
+      timestamp: nuevoRegistro.horaEntrada,
+      reunion: reunionActiva,
+      asistente: nuevoRegistro,
+    });
   };
 
   return (
@@ -157,7 +216,6 @@ export default function KioscoQRFeature() {
           />
         </div>
 
-        <ComuneroPanel asistente={comuneroSeleccionado} onCerrar={() => setComuneroSeleccionado(null)} />
       </div>
 
       {modalCerrar && reunionActiva && (

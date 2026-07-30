@@ -14,7 +14,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('');
   const [lugar, setLugar] = useState('');
-  const [duracionMinutos, setDuracionMinutos] = useState(90);
+  const [toleranciaMinutos, setToleranciaMinutos] = useState(15);
   const [errores, setErrores] = useState<Record<string, string>>({});
 
   const validar = () => {
@@ -23,7 +23,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
     if (!fecha) nuevosErrores.fecha = 'Selecciona una fecha.';
     if (!horaInicio) nuevosErrores.horaInicio = 'Selecciona una hora.';
     if (!lugar.trim()) nuevosErrores.lugar = 'Ingresa el lugar.';
-    if (!duracionMinutos || duracionMinutos <= 0) nuevosErrores.duracionMinutos = 'Duración inválida.';
+    if (!toleranciaMinutos || toleranciaMinutos <= 0) nuevosErrores.toleranciaMinutos = 'Tolerancia inválida.';
     setErrores(nuevosErrores);
     return Object.keys(nuevosErrores).length === 0;
   };
@@ -31,7 +31,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validar()) return;
-    onCrear({ nombre: nombre.trim(), fecha, horaInicio, lugar: lugar.trim(), duracionMinutos });
+    onCrear({ nombre: nombre.trim(), fecha, horaInicio, lugar: lugar.trim(), toleranciaMinutos });
   };
 
   return (
@@ -115,19 +115,22 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
 
           <div>
             <label className="text-xs text-gray-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
-              <Hourglass className="w-3 h-3" /> Duración estimada (minutos)
+              <Hourglass className="w-3 h-3" /> Tiempo estimado de tolerancia (minutos)
             </label>
             <input
               type="number"
-              min={15}
-              step={15}
-              value={duracionMinutos}
-              onChange={(e) => setDuracionMinutos(Number(e.target.value))}
+              min={5}
+              step={5}
+              value={toleranciaMinutos}
+              onChange={(e) => setToleranciaMinutos(Number(e.target.value))}
               className={`mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-[#1E4D3A]/20 focus:border-[#1E4D3A]/40 ${
-                errores.duracionMinutos ? 'border-red-300' : 'border-gray-200'
+                errores.toleranciaMinutos ? 'border-red-300' : 'border-gray-200'
               }`}
             />
-            {errores.duracionMinutos && <p className="text-[11px] text-red-600 font-semibold mt-1">{errores.duracionMinutos}</p>}
+            <p className="text-[11px] text-gray-400 font-medium mt-1">
+              Minutos de gracia después de la hora de inicio para registrar asistencia a tiempo.
+            </p>
+            {errores.toleranciaMinutos && <p className="text-[11px] text-red-600 font-semibold mt-1">{errores.toleranciaMinutos}</p>}
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-2">
