@@ -7,7 +7,7 @@ import { LoteDetail } from '../components/LoteDetail';
 
 import { AgregarLoteForm } from '../components/AgregarLoteForm';
 import { TraspasarLoteModal } from '../components/TraspasarLoteModal';
-import { AsignarTitularLoteModal, TitularLoteAsignado } from '../components/Asignartitularlotemodal';
+import { AsignarTitularLoteModal, TitularLoteAsignado } from '../components/AsignarTitularLoteModal';
 import { Lote as LoteCompleto, PropietarioHistoricoLote } from '../types/typesLotes';
 import { Comunero } from '../../comuneros/types/types';
 
