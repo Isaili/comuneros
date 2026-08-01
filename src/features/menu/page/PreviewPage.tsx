@@ -8,8 +8,8 @@ import { ParcelasFeature } from '../../parcelas/page/ParcelasFeature';
 import { LotesFeature } from '../../lotes/page/LotesFeature';
 import MultasAsistenciasFeature from '../../multas-asistencias/page/MultasAsistenciasFeature';
 import KioscoQRFeature from '../../kiosco-qr/page/KioscoQRFeature';
+import BienvenidaComuneroFeature from '../../bienvenida-comunero/page/BienvenidaComuneroFeature';
 import ReportesFeature from '../../reportes/page/ReportesFeature';
-
 import { PredialPagos } from '../../pagos/page/PredialPagos';
 
 export const PreviewPage: React.FC = () => {
@@ -21,7 +21,6 @@ export const PreviewPage: React.FC = () => {
       {/* El Sidebar pasa el estado de la vista de forma global */}
       <Sidebar currentView={currentView} setView={setView} />
 
-      {/* Contenedor dinámico del panel derecho */}
       <main className="flex-1 min-w-0 p-4 sm:p-8 pt-20 lg:pt-8 space-y-8 overflow-y-auto h-screen">
 
         {/* VISTA: Dashboard */}
@@ -55,16 +54,33 @@ export const PreviewPage: React.FC = () => {
           <MultasAsistenciasFeature />
         )}
 
+
+        {currentView === 'reportes' && (
+          <div className="animate-fade-in">
+            <ReportesFeature />
+          </div>
+        )}
+
         {currentView === 'kiosco-qr' && (
           <KioscoQRFeature />
         )}
 
-        {currentView === 'reportes' && (
-          <ReportesFeature />
+        {currentView === 'Pantalla de Asistencia' && (
+          <BienvenidaComuneroFeature />
         )}
 
         {/* OTRAS VISTAS EN CONSTRUCCIÓN */}
-        {!['dashboard', 'comuneros', 'parcelas', 'lotes', 'pagos', 'multas-asistencias', 'kiosco-qr', 'reportes'].includes(currentView) && (
+        {![
+          'dashboard',
+          'comuneros',
+          'parcelas',
+          'lotes',
+          'pagos',
+          'multas-asistencias',
+          'kiosco-qr',
+          'reportes',
+          'Pantalla de Asistencia',
+        ].includes(currentView) && (
           <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 font-medium capitalize animate-fade-in">
             Sección de <span className="font-bold text-gray-700">{currentView.replace('-', ' ')}</span> en desarrollo.
           </div>

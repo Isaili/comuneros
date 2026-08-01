@@ -5,10 +5,14 @@ import { Users, FileText, Landmark, CircleDollarSign, Calendar } from "lucide-re
 import StatCard from "./StatCard";
 import IncomeChart from "./IncomeChart";
 import NextAssembly from "./NextAssembly";
-import AssemblyHistory from "./AssemblyHistory";
+import { HistorialReunionesList } from "../../menu/components/HistorialReunionesList";
+import { AsistentesReunionModal } from "../../menu/components/modals/AsistentesReunionModal";
+import { reunionesHistorialMock } from "../../reportes/mocks/reunionesHistorialMock";
+import { ReunionHistorial } from "../../reportes/types/types";
 
 export default function DashboardView() {
   const [fechaActual, setFechaActual] = useState<string>('');
+  const [reunionSeleccionada, setReunionSeleccionada] = useState<ReunionHistorial | null>(null);
 
   useEffect(() => {
     const opciones: Intl.DateTimeFormatOptions = {
@@ -23,7 +27,7 @@ export default function DashboardView() {
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
-      
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight font-serif flex items-center gap-2">
@@ -33,7 +37,7 @@ export default function DashboardView() {
             Resumen actualizado del estado de la Comisaría Comunal.
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm text-xs font-semibold text-gray-700 self-start sm:self-auto">
           <Calendar className="w-4 h-4 text-gray-400" />
           <span>FECHA ACTUAL:</span>
@@ -44,34 +48,34 @@ export default function DashboardView() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 sm:rounded-2xl min-w-0">
-        <StatCard 
-          title="Comuneros registrados" 
-          value="428" 
-          subtext="↗ 12 más que el mes pasado" 
+        <StatCard
+          title="Comuneros registrados"
+          value="428"
+          subtext="↗ 12 más que el mes pasado"
           icon={Users}
           iconBg="bg-[#E6F2E9]"
           iconColor="text-[#1F4D3C]"
         />
-        <StatCard 
-          title="Parcelas registradas" 
-          value="512" 
-          subtext="↗ 8 nuevas este mes" 
+        <StatCard
+          title="Parcelas registradas"
+          value="512"
+          subtext="↗ 8 nuevas este mes"
           icon={FileText}
           iconBg="bg-[#E6F2E9]"
           iconColor="text-[#1F4D3C]"
         />
-        <StatCard 
-          title="Lotes Registrados" 
-          value="37" 
-          subtext="$ 148,500 en adeudo" 
+        <StatCard
+          title="Lotes Registrados"
+          value="37"
+          subtext="$ 148,500 en adeudo"
           icon={Landmark}
           iconBg="bg-[#E6F2E9]"
           iconColor="text-[#1F4D3C]"
         />
-        <StatCard 
-          title="Ingresos del periodo" 
-          value="$286,400" 
-          subtext="↑ $18,650 vs. mes pasado" 
+        <StatCard
+          title="Ingresos del periodo"
+          value="$286,400"
+          subtext="↑ $18,650 vs. mes pasado"
           icon={CircleDollarSign}
           iconBg="bg-[#E6F2E9]"
           iconColor="text-[#1F4D3C]"
@@ -84,9 +88,13 @@ export default function DashboardView() {
         </div>
         <div className="flex flex-col gap-6 h-full min-w-0">
           <NextAssembly />
-          <AssemblyHistory />
+          <HistorialReunionesList reuniones={reunionesHistorialMock} onSeleccionar={setReunionSeleccionada} />
         </div>
       </div>
+
+      {reunionSeleccionada && (
+        <AsistentesReunionModal reunion={reunionSeleccionada} onClose={() => setReunionSeleccionada(null)} />
+      )}
 
     </div>
   );
