@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Landmark, FileText, Calendar, AlertCircle, Search, History, DollarSign, Check, ChevronDown, Move } from 'lucide-react';
-
-import { Comunero } from '../../comuneros/types/types';
+import React, { useState, useEffect } from 'react';
+import { X, Landmark, FileText, Calendar, AlertCircle, History, DollarSign, Move } from 'lucide-react';
 
 import { 
   Lote, 
@@ -12,14 +10,12 @@ import {
 } from '../types/typesLotes';
 
 interface AgregarLoteFormProps {
-  comunerosRegistrados: Comunero[];
   onClose: () => void;
   onGuardar: (nuevoLote: Lote) => void;
   loteAEditar?: Lote | null;
 }
 
 export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
-  comunerosRegistrados,
   onClose,
   onGuardar,
   loteAEditar
@@ -33,21 +29,9 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
   const [folioInterno, setFolioInterno] = useState<string>('');
   const [estadoPredialActual, setEstadoPredialActual] = useState<'Pagado' | 'Pagar'>('Pagar');
 
-  // 2. Estado para el Titular Único
-  const [comuneroId, setComuneroId] = useState<string>('');
-  const [nombreCompleto, setNombreCompleto] = useState<string>('');
-  const [certificado, setCertificado] = useState<string>('');
-  const [calidadAgraria, setCalidadAgraria] = useState<string>('Ejidatario');
-  const [actoJuridico, setActoJuridico] = useState<string>('Asignación');
-
-  // 3. Historiales vinculados
+  // 2. Historiales vinculados
   const [historialPropietarios, setHistorialPropietarios] = useState<PropietarioHistoricoLote[]>([]);
   const [historialPrediales, setHistorialPrediales] = useState<PredialHistoricoLote[]>([]);
-
-  // Estados del Buscador de Comuneros
-  const [busqueda, setBusqueda] = useState<string>('');
-  const [menuAbierto, setMenuAbierto] = useState<boolean>(false);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   // 🔄 Rellenado automático al abrir el formulario (Edición vs Creación)
   useEffect(() => {
@@ -57,44 +41,16 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
       setLargo(loteAEditar.largo || 10);
       setAncho(loteAEditar.ancho || 20);
       setEstadoPredialActual(loteAEditar.estadoPredial);
-      setCertificado(loteAEditar.certificado || '');
-      setCalidadAgraria(loteAEditar.calidadAgraria || 'Ejidatario');
-      setActoJuridico(loteAEditar.actoJuridico || 'Asignación');
       setHistorialPropietarios(loteAEditar.historialPropietarios || []);
       setHistorialPrediales(loteAEditar.historialPrediales || []);
       setObservaciones(loteAEditar.observaciones || '');
-      
-      if (loteAEditar.propietario) {
-        const comuneroEncontrado = comunerosRegistrados.find(
-          c => `${c.nombre} ${c.apellidos}`.toLowerCase() === loteAEditar.propietario.toLowerCase()
-        );
-        if (comuneroEncontrado) {
-          setComuneroId(comuneroEncontrado.id);
-          setNombreCompleto(`${comuneroEncontrado.nombre} ${comuneroEncontrado.apellidos}`);
-          setBusqueda(`${comuneroEncontrado.nombre} ${comuneroEncontrado.apellidos}`);
-        } else {
-          setNombreCompleto(loteAEditar.propietario);
-          setBusqueda(loteAEditar.propietario);
-        }
-      }
     } else {
       const numeroAleatorio = Math.floor(1000 + Math.random() * 9000);
       setFolioInterno(`L-${numeroAleatorio}`);
     }
-  }, [loteAEditar, comunerosRegistrados]);
+  }, [loteAEditar]);
 
-  // Manejador para cerrar menús al clickear fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setMenuAbierto(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // 🧮 FÓRMULAS CORREGIDAS (Tasa de $0.10 por m² para que 10x20m = $20 pesos)
+  // 🧮 FÓRMULAS (Tasa de $0.10 por m² para que 10x20m = $20 pesos)
   const superficieCalculadaM2 = largo * ancho;
   const costoPorM2 = 0.10; 
   const pagoPredialCalculado = superficieCalculadaM2 * costoPorM2;
@@ -129,11 +85,9 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!nombreCompleto.trim()) {
-      alert("Por favor, busque y seleccione un titular activo para este lote.");
-      return;
-    }
-
+    // ✅ Ya no se exige titular al registrar/editar el lote.
+    // Si se está editando, conservamos el propietario/certificado/calidad/acto
+    // que ya tenía (se gestionan desde "Asignar Titular" / "Traspasar").
     const nuevoLote: Lote = {
       folioInterno,
       numeroLote,
@@ -143,21 +97,16 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
       fechaRegistro,
       observaciones,
       estadoPredial: estadoPredialActual,
-      propietario: nombreCompleto,
-      certificado,
-      calidadAgraria,
-      actoJuridico,
+      propietario: loteAEditar?.propietario || '',
+      certificado: loteAEditar?.certificado || '',
+      calidadAgraria: loteAEditar?.calidadAgraria || '',
+      actoJuridico: loteAEditar?.actoJuridico || '',
       historialPropietarios,
       historialPrediales
     };
 
     onGuardar(nuevoLote);
   };
-
-  const filteredComuneros = comunerosRegistrados.filter(c => 
-    `${c.nombre} ${c.apellidos}`.toLowerCase().includes(busqueda.toLowerCase()) ||
-    c.folioComunero.toLowerCase().includes(busqueda.toLowerCase())
-  ).slice(0, 5);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 overflow-y-auto">
@@ -172,9 +121,11 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
               <span className="p-1.5 bg-emerald-700/10 text-emerald-700 rounded-lg">
                 <Landmark className="w-4 h-4" />
               </span>
-              {loteAEditar ? 'Modificar Registro de Lote Habitacional' : 'Alta Integral de Lote Habitacional'}
+              {loteAEditar ? 'Modificar Registro de Lote Habitacional' : 'Alta de Lote Habitacional'}
             </h3>
-            <p className="text-xs text-gray-400 font-medium mt-0.5">Control de dimensiones individuales, propiedad privada no transferible de forma múltiple e historial contributivo.</p>
+            <p className="text-xs text-gray-400 font-medium mt-0.5">
+              Registro físico y fiscal del lote. La asignación de titular se realiza por separado, desde el expediente.
+            </p>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100"><X className="w-4 h-4" /></button>
         </div>
@@ -238,120 +189,42 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
             </div>
           </div>
 
-          {/* Fila Calculadora: Superficie y Costo Predial Modificado */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+          {/* Fila Calculadora: Superficie, Costo Predial y estado de titular */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-emerald-100/60 text-emerald-800 rounded-xl"><Move className="w-5 h-5 animate-pulse" /></div>
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Medida de Superficie Resultante</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Superficie Resultante</p>
                 <p className="text-base font-black text-gray-900">
                   {ancho}m × {largo}m = <span className="text-emerald-700">{superficieCalculadaM2.toFixed(2)} m²</span>
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 md:justify-end">
+            <div className="flex items-center gap-3">
               <div className="p-3 bg-slate-100 text-gray-700 rounded-xl"><DollarSign className="w-5 h-5" /></div>
               <div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-wide">Predial Calculado ($0.10 por m²)</p>
                 <p className="text-base font-black text-gray-900">${pagoPredialCalculado.toFixed(2)} MXN</p>
               </div>
             </div>
-          </div>
-
-          {/* SECCIÓN 1: TITULAR VIGENTE DEL LOTE */}
-          <div className="space-y-3">
-            <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider text-emerald-800">1. Propietario o Titular Vigente (Límite: 1)</h4>
-            
-            <div className="border border-gray-100 rounded-xl shadow-xs p-4 bg-slate-50/40 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                
-                {/* Selector/Buscador del Comunero */}
-                <div className="space-y-1.5 relative" ref={dropdownRef}>
-                  <label className="text-gray-500 font-bold block">Buscar Titular *</label>
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                    <input
-                      type="text"
-                      required
-                      placeholder="🔎 Escriba nombre o folio..."
-                      value={busqueda}
-                      onFocus={() => setMenuAbierto(true)}
-                      onChange={(e) => {
-                        setBusqueda(e.target.value);
-                        setMenuAbierto(true);
-                        if (!e.target.value) {
-                          setComuneroId('');
-                          setNombreCompleto('');
-                        }
-                      }}
-                      className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-800 font-bold outline-none focus:border-emerald-700 text-xs"
-                    />
-                  </div>
-
-                  {menuAbierto && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
-                      {filteredComuneros.length > 0 ? (
-                        filteredComuneros.map(c => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => {
-                              setComuneroId(c.id);
-                              setNombreCompleto(`${c.nombre} ${c.apellidos}`);
-                              setBusqueda(`${c.nombre} ${c.apellidos}`);
-                              setMenuAbierto(false);
-                            }}
-                            className="w-full text-left px-3 py-2 hover:bg-emerald-50 text-gray-700 font-semibold flex items-center justify-between border-b border-gray-50 last:border-0"
-                          >
-                            <div>
-                              <p className="text-gray-900 text-xs font-bold">{c.nombre} {c.apellidos}</p>
-                              <p className="text-[10px] text-gray-400 font-medium">{c.tipo.toUpperCase()} • Folio: {c.folioComunero}</p>
-                            </div>
-                            {comuneroId === c.id && <Check className="w-4 h-4 text-emerald-700" />}
-                          </button>
-                        ))
-                      ) : (
-                        <div className="p-3 text-center text-gray-400 text-[11px] font-medium">Ningún comunero coincide con el término.</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Certificado */}
-                <div className="space-y-1.5">
-                  <label className="text-gray-500 font-bold block">Nº de Certificado Habitacional *</label>
-                  <input type="text" required placeholder="CERT-LOTE-XXXX" value={certificado} onChange={(e) => setCertificado(e.target.value)} className="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-gray-800 outline-none focus:border-emerald-700 text-xs" />
-                </div>
-
-                {/* Calidad Agraria */}
-                <div className="space-y-1.5">
-                  <label className="text-gray-500 font-bold block">Calidad Agraria</label>
-                  <select value={calidadAgraria} onChange={(e) => setCalidadAgraria(e.target.value)} className="w-full px-1.5 py-2 bg-white border border-gray-200 rounded-lg outline-none text-xs">
-                    <option value="Ejidatario">Ejidatario(a)</option>
-                    <option value="Avecindado">Avecindado(a)</option>
-                    <option value="Posesionario">Posesionario(a)</option>
-                  </select>
-                </div>
-
-                {/* Acto de Adquisición */}
-                <div className="space-y-1.5">
-                  <label className="text-gray-500 font-bold block">Acto de Adquisición</label>
-                  <select value={actoJuridico} onChange={(e) => setActoJuridico(e.target.value)} className="w-full px-1.5 py-2 bg-white border border-gray-200 rounded-lg outline-none text-xs">
-                    <option value="Asignación">Asignación Directa</option>
-                    <option value="Cesión de derechos">Cesión de derechos</option>
-                    <option value="Sucesión">Sucesión hereditaria</option>
-                  </select>
-                </div>
-
-              </div>
+            <div className="md:text-right">
+              {loteAEditar?.propietario ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+                  Titular: {loteAEditar.propietario}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
+                  Sin titular asignado — se asigna después de guardar
+                </span>
+              )}
             </div>
           </div>
 
-          {/* SECCIÓN 2: TRACTO SUCESIVO */}
+          {/* SECCIÓN 1: TRACTO SUCESIVO */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider flex items-center gap-1 text-amber-800">
-                <History className="w-4 h-4" /> 2. Historial Registral de Dueños Pasados (Subdivisiones o Traspasos)
+                <History className="w-4 h-4" /> 1. Historial Registral de Dueños Pasados (Subdivisiones o Traspasos)
               </h4>
               <button type="button" onClick={agregarPropietarioHistorico} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg hover:bg-amber-100/60">
                 Registrar Antecesor
@@ -401,11 +274,11 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
             </div>
           </div>
 
-          {/* SECCIÓN 3: HISTORIAL DE PREDIALES PASADOS */}
+          {/* SECCIÓN 2: HISTORIAL DE PREDIALES PASADOS */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider flex items-center gap-1 text-red-800">
-                <DollarSign className="w-4 h-4" /> 3. Historial de Pagos Prediales (Años Anteriores)
+                <DollarSign className="w-4 h-4" /> 2. Historial de Pagos Prediales (Años Anteriores)
               </h4>
               <button type="button" onClick={agregarPredialHistorico} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-800 border border-red-200 rounded-lg hover:bg-red-100/60">
                 Registrar Año Fiscal Pasado
