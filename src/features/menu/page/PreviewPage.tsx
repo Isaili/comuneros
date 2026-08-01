@@ -78,7 +78,6 @@ export const PreviewPage: React.FC = () => {
           'pagos',
           'multas-asistencias',
           'kiosco-qr',
-          'reportes',
           'Pantalla de Asistencia',
         ].includes(currentView) && (
           <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 font-medium capitalize animate-fade-in">

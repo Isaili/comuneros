@@ -109,7 +109,6 @@ export const ComunerosList: React.FC<ListProps> = ({
                 <th className="py-3 px-2">Nombre</th>
                 <th className="py-3 px-2">Tipo</th>
                 <th className="py-3 px-2">Fecha de nacimiento</th>
-                <th className="py-3 px-2">Estado civil</th>
                 <th className="py-3 px-2">Colonia</th>
                 <th className="py-3 px-2 text-right">Acciones</th>
               </tr>
