@@ -39,7 +39,7 @@ const MOCK_COMUNEROS: Comunero[] = [
     tipo: "comunero",
     fechaNacimiento: "1975-04-12",
     edad: 51,
-    estadoCivil: "Casado",
+   
     direccion: "Av. de los Ejidos #45",
     colonia: "San Isidro",
     telefono: "9511234567",
@@ -57,7 +57,7 @@ const MOCK_COMUNEROS: Comunero[] = [
     tipo: "avecindado",
     fechaNacimiento: "1988-11-23",
     edad: 37,
-    estadoCivil: "Soltero",
+
     direccion: "Calle Benito Juárez #10",
     colonia: "Centro",
     telefono: "9519876543",
@@ -75,7 +75,7 @@ const MOCK_COMUNEROS: Comunero[] = [
     tipo: "comunero",
     fechaNacimiento: "1980-03-15",
     edad: 46,
-    estadoCivil: "Casado",
+
     direccion: "Calle Miguel Hidalgo #123",
     colonia: "Santa Ana",
     telefono: "9611234567",

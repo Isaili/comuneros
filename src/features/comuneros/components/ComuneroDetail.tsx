@@ -30,7 +30,6 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-medium text-gray-500 pt-1">
               <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-400" /> {comunero.fechaNacimiento} ({comunero.edad} años)</div>
               <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-gray-400" /> {comunero.telefono}</div>
-              <div className="flex items-center gap-2"><Heart className="w-4 h-4 text-gray-400" /> {comunero.estadoCivil}</div>
               <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-gray-400" /> {comunero.direccion}</div>
               <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-400" /> Reg: {comunero.fechaRegistro}</div>
               <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-gray-400" /> Colonia: {comunero.colonia}</div>

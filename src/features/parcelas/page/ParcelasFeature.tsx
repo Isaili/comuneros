@@ -7,11 +7,11 @@ import { ParcelasList } from '../components/ParcelasList';
 import { ParcelaDetail } from '../components/ParcelaDetail';
 import { AgregarParcelaForm } from '../components/AgregarParcelaForm'; 
 import { TraspasarParcelaModal } from '../components/TraspasarParcelaModal'; 
+import { AsignarTitularModal } from '../components/AsignarTitularModal';
 import { Comunero } from '../../comuneros/types/types'; 
 
-import { Parcela, PropietarioHistorico } from '../types/typesParcela'; 
+import { Parcela, PropietarioHistorico, TitularFila } from '../types/typesParcela'; 
 
-// Tipamos la payload que entrega el TraspasarParcelaModal
 interface DatosTraspasoPayload {
   nuevosPropietarios?: Array<{
     nombre?: string;
@@ -34,6 +34,8 @@ const MOCK_PARCELAS: Parcela[] = [
   { id: '1', numero: 'P-001', superficie: '2.50 ha', titularesCount: 2, propietarios: ['José Antonio Hernández López', 'María Guadalupe Pérez Martínez'], estadoPredial: 'Pagado', historialPropietarios: [], historialPrediales: [] },
   { id: '2', numero: 'P-002', superficie: '1.75 ha', titularesCount: 1, propietarios: ['José Antonio Hernández López'], estadoPredial: 'Pagado', historialPropietarios: [], historialPrediales: [] },
   { id: '3', numero: 'P-003', superficie: '3.20 ha', titularesCount: 3, propietarios: ['María Guadalupe Pérez Martínez', 'Isabel Hernández López'], estadoPredial: 'Pagar', historialPropietarios: [], historialPrediales: [] },
+  // Ejemplo de parcela registrada SIN titular todavía
+  { id: '4', numero: 'P-004', superficie: '4.00 ha', titularesCount: 0, propietarios: [], estadoPredial: 'Pagar', historialPropietarios: [], historialPrediales: [] },
 ];
 
 const MOCK_COMUNEROS_REGISTRADOS: Comunero[] = [
@@ -44,7 +46,6 @@ const MOCK_COMUNEROS_REGISTRADOS: Comunero[] = [
     tipo: 'comunero',
     fechaNacimiento: '15/03/1980',
     edad: 46,
-    estadoCivil: 'Casado',
     direccion: 'Calle Miguel Hidalgo #123',
     colonia: 'Santa Ana',
     telefono: '961 123 4567',
@@ -62,7 +63,6 @@ const MOCK_COMUNEROS_REGISTRADOS: Comunero[] = [
     tipo: 'avecindado',
     fechaNacimiento: '15/03/1980',
     edad: 46,
-    estadoCivil: 'Casado',
     direccion: 'Calle Miguel Hidalgo #123',
     colonia: 'Centro',
     telefono: '961 123 4567',
@@ -79,7 +79,6 @@ const MOCK_COMUNEROS_REGISTRADOS: Comunero[] = [
     apellidos: 'Pérez Martínez',
     tipo: 'comunero',
     fechaNacimiento: '22/07/1985',
-    estadoCivil: 'Casado',
     edad: 40,
     direccion: 'Av. Central Oriente #45',
     colonia: 'San José',
@@ -103,6 +102,7 @@ export const ParcelasFeature: React.FC = () => {
 
   const [parcelaATraspasar, setParcelaATraspasar] = useState<Parcela | null>(null);
   const [parcelaAEditar, setParcelaAEditar] = useState<Parcela | null>(null);
+  const [parcelaAAsignarTitular, setParcelaAAsignarTitular] = useState<Parcela | null>(null);
 
   const handleGuardarParcela = (datosFormulario: Partial<Parcela> & { titulares?: Array<{ nombreCompleto: string }> }) => {
     const rawSuperficie = datosFormulario.superficie || '';
@@ -118,7 +118,7 @@ export const ParcelasFeature: React.FC = () => {
             ...p,
             numero: datosFormulario.numero || datosFormulario.folioInterno || p.numero,
             superficie: rawSuperficie.includes('ha') ? rawSuperficie : formatoSuperficie,
-            titularesCount: datosFormulario.titularesCount || datosFormulario.titulares?.length || p.titularesCount,
+            titularesCount: datosFormulario.titularesCount ?? datosFormulario.titulares?.length ?? p.titularesCount,
             propietarios: datosFormulario.propietarios || (datosFormulario.titulares?.map(t => t.nombreCompleto) ?? p.propietarios),
             estadoPredial: datosFormulario.estadoPredial || p.estadoPredial,
             historialPropietarios: datosFormulario.historialPropietarios || p.historialPropietarios,
@@ -133,8 +133,8 @@ export const ParcelasFeature: React.FC = () => {
         id: Date.now().toString(),
         numero: datosFormulario.numero || datosFormulario.folioInterno || 'P-000',
         superficie: formatoSuperficie,
-        titularesCount: datosFormulario.titularesCount || datosFormulario.titulares?.length || 1,
-        propietarios: datosFormulario.propietarios || (datosFormulario.titulares?.map(t => t.nombreCompleto) ?? ['Sin propietario asignado']),
+        titularesCount: datosFormulario.titularesCount ?? datosFormulario.titulares?.length ?? 0,
+        propietarios: datosFormulario.propietarios || (datosFormulario.titulares?.map(t => t.nombreCompleto) ?? []),
         estadoPredial: datosFormulario.estadoPredial || 'Pagar',
         historialPropietarios: datosFormulario.historialPropietarios || [],
         historialPrediales: datosFormulario.historialPrediales || []
@@ -155,7 +155,32 @@ export const ParcelasFeature: React.FC = () => {
     setParcelaAEditar(null);
   };
 
-  // Función ajustada con contrato estricto
+  const handleTraspasarClick = (parcela: Parcela) => {
+    const sinTitular = !parcela.propietarios || parcela.propietarios.length === 0;
+    if (sinTitular) {
+      setParcelaAAsignarTitular(parcela);
+    } else {
+      setParcelaATraspasar(parcela);
+    }
+  };
+
+  
+  const handleConfirmarAsignacion = (titulares: TitularFila[]) => {
+    if (!parcelaAAsignarTitular) return;
+
+    setParcelas(prev => prev.map(p => {
+      if (p.id !== parcelaAAsignarTitular.id) return p;
+      return {
+        ...p,
+        propietarios: titulares.map(t => t.nombreCompleto),
+        titularesCount: titulares.length,
+      };
+    }));
+
+    setParcelaAAsignarTitular(null);
+  };
+
+
   const handleEjecutarTraspaso = (datosTraspaso: DatosTraspasoPayload) => {
     if (!parcelaATraspasar) return;
 
@@ -239,7 +264,7 @@ export const ParcelasFeature: React.FC = () => {
             parcelas={filteredParcelas}
             selectedId={selectedParcela?.id ?? ""} 
             onSelect={setSelectedParcela}
-            onTraspasar={setParcelaATraspasar}
+            onTraspasar={handleTraspasarClick}
             onEditar={handleEditarClick}
           />
         ) : (
@@ -284,6 +309,15 @@ export const ParcelasFeature: React.FC = () => {
           comunerosRegistrados={comuneros}
           onClose={() => setParcelaATraspasar(null)}
           onConfirmar={handleEjecutarTraspaso}
+        />
+      )}
+
+      {parcelaAAsignarTitular && (
+        <AsignarTitularModal
+          parcela={parcelaAAsignarTitular}
+          comunerosRegistrados={comuneros}
+          onClose={() => setParcelaAAsignarTitular(null)}
+          onAsignar={handleConfirmarAsignacion}
         />
       )}
 

@@ -153,7 +153,6 @@ export const ComunerosList: React.FC<ListProps> = ({
                   <td className="py-3 px-2 text-gray-600 font-medium whitespace-nowrap">
                     {c.fechaNacimiento}
                   </td>
-                  <td className="py-3 px-2 text-gray-600 font-medium">{c.estadoCivil}</td>
                   <td className="py-3 px-2 text-gray-600 font-medium truncate max-w-[160px]">
                     {c.colonia}
                   </td>
