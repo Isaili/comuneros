@@ -34,61 +34,55 @@ const MOCK_PARCELAS: Parcela[] = [
   { id: '1', numero: 'P-001', superficie: '2.50 ha', titularesCount: 2, propietarios: ['José Antonio Hernández López', 'María Guadalupe Pérez Martínez'], estadoPredial: 'Pagado', historialPropietarios: [], historialPrediales: [] },
   { id: '2', numero: 'P-002', superficie: '1.75 ha', titularesCount: 1, propietarios: ['José Antonio Hernández López'], estadoPredial: 'Pagado', historialPropietarios: [], historialPrediales: [] },
   { id: '3', numero: 'P-003', superficie: '3.20 ha', titularesCount: 3, propietarios: ['María Guadalupe Pérez Martínez', 'Isabel Hernández López'], estadoPredial: 'Pagar', historialPropietarios: [], historialPrediales: [] },
-  // Ejemplo de parcela registrada SIN titular todavía
   { id: '4', numero: 'P-004', superficie: '4.00 ha', titularesCount: 0, propietarios: [], estadoPredial: 'Pagar', historialPropietarios: [], historialPrediales: [] },
 ];
 
+// Corregido: MOCK_COMUNEROS con apellidoPaterno y apellidoMaterno
 const MOCK_COMUNEROS_REGISTRADOS: Comunero[] = [
   {
     id: '1',
     nombre: 'Isabel',
-    apellidos: 'Hernández López',
+    apellidoPaterno: 'Hernández',
+    apellidoMaterno: 'López',
     tipo: 'comunero',
-    fechaNacimiento: '15/03/1980',
-    edad: 46,
-    direccion: 'Calle Miguel Hidalgo #123',
-    colonia: 'Santa Ana',
+    estadoCivil: 'casado',
+    fechaNacimiento: '1980-03-15',
+    vecindario: 'Santa Ana',
     telefono: '961 123 4567',
-    fechaRegistro: '10 de enero de 2010',
-    folioComunero: 'COM-0042',
+    fechaRegistro: '2010-01-10',
     fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0042',
-    activo: true,
-    terrenos: []
+    activo: true
   },
   {
     id: '2',
     nombre: 'José Antonio',
-    apellidos: 'Hernández López',
+    apellidoPaterno: 'Hernández',
+    apellidoMaterno: 'López',
     tipo: 'avecindado',
-    fechaNacimiento: '15/03/1980',
-    edad: 46,
-    direccion: 'Calle Miguel Hidalgo #123',
-    colonia: 'Centro',
+    estadoCivil: 'soltero',
+    fechaNacimiento: '1980-03-15',
+    vecindario: 'Centro',
     telefono: '961 123 4567',
-    fechaRegistro: '10 de enero de 2010',
-    folioComunero: 'COM-0043',
+    fechaRegistro: '2010-01-10',
     fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0043',
-    activo: true,
-    terrenos: []
+    activo: true
   },
   {
     id: '3',
     nombre: 'María Guadalupe',
-    apellidos: 'Pérez Martínez',
+    apellidoPaterno: 'Pérez',
+    apellidoMaterno: 'Martínez',
     tipo: 'comunero',
-    fechaNacimiento: '22/07/1985',
-    edad: 40,
-    direccion: 'Av. Central Oriente #45',
-    colonia: 'San José',
+    estadoCivil: 'casado',
+    fechaNacimiento: '1985-07-22',
+    vecindario: 'San José',
     telefono: '961 987 6543',
-    fechaRegistro: '15 de marzo de 2014',
-    folioComunero: 'COM-0089',
+    fechaRegistro: '2014-03-15',
     fotografia: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200',
     qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0089',
-    activo: true,
-    terrenos: []
+    activo: true
   }
 ];
 
@@ -164,22 +158,20 @@ export const ParcelasFeature: React.FC = () => {
     }
   };
 
-  
-  const handleConfirmarAsignacion = (titulares: TitularFila[]) => {
+  const handleConfirmarAsignacion = (comuneroId: string, nombreCompleto: string) => {
     if (!parcelaAAsignarTitular) return;
 
     setParcelas(prev => prev.map(p => {
       if (p.id !== parcelaAAsignarTitular.id) return p;
       return {
         ...p,
-        propietarios: titulares.map(t => t.nombreCompleto),
-        titularesCount: titulares.length,
+        propietarios: [nombreCompleto],
+        titularesCount: 1,
       };
     }));
 
     setParcelaAAsignarTitular(null);
   };
-
 
   const handleEjecutarTraspaso = (datosTraspaso: DatosTraspasoPayload) => {
     if (!parcelaATraspasar) return;
@@ -314,7 +306,6 @@ export const ParcelasFeature: React.FC = () => {
 
       {parcelaAAsignarTitular && (
         <AsignarTitularModal
-          parcela={parcelaAAsignarTitular}
           comunerosRegistrados={comuneros}
           onClose={() => setParcelaAAsignarTitular(null)}
           onAsignar={handleConfirmarAsignacion}

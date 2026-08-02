@@ -1,207 +1,123 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Comunero } from '../types/types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Comunero, CrearComuneroPayload } from '../types/types';
+import { comunerosApi } from '../services/comunerosApi';
 import { ComunerosHeader } from '../components/ComunerosHeader';
 import { ComunerosList } from '../components/ComunerosList';
 import { ComuneroDetail } from '../components/ComuneroDetail';
-import { AgregarComuneroForm } from '../components/AgregarComuneroForm'; 
-
-const MOCK_COMUNEROS: Comunero[] = [
-  {
-    id: '1',
-    nombre: 'Isabel',
-    apellidos: 'Hernández López',
-    tipo: 'comunero',
-    fechaNacimiento: '15/03/1980',
-    edad: 65, 
-    direccion: 'Calle Miguel Hidalgo #123',
-    colonia: 'Santa Ana',
-    telefono: '961 123 4567',
-    fechaRegistro: '10 de enero de 2010',
-    folioComunero: 'COM-0042',
-    fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
-    qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0042',
-    activo: true,
-    terrenos: [
-
-      { tipo: 'Parcela', numero: 155, folio: 'P-0155', certificado: 'CERT-15857', superficie: '2.50 ha', ubicacion: 'Ejido Copainalá', hectareasPosesion: 2.5 },
-      { tipo: 'Parcela', numero: 257, folio: 'P-0627', certificado: 'CERT-23565', superficie: '1.75 ha', ubicacion: 'Ejido Copainalá', hectareasPosesion: 1.75 },
-      { tipo: 'Lote', numero: 85, folio: 'L-008', superficie: '300 m²', ubicacion: 'Barrio San José', hectareasPosesion: 0.03 }
-    ]
-  },
-  {
-    id: '2',
-    nombre: 'José Antonio',
-    apellidos: 'Hernández López',
-    tipo: 'avecindado',
-    fechaNacimiento: '15/03/1980',
-    edad: 46,
-    direccion: 'Calle Miguel Hidalgo #123',
-    colonia: 'Centro',
-    telefono: '961 123 4567',
-    fechaRegistro: '10 de enero de 2010',
-    folioComunero: 'COM-0042',
-    fotografia: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=200',
-    qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0042',
-    activo: true,
-    terrenos: [
-
-      { tipo: 'Parcela', numero: 15, folio: 'P-015', certificado: 'CERT-1587', superficie: '2.50 ha', hectareasPosesion: 2.50, ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Parcela', numero: 27, folio: 'P-027', certificado: 'CERT-2365', superficie: '1.75 ha', hectareasPosesion: 1.75, ubicacion: 'Ejido Copainalá' },
-      { tipo: 'Lote', numero: 8, folio: 'L-008', superficie: '300 m²', hectareasPosesion: 0.03, ubicacion: 'Barrio San José' }
-
-  
-    ]
-  },
-  {
-    id: '3',
-    nombre: 'María Guadalupe',
-    apellidos: 'Pérez Martínez',
-    tipo: 'comunero',
-    fechaNacimiento: '22/07/1985',
-    edad: 40,
-    direccion: 'Av. Central Oriente #45',
-    colonia: 'San José',
-    telefono: '961 987 6543',
-    fechaRegistro: '15 de marzo de 2014',
-    folioComunero: 'COM-0089',
-    fotografia: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200',
-    qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=COM-0089',
-    activo: true,
-    terrenos: [
-
-      { tipo: 'Parcela', numero: 4, folio: 'P-004', certificado: 'CERT-0921', superficie: '3.10 ha', hectareasPosesion: 3.10, ubicacion: 'Ejido Copainalá' }
-
-     
-    ]
-  }
-];
+import { AgregarComuneroForm } from '../components/AgregarComuneroForm';
 
 export const ComunerosFeature: React.FC = () => {
-  const [comuneros, setComuneros] = useState<Comunero[]>(MOCK_COMUNEROS);
-  
+  const [comuneros, setComuneros] = useState<Comunero[]>([]);
+
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+
   const [selectedComunero, setSelectedComunero] = useState<Comunero | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [comuneroAEditar, setComuneroAEditar] = useState<Comunero | null>(null);
 
+  const cargarComuneros = useCallback(async (paginaActual: number) => {
+    setIsLoading(true);
+    try {
+      const { comuneros: lista, totalPages: paginasTotales } = await comunerosApi.listar(paginaActual, limit);
+      setComuneros(lista);
+      setTotalPages(paginasTotales);
+    } catch (err) {
+      console.error('Error al cargar comuneros:', err);
+      setComuneros([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [limit]);
+
+  useEffect(() => {
+    cargarComuneros(page);
+  }, [page, cargarComuneros]);
+
   const handleSearch = (text: string) => setSearchTerm(text);
-  
+
   const handleAddComunero = () => {
     setComuneroAEditar(null);
     setIsAddModalOpen(true);
   };
 
-  // Función unificada para guardar (crear o actualizar) un miembro
-  const handleGuardarNuevoComunero = (datosFormulario: any) => {
-    const esEdicion = !!comuneroAEditar;
+  const handleGuardarNuevoComunero = async (
+    payload: CrearComuneroPayload,
+    fotoFile?: File | Blob | string | null
+  ) => {
+    try {
+      // Si recibes un File/Blob lo envía directamente; si es un string o null no fuerza el archivo
+      const archivoAEnviar = fotoFile instanceof Blob ? fotoFile : null;
 
-    if (esEdicion) {
-      setComuneros(prev => prev.map(c => {
-        if (c.id === comuneroAEditar!.id) {
-          let fechaNacimientoFormateada = datosFormulario.fechaNacimiento;
-          if (datosFormulario.fechaNacimiento.includes('-')) {
-            const partes = datosFormulario.fechaNacimiento.split('-');
-            fechaNacimientoFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
-          }
-
-          const nuevaEdad = datosFormulario.fechaNacimiento 
-            ? new Date().getFullYear() - new Date(datosFormulario.fechaNacimiento).getFullYear() 
-            : c.edad;
-
-          return {
-            ...c,
-            nombre: datosFormulario.nombre,
-            apellidos: datosFormulario.apellidos,
-            tipo: datosFormulario.tipoComunero as 'comunero' | 'avecindado',
-            fechaNacimiento: fechaNacimientoFormateada,
-            edad: nuevaEdad,
-            direccion: datosFormulario.direccion || 'Sin dirección registrada',
-            colonia: datosFormulario.colonia,
-            telefono: datosFormulario.telefono || '',
-            correo: datosFormulario.correo || '',
-            fotografia: datosFormulario.fotografia,
-          };
-        }
-        return c;
-      }));
-
-      if (selectedComunero?.id === comuneroAEditar!.id) {
-        setSelectedComunero(null);
+      if (comuneroAEditar) {
+        await comunerosApi.actualizar(comuneroAEditar.id, payload, archivoAEnviar);
+      } else {
+        await comunerosApi.crear(payload, archivoAEnviar);
       }
-
-    } else {
-      const numeroFolio = Math.floor(1000 + Math.random() * 9000);
-      const folioGenerado = `COM-${numeroFolio}`;
-      const idGenerado = Date.now().toString();
-
-      let fechaNacimientoFormateada = datosFormulario.fechaNacimiento;
-      if (datosFormulario.fechaNacimiento.includes('-')) {
-        const partes = datosFormulario.fechaNacimiento.split('-');
-        fechaNacimientoFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+      
+      setIsAddModalOpen(false);
+      setComuneroAEditar(null);
+      await cargarComuneros(page); // Refresca la lista
+    } catch (err: any) {
+      if (err.response) {
+        console.error('❌ Error devuelto por el servidor:', err.response.data);
+        const errorMsg = err.response.data.message || 'Error al procesar la solicitud.';
+        alert(`No se pudo guardar: ${Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg}`);
+      } else {
+        console.error('Error al guardar comunero:', err);
+        alert('No se pudo guardar el registro. Revisa la conexión con el servidor.');
       }
-
-      const comuneroFormateado: Comunero = {
-        id: idGenerado,
-        nombre: datosFormulario.nombre,
-        apellidos: datosFormulario.apellidos,
-        tipo: datosFormulario.tipoComunero as 'comunero' | 'avecindado',
-        fechaNacimiento: fechaNacimientoFormateada,
-        edad: datosFormulario.fechaNacimiento ? new Date().getFullYear() - new Date(datosFormulario.fechaNacimiento).getFullYear() : 30,
-        direccion: datosFormulario.direccion || 'Sin dirección registrada',
-        colonia: datosFormulario.colonia,
-        telefono: datosFormulario.telefono || '',
-        fechaRegistro: new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }),
-        folioComunero: folioGenerado,
-        fotografia: datosFormulario.fotografia,
-        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${folioGenerado}`,
-        activo: true,
-        terrenos: []
-      };
-
-      setComuneros(prev => [comuneroFormateado, ...prev]);
     }
-
-    setIsAddModalOpen(false);
-    setComuneroAEditar(null);
   };
 
   const handleEdit = (id: string) => {
-    const comuneroBuscado = comuneros.find(c => c.id === id);
+    const comuneroBuscado = comuneros.find((c) => c.id === id);
     if (comuneroBuscado) {
       setComuneroAEditar(comuneroBuscado);
       setIsAddModalOpen(true);
     }
   };
-  
-  const handleDelete = (id: string) => {
-    if (confirm("¿Estás seguro de que deseas eliminar este registro?")) {
-      setComuneros(prev => prev.filter(c => c.id !== id));
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
+    try {
+      await comunerosApi.eliminar(id);
+      await cargarComuneros(page);
       if (selectedComunero?.id === id) setSelectedComunero(null);
+    } catch (err) {
+      console.error('Error al eliminar comunero:', err);
+      alert('No se pudo eliminar el registro.');
     }
   };
 
-  const filteredComuneros = comuneros.filter(c => 
-    `${c.nombre} ${c.apellidos}`.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredComuneros = comuneros.filter((c) =>
+    `${c.nombre} ${c.apellidoPaterno} ${c.apellidoMaterno}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
-      
-      <ComunerosHeader 
-        onAddClick={handleAddComunero} 
-        onSearchChange={handleSearch} 
-      />
+      <ComunerosHeader onAddClick={handleAddComunero} onSearchChange={handleSearch} />
 
       <div className="w-full">
-        {filteredComuneros.length > 0 ? (
-          <ComunerosList 
+        {isLoading ? (
+          <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 text-sm">
+            Cargando comuneros...
+          </div>
+        ) : filteredComuneros.length > 0 ? (
+          <ComunerosList
             comuneros={filteredComuneros}
-            selectedId={selectedComunero?.id ?? ""}
+            selectedId={selectedComunero?.id ?? ''}
             onSelect={setSelectedComunero}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
           />
         ) : (
           <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-12 text-center text-gray-400 font-medium text-xs sm:text-sm shadow-sm">
@@ -216,7 +132,7 @@ export const ComunerosFeature: React.FC = () => {
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10 animate-slide-up">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-20">
               <h3 className="text-lg font-bold text-gray-800">Expediente del Comunero</h3>
-              <button 
+              <button
                 onClick={() => setSelectedComunero(null)}
                 className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-semibold transition-colors"
               >
@@ -224,8 +140,8 @@ export const ComunerosFeature: React.FC = () => {
               </button>
             </div>
             <div className="p-6">
-              <ComuneroDetail 
-                comunero={selectedComunero} 
+              <ComuneroDetail
+                comunero={selectedComunero}
                 onEdit={(id) => {
                   setSelectedComunero(null);
                   handleEdit(id);
@@ -238,7 +154,7 @@ export const ComunerosFeature: React.FC = () => {
       )}
 
       {isAddModalOpen && (
-        <AgregarComuneroForm 
+        <AgregarComuneroForm
           onClose={() => {
             setIsAddModalOpen(false);
             setComuneroAEditar(null);
@@ -247,7 +163,6 @@ export const ComunerosFeature: React.FC = () => {
           comuneroAEditar={comuneroAEditar}
         />
       )}
-
     </div>
   );
 };
