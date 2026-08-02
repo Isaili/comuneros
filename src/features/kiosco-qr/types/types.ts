@@ -8,6 +8,7 @@ export interface Reunion {
   lugar: string;
   estado: EstadoReunion;
   toleranciaMinutos: number; 
+  duracionMinutos: number;
 }
 
 export interface ComuneroKiosco {

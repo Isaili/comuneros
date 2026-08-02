@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { X, CalendarPlus, MapPin, Clock, FileText, Hourglass } from 'lucide-react';
+import { X, CalendarPlus, MapPin, Clock, FileText, Hourglass, Timer } from 'lucide-react';
 import { Reunion } from '../../types/types';
 
 interface CrearReunionModalProps {
@@ -15,6 +15,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
   const [horaInicio, setHoraInicio] = useState('');
   const [lugar, setLugar] = useState('');
   const [toleranciaMinutos, setToleranciaMinutos] = useState(15);
+  const [duracionMinutos, setDuracionMinutos] = useState(90);
   const [errores, setErrores] = useState<Record<string, string>>({});
 
   const validar = () => {
@@ -24,6 +25,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
     if (!horaInicio) nuevosErrores.horaInicio = 'Selecciona una hora.';
     if (!lugar.trim()) nuevosErrores.lugar = 'Ingresa el lugar.';
     if (!toleranciaMinutos || toleranciaMinutos <= 0) nuevosErrores.toleranciaMinutos = 'Tolerancia inválida.';
+    if (!duracionMinutos || duracionMinutos <= 0) nuevosErrores.duracionMinutos = 'Duración inválida.';
     setErrores(nuevosErrores);
     return Object.keys(nuevosErrores).length === 0;
   };
@@ -31,7 +33,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validar()) return;
-    onCrear({ nombre: nombre.trim(), fecha, horaInicio, lugar: lugar.trim(), toleranciaMinutos });
+    onCrear({ nombre: nombre.trim(), fecha, horaInicio, lugar: lugar.trim(), toleranciaMinutos, duracionMinutos });
   };
 
   return (
@@ -49,7 +51,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           <div>
             <label className="text-xs text-gray-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
               <FileText className="w-3 h-3" /> Nombre de la asamblea
@@ -68,9 +70,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
-                Fecha
-              </label>
+              <label className="text-xs text-gray-400 font-bold uppercase tracking-wide">Fecha</label>
               <input
                 type="date"
                 value={fecha}
@@ -113,25 +113,48 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
             {errores.lugar && <p className="text-[11px] text-red-600 font-semibold mt-1">{errores.lugar}</p>}
           </div>
 
-          <div>
-            <label className="text-xs text-gray-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
-              <Hourglass className="w-3 h-3" /> Tiempo estimado de tolerancia (minutos)
-            </label>
-            <input
-              type="number"
-              min={5}
-              step={5}
-              value={toleranciaMinutos}
-              onChange={(e) => setToleranciaMinutos(Number(e.target.value))}
-              className={`mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-[#1E4D3A]/20 focus:border-[#1E4D3A]/40 ${
-                errores.toleranciaMinutos ? 'border-red-300' : 'border-gray-200'
-              }`}
-            />
-            <p className="text-[11px] text-gray-400 font-medium mt-1">
-              Minutos de gracia después de la hora de inicio para registrar asistencia a tiempo.
-            </p>
-            {errores.toleranciaMinutos && <p className="text-[11px] text-red-600 font-semibold mt-1">{errores.toleranciaMinutos}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
+                <Hourglass className="w-3 h-3" /> Tolerancia (min)
+              </label>
+              <input
+                type="number"
+                min={5}
+                step={5}
+                value={toleranciaMinutos}
+                onChange={(e) => setToleranciaMinutos(Number(e.target.value))}
+                className={`mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-[#1E4D3A]/20 focus:border-[#1E4D3A]/40 ${
+                  errores.toleranciaMinutos ? 'border-red-300' : 'border-gray-200'
+                }`}
+              />
+              {errores.toleranciaMinutos && (
+                <p className="text-[11px] text-red-600 font-semibold mt-1">{errores.toleranciaMinutos}</p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
+                <Timer className="w-3 h-3" /> Duración (min)
+              </label>
+              <input
+                type="number"
+                min={15}
+                step={15}
+                value={duracionMinutos}
+                onChange={(e) => setDuracionMinutos(Number(e.target.value))}
+                className={`mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-[#1E4D3A]/20 focus:border-[#1E4D3A]/40 ${
+                  errores.duracionMinutos ? 'border-red-300' : 'border-gray-200'
+                }`}
+              />
+              {errores.duracionMinutos && (
+                <p className="text-[11px] text-red-600 font-semibold mt-1">{errores.duracionMinutos}</p>
+              )}
+            </div>
           </div>
+          <p className="text-[11px] text-gray-400 font-medium -mt-2">
+            Tolerancia: minutos de gracia para registrar asistencia a tiempo. Duración: usada para avisar cuando la
+            reunión esté por concluir.
+          </p>
 
           <div className="pt-2 flex items-center justify-end gap-2">
             <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-200 hover:bg-gray-100 rounded-lg text-sm font-bold text-gray-600 transition-colors">

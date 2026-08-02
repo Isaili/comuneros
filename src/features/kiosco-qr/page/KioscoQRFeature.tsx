@@ -19,6 +19,7 @@ import { crearCanalAsistencia, publicarEvento, guardarSnapshot } from '../../bie
 const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`).getTime();
 
 const INTERVALO_REVISION_MS = 15_000;
+const MINUTOS_AVISO_CIERRE = 15;
 
 export default function KioscoQRFeature() {
   const [reuniones, setReuniones] = useState<Reunion[]>(reunionesMock);
@@ -33,6 +34,7 @@ export default function KioscoQRFeature() {
   const [salidasHabilitadas, setSalidasHabilitadas] = useState(false);
 
   const canalRef = useRef<BroadcastChannel | null>(null);
+  const avisoDisparadoParaId = useRef<string | null>(null);
 
   useEffect(() => {
     canalRef.current = crearCanalAsistencia();
@@ -101,6 +103,36 @@ export default function KioscoQRFeature() {
     const interval = setInterval(revisarHorario, INTERVALO_REVISION_MS);
     return () => clearInterval(interval);
   }, [reunionActivaId, reunionMasCercana?.id]);
+
+  // Aviso de cierre próximo: se dispara una sola vez por reunión cuando faltan
+  // MINUTOS_AVISO_CIERRE o menos para que termine (horaInicio + duracionMinutos).
+  useEffect(() => {
+    if (!reunionActiva) return;
+
+    const revisarCierreProximo = () => {
+      const inicioMs = fechaHoraTimestamp(reunionActiva);
+      const finMs = inicioMs + reunionActiva.duracionMinutos * 60 * 1000;
+      const minutosRestantes = (finMs - Date.now()) / 60000;
+
+      const yaAvisado = avisoDisparadoParaId.current === reunionActiva.id;
+
+      if (minutosRestantes <= MINUTOS_AVISO_CIERRE && minutosRestantes > 0 && !yaAvisado) {
+        setAvisoProximoCierre(reunionActiva.nombre);
+        avisoDisparadoParaId.current = reunionActiva.id;
+      }
+    };
+
+    revisarCierreProximo();
+    const interval = setInterval(revisarCierreProximo, INTERVALO_REVISION_MS);
+    return () => clearInterval(interval);
+  }, [reunionActiva]);
+
+  // Resetea el flag de "ya avisado" cuando cambia o se cierra la reunión activa.
+  useEffect(() => {
+    if (!reunionActiva) {
+      avisoDisparadoParaId.current = null;
+    }
+  }, [reunionActiva?.id]);
 
   const confirmarCierre = () => {
     if (!reunionActiva) return;
@@ -216,6 +248,7 @@ export default function KioscoQRFeature() {
           />
         </div>
 
+        <ComuneroPanel asistente={comuneroSeleccionado} onCerrar={() => setComuneroSeleccionado(null)} />
       </div>
 
       {modalCerrar && reunionActiva && (
