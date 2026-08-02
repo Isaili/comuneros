@@ -30,7 +30,7 @@ export const LotesHeader: React.FC<HeaderProps> = ({
     <div className="space-y-4 w-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#111827] flex items-center gap-2">
+          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight font-serif flex items-center gap-2">
             <span className="p-1.5 bg-slate-100 rounded-lg text-slate-700 shrink-0">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -38,7 +38,7 @@ export const LotesHeader: React.FC<HeaderProps> = ({
             </span>
             Analista de Lotes
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+          <p className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide mt-1">
             Consulta y administra la información de todos los lotes comunales.
           </p>
         </div>

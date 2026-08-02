@@ -8,7 +8,7 @@ export const reunionesMock: Reunion[] = [
     horaInicio: '10:00',
     lugar: 'Salón ejidal principal',
     estado: 'programada',
-    duracionMinutos: 120,
+    toleranciaMinutos: 15,
   },
   {
     id: 'reu-002',
@@ -17,7 +17,7 @@ export const reunionesMock: Reunion[] = [
     horaInicio: '09:00',
     lugar: 'Salón ejidal principal',
     estado: 'programada',
-    duracionMinutos: 90,
+    toleranciaMinutos: 30,
   },
   {
     id: 'reu-003',
@@ -26,6 +26,6 @@ export const reunionesMock: Reunion[] = [
     horaInicio: '11:30',
     lugar: 'Anexo Ejidal Norte',
     estado: 'programada',
-    duracionMinutos: 150,
+    toleranciaMinutos: 30,
   },
 ];
