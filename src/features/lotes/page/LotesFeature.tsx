@@ -1,306 +1,299 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Layers, Search, MapPin, UserPlus, ArrowRightLeft, UserCheck } from 'lucide-react';
-import { Lote, PropietarioHistoricoLote } from '../types/typesLotes';
+import { LotesHeader } from '../components/LotesHeader';
+import { LotesList, Lote as LoteSimplificado } from '../components/LotesList';
+import { LoteDetail } from '../components/LoteDetail';
+
+import { AgregarLoteForm } from '../components/AgregarLoteForm';
+import { TraspasarLoteModal } from '../components/TraspasarLoteModal';
+import { Lote as LoteCompleto, PropietarioHistoricoLote } from '../types/typesLotes';
 import { Comunero } from '../../comuneros/types/types';
 
-// Importamos únicamente el componente del modal
-import AsignarTitularLoteModal from '../components/AsignarTitularLoteModal';
 
-import { 
-  TraspasarLoteModal, 
-  DatosTraspasoLotePayload 
-} from '../components/TraspasarLoteModal';
-
-export interface TitularLoteAsignado {
-  nombreCompleto: string;
-  certificado: string;
-  calidadAgraria: string;
-  actoJuridico: string;
+interface DatosTraspasoLotePayload {
+  nuevosPropietarios?: Array<{
+    nombre?: string;
+    certificado?: string;
+  }>;
+  actoJuridico?: string;
+  fecha?: string;
 }
+
+const MOCK_LOTES: LoteSimplificado[] = [
+  { id: 'l1', numero: 'L-001', folio: 'L-001', superficie: '300.00 m²', propietarios: ['José Antonio Hernández López'], estadoPredial: 'Pagado' },
+  { id: 'l2', numero: 'L-002', folio: 'L-002', superficie: '250.00 m²', propietarios: ['María G. Pérez Martínez'], estadoPredial: 'Pagado' },
+  { id: 'l3', numero: 'L-003', folio: 'L-003', superficie: '180.00 m²', propietarios: ['Pedro Jiménez Vázquez'], estadoPredial: 'Pagar' },
+  { id: 'l4', numero: 'L-004', folio: 'L-004', superficie: '350.00 m²', propietarios: ['Rosa Elena Gómez Díaz'], estadoPredial: 'Pagado' },
+  { id: 'l5', numero: 'L-005', folio: 'L-005', superficie: '200.00 m²', propietarios: ['Carlos A. López Hernández'], estadoPredial: 'Pagar' },
+  { id: 'l6', numero: 'L-006', folio: 'L-006', superficie: '275.00 m²', propietarios: ['Ana Laura Vázquez Pérez'], estadoPredial: 'Pagado' },
+  { id: 'l7', numero: 'L-007', folio: 'L-007', superficie: '150.00 m²', propietarios: ['Miguel Ángel Martínez Gómez'], estadoPredial: 'Pagar' },
+  { id: 'l8', numero: 'L-008', folio: 'L-008', superficie: '400.00 m²', propietarios: ['Juan Carlos Pérez López'], estadoPredial: 'Pagado' }
+];
 
 const MOCK_COMUNEROS: Comunero[] = [
   {
-    id: '1',
-    nombre: 'Juan',
-    apellidoPaterno: 'Pérez',
-    apellidoMaterno: 'Gómez',
-    tipo: 'comunero',
+    id: "com-1",
+    nombre: "José Antonio",
+    apellidos: "Hernández López",
+    tipo: "comunero",
+    fechaNacimiento: "1975-04-12",
+    edad: 51,
     estadoCivil: 'casado',
-    fotografia: '',
-    vecindario: 'Barrio Centro',
-    activo: true, 
-    fechaRegistro: '2023-01-01',
-    telefono: '5551234567',
-    fechaNacimiento: '1985-05-12',
-    qrCode: 'QR-001',
+    direccion: "Av. de los Ejidos #45",
+    colonia: "San Isidro",
+    telefono: "9511234567",
+    fechaRegistro: "2010-02-15",
+    folioComunero: "FOL-2010-089",
+    fotografia: "",
+    qrCode: "",
+    terrenos: [],
+    activo: true
   },
   {
-    id: '2',
-    nombre: 'María',
-    apellidoPaterno: 'López',
-    apellidoMaterno: 'Hernández',
-    tipo: 'avecindado',
+    id: "com-2",
+    nombre: "María G.",
+    apellidos: "Pérez Martínez",
+    tipo: "avecindado",
+    fechaNacimiento: "1988-11-23",
+    edad: 37,
     estadoCivil: 'soltero',
-    fotografia: '',
-    vecindario: 'San Mateo',
-    activo: true, 
-    fechaRegistro: '2023-03-15',
-    telefono: '5559876543',
-    fechaNacimiento: '1990-08-22',
-    qrCode: 'QR-002',
+    direccion: "Calle Benito Juárez #10",
+    colonia: "Centro",
+    telefono: "9519876543",
+    fechaRegistro: "2018-06-10",
+    folioComunero: "FOL-2018-402",
+    fotografia: "",
+    qrCode: "",
+    terrenos: [],
+    activo: true
   },
   {
-    id: '3',
-    nombre: 'Carlos',
-    apellidoPaterno: 'Sánchez',
-    apellidoMaterno: 'Ruiz',
-    tipo: 'comunero',
-    estadoCivil: 'union_libre',
-    fotografia: '',
-    vecindario: 'Santa María',
-    activo: true, 
-    fechaRegistro: '2022-11-10',
-    telefono: '5554567890',
-    fechaNacimiento: '1978-12-05',
-    qrCode: 'QR-003',
-  },
-];
-
-const INITIAL_LOTES: Lote[] = [
-  {
-    id: 'lote-1',
-    numeroLote: 'LOTE-101',
-    folioInterno: 'FOL-001',
-    largo: 25,
-    ancho: 20,
-    superficieM2: 500,
-    fechaRegistro: '2024-01-15',
-    observaciones: 'Sin novedades',
-    estadoPredial: 'Pagado',
-    propietario: 'Juan Pérez Gómez',
-    certificado: 'CERT-FOL-001',
-    calidadAgraria: 'Comunero',
-    actoJuridico: 'Asignación Directa',
-    ubicacion: 'Zona Norte - Sector A',
-    estatus: 'asignado',
-    historialPropietarios: [
-      {
-        nombre: 'Sin Propietario Anterior',
-        certificado: 'N/A',
-        fechaAdquisicion: '2024-01-15',
-        fechaCesion: '2024-01-15',
-        actoJuridico: 'Asignación Directa',
-        adquirente: 'Juan Pérez Gómez'
-      }
-    ],
-    historialPrediales: []
-  },
-  {
-    id: 'lote-2',
-    numeroLote: 'LOTE-102',
-    folioInterno: 'FOL-002',
-    largo: 30,
-    ancho: 25,
-    superficieM2: 750,
-    fechaRegistro: '2024-02-01',
-    observaciones: 'Disponible para asignación',
-    estadoPredial: 'Pagar',
-    propietario: '',
-    certificado: '',
-    calidadAgraria: '',
-    actoJuridico: '',
-    ubicacion: 'Zona Sur - Sector B',
-    estatus: 'disponible',
-    historialPropietarios: [],
-    historialPrediales: []
+    id: "com-3",
+    nombre: "Isabel",
+    apellidos: "Hernández López",
+    tipo: "comunero",
+    fechaNacimiento: "1980-03-15",
+    edad: 46,
+    estadoCivil: 'casado',
+    direccion: "Calle Miguel Hidalgo #123",
+    colonia: "Santa Ana",
+    telefono: "9611234567",
+    fechaRegistro: "2010-01-10",
+    folioComunero: "COM-0042",
+    fotografia: "",
+    qrCode: "",
+    terrenos: [],
+    activo: true
   }
 ];
 
 export const LotesFeature: React.FC = () => {
-  const [lotes, setLotes] = useState<Lote[]>(INITIAL_LOTES);
-  const [busqueda, setBusqueda] = useState<string>('');
-  const [loteSeleccionadoAsignar, setLoteSeleccionadoAsignar] = useState<Lote | null>(null);
-  const [loteSeleccionadoTraspasar, setLoteSeleccionadoTraspasar] = useState<Lote | null>(null);
+  const [lotes, setLotes] = useState<LoteSimplificado[]>(MOCK_LOTES);
+  const [comuneros] = useState<Comunero[]>(MOCK_COMUNEROS);
+  
+  const [selectedLote, setSelectedLote] = useState<LoteSimplificado | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const lotesFiltrados = lotes.filter(l => 
-    l.numeroLote.toLowerCase().includes(busqueda.toLowerCase()) ||
-    l.folioInterno.toLowerCase().includes(busqueda.toLowerCase()) ||
-    (l.propietario && l.propietario.toLowerCase().includes(busqueda.toLowerCase()))
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [loteEdicionCompleto, setLoteEdicionCompleto] = useState<LoteCompleto | null>(null);
+  const [loteATraspasar, setLoteATraspasar] = useState<LoteCompleto | null>(null);
+
+  const filteredLotes = lotes.filter(l => 
+    l.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    l.folio.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    l.propietarios.some((prop: string) => prop.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleAsignarTitular = (datos: TitularLoteAsignado) => {
-    if (!loteSeleccionadoAsignar) return;
+  // Convierte un LoteSimplificado a LoteCompleto para pasarlo a modales
+  const adaptarLoteACompleto = (loteSimplificado: LoteSimplificado): LoteCompleto => {
+    const superficieNumerica = parseFloat(loteSimplificado.superficie) || 200;
+    const largoCalculado = 20;
+    const anchoCalculado = superficieNumerica / largoCalculado;
 
-    const hoy = new Date().toISOString().split('T')[0];
-
-    const nuevaTransaccion: PropietarioHistoricoLote = {
-      nombre: 'Ninguno',
-      certificado: 'N/A',
-      fechaAdquisicion: hoy,
-      fechaCesion: hoy,
-      actoJuridico: datos.actoJuridico,
-      adquirente: datos.nombreCompleto
+    return {
+      id: loteSimplificado.id,
+      folioInterno: loteSimplificado.folio,
+      numeroLote: loteSimplificado.numero,
+      largo: largoCalculado,
+      ancho: anchoCalculado,
+      superficieM2: superficieNumerica,
+      fechaRegistro: new Date().toISOString().split('T')[0],
+      estadoPredial: loteSimplificado.estadoPredial,
+      propietario: loteSimplificado.propietarios[0] || 'Sin propietario asignado',
+      certificado: `CERT-${loteSimplificado.folio}`, 
+      calidadAgraria: 'Ejidatario',
+      actoJuridico: 'Asignación Directa',
+      historialPropietarios: [],
+      historialPrediales: [],
+      observaciones: ''
     };
-
-    setLotes(prev => prev.map(l => {
-      if (l.id === loteSeleccionadoAsignar.id) {
-        return {
-          ...l,
-          propietario: datos.nombreCompleto,
-          certificado: datos.certificado,
-          calidadAgraria: datos.calidadAgraria,
-          actoJuridico: datos.actoJuridico,
-          estatus: 'asignado',
-          historialPropietarios: [nuevaTransaccion, ...(l.historialPropietarios || [])]
-        };
-      }
-      return l;
-    }));
-
-    setLoteSeleccionadoAsignar(null);
   };
 
-  const handleTraspasarLote = (datos: DatosTraspasoLotePayload) => {
-    if (!loteSeleccionadoTraspasar) return;
+  const activarEdicionDeLote = (loteSimplificado: LoteSimplificado) => {
+    setSelectedLote(null);
+    setLoteEdicionCompleto(adaptarLoteACompleto(loteSimplificado));
+    setIsAddModalOpen(true);
+  };
 
-    const nombresNuevos = datos.nuevosPropietarios.map(p => p.nombre).join(' / ');
-    const certificadosNuevos = datos.nuevosPropietarios.map(p => p.certificado).join(' / ');
+  const activarTraspasoDeLote = (loteSimplificado: LoteSimplificado) => {
+    setSelectedLote(null);
+    setLoteATraspasar(adaptarLoteACompleto(loteSimplificado));
+  };
 
-    const nuevaTransaccion: PropietarioHistoricoLote = {
-      nombre: loteSeleccionadoTraspasar.propietario || 'Sin Titular',
-      certificado: loteSeleccionadoTraspasar.certificado || 'Sin Certificado',
-      fechaAdquisicion: loteSeleccionadoTraspasar.fechaRegistro,
-      fechaCesion: datos.fecha,
-      actoJuridico: datos.actoJuridico,
-      adquirente: nombresNuevos
+  const handleEliminarLote = (loteAEliminar: LoteSimplificado) => {
+    if (confirm(`¿Está seguro que desea eliminar el registro del Lote ${loteAEliminar.numero}?`)) {
+      setLotes(prev => prev.filter(l => l.id !== loteAEliminar.id));
+      if (selectedLote?.id === loteAEliminar.id) {
+        setSelectedLote(null);
+      }
+    }
+  };
+
+  const handleGuardarLote = (loteProcesado: LoteCompleto) => {
+    const loteAdaptado: LoteSimplificado = {
+      id: loteProcesado.id || loteProcesado.folioInterno,
+      numero: loteProcesado.numeroLote,
+      folio: loteProcesado.folioInterno,
+      superficie: `${loteProcesado.superficieM2.toFixed(2)} m²`,
+      propietarios: [loteProcesado.propietario],
+      estadoPredial: loteProcesado.estadoPredial
     };
 
+    if (loteEdicionCompleto) {
+      setLotes(prev => prev.map(l => l.folio === loteEdicionCompleto.folioInterno ? loteAdaptado : l));
+    } else {
+      setLotes(prev => [loteAdaptado, ...prev]);
+    }
+
+    setIsAddModalOpen(false);
+    setLoteEdicionCompleto(null);
+  };
+
+  const handleEjecutarTraspasoLote = (datosTraspaso: DatosTraspasoLotePayload) => {
+    if (!loteATraspasar) return;
+
+    const listaNuevos = datosTraspaso.nuevosPropietarios || [];
+
+    const adquirentesValidos = listaNuevos
+      .map(n => ({
+        nombre: n.nombre || '',
+        certificado: n.certificado || 'CERT-S/N'
+      }))
+      .filter(n => n.nombre.trim() !== '');
+
+    if (adquirentesValidos.length === 0) {
+      alert("Error: Debe seleccionar adquirentes válidos para ejecutar el traspaso.");
+      return;
+    }
+
+    const fechaOperacion = datosTraspaso.fecha || new Date().toLocaleDateString('es-MX');
+    const acto = datosTraspaso.actoJuridico || 'Cesión de derechos';
+
+    // Actualizar la lista principal de lotes
     setLotes(prev => prev.map(l => {
-      if (l.id === loteSeleccionadoTraspasar.id) {
-        return {
-          ...l,
-          propietario: nombresNuevos,
-          certificado: certificadosNuevos,
-          actoJuridico: datos.actoJuridico,
-          estatus: 'asignado',
-          historialPropietarios: [nuevaTransaccion, ...(l.historialPropietarios || [])]
-        };
-      }
-      return l;
+      if (l.folio !== loteATraspasar.folioInterno && l.id !== loteATraspasar.id) return l;
+
+      const nombresNuevosPropietarios = adquirentesValidos.map(a => a.nombre);
+
+      return {
+        ...l,
+        propietarios: nombresNuevosPropietarios
+      };
     }));
 
-    setLoteSeleccionadoTraspasar(null);
+    setLoteATraspasar(null);
+    setSelectedLote(null);
+  };
+
+  const handleCancelarFormulario = () => {
+    setIsAddModalOpen(false);
+    setLoteEdicionCompleto(null);
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-emerald-500/10 text-emerald-700 rounded-xl">
-            <Layers className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold text-gray-900">Gestión de Lotes Comunales</h1>
-            <p className="text-xs text-gray-500 font-medium">Asignación, propiedad y control de traspasos</p>
-          </div>
-        </div>
+    <div className="space-y-4 sm:space-y-6 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
+      
+      <LotesHeader 
+        onSearchChange={setSearchTerm} 
+        onAddClick={() => {
+          setLoteEdicionCompleto(null); 
+          setIsAddModalOpen(true);
+        }}
+      />
 
-        {/* Buscador */}
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar lote, folio o titular..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-gray-200 rounded-xl text-xs font-semibold outline-none focus:border-emerald-500"
+      <div className="w-full">
+        {filteredLotes.length > 0 ? (
+          <LotesList 
+            lotes={filteredLotes}
+            selectedId={selectedLote?.id ?? ""} 
+            onSelect={setSelectedLote}
+            onEdit={activarEdicionDeLote}
+            onDelete={handleEliminarLote}
+            onTraspasar={activarTraspasoDeLote}
           />
-        </div>
+        ) : (
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-12 text-center text-gray-400 font-medium text-xs sm:text-sm shadow-sm">
+            No se encontraron lotes que coincidan con la búsqueda.
+          </div>
+        )}
       </div>
 
-      {/* Grid de Lotes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {lotesFiltrados.map((lote) => {
-          const estaAsignado = Boolean(lote.propietario && lote.propietario.trim() !== '');
-
-          return (
-            <div key={lote.id} className="bg-white border border-gray-100 rounded-2xl p-5 space-y-4 shadow-xs hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Folio: {lote.folioInterno}</span>
-                  <h3 className="text-base font-bold text-gray-900">{lote.numeroLote}</h3>
-                </div>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                  estaAsignado ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
-                }`}>
-                  {estaAsignado ? 'Asignado' : 'Disponible'}
-                </span>
-              </div>
-
-              <div className="space-y-1.5 text-xs text-gray-600 font-medium">
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                  <span>{lote.ubicacion || 'Sin ubicación registrada'}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <UserCheck className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="font-bold text-gray-800">{lote.propietario || 'Sin titular asignado'}</span>
-                </div>
-                <div className="text-[11px] text-gray-400">
-                  Dimensiones: {lote.largo}m x {lote.ancho}m ({lote.superficieM2} m²)
-                </div>
-              </div>
-
-              {/* Acciones */}
-              <div className="pt-2 flex gap-2 border-t border-gray-50">
-                {!estaAsignado ? (
-                  <button
-                    onClick={() => setLoteSeleccionadoAsignar(lote)}
-                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" /> Asignar Titular
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setLoteSeleccionadoTraspasar(lote)}
-                    className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <ArrowRightLeft className="w-3.5 h-3.5" /> Traspasar
-                  </button>
-                )}
+      {/* Modal de Detalle de Lote */}
+      {selectedLote && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="absolute inset-0" onClick={() => setSelectedLote(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto z-10 animate-slide-up">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-20">
+              <h3 className="text-base font-bold text-gray-800">Expediente del Lote</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => activarTraspasoDeLote(selectedLote)}
+                  className="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100/80 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
+                >
+                   Traspasar
+                </button>
+                <button
+                  onClick={() => activarEdicionDeLote(selectedLote)}
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100/80 rounded-lg text-xs font-bold transition-colors"
+                >
+                  Editar
+                </button>
+                <button 
+                  onClick={() => setSelectedLote(null)}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-semibold transition-colors"
+                >
+                  ✕ Cerrar
+                </button>
               </div>
             </div>
-          );
-        })}
-      </div>
+            <div className="p-5 sm:p-6">
+              <LoteDetail lote={selectedLote} />
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Modales */}
-      {loteSeleccionadoAsignar && (
-        <AsignarTitularLoteModal
-          comunerosRegistrados={MOCK_COMUNEROS}
-          onClose={() => setLoteSeleccionadoAsignar(null)}
-          onAsignar={(comuneroId, nombreCompleto) => {
-            handleAsignarTitular({
-              nombreCompleto,
-              certificado: 'PENDIENTE',
-              calidadAgraria: 'Comunero',
-              actoJuridico: 'Asignación Directa'
-            });
-          }}
+      {/* Modal Agregar/Editar Lote */}
+      {isAddModalOpen && (
+        <AgregarLoteForm 
+          comunerosRegistrados={comuneros} 
+          onClose={handleCancelarFormulario} 
+          onGuardar={handleGuardarLote} 
+          loteAEditar={loteEdicionCompleto} 
         />
       )}
 
-      {loteSeleccionadoTraspasar && (
+      {/* Modal Traspasar Lote */}
+      {loteATraspasar && (
         <TraspasarLoteModal
-          lote={loteSeleccionadoTraspasar}
-          comunerosRegistrados={MOCK_COMUNEROS}
-          onClose={() => setLoteSeleccionadoTraspasar(null)}
-          onConfirmar={handleTraspasarLote}
+          lote={loteATraspasar}
+          comunerosRegistrados={comuneros}
+          onClose={() => setLoteATraspasar(null)}
+          onConfirmar={handleEjecutarTraspasoLote}
         />
       )}
+
     </div>
   );
 };
