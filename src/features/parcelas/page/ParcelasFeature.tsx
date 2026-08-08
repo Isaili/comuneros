@@ -1,16 +1,16 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ParcelasHeader } from './components/ParcelasHeader';
-import { ParcelasList } from './components/ParcelasList';
-import { ParcelaDetail } from './components/ParcelaDetail';
-import { AgregarParcelaForm, ParcelaFormPayload } from './components/AgregarParcelaForm';
-import { TraspasarParcelaModal } from './components/TraspasarParcelaModal';
-import { AsignarTitularModal } from './components/AsignarTitularModal';
-import { Comunero } from '../comuneros/types/types';
-import { Parcela } from './types/domain.types';
-import { useParcelas } from './hooks/useParcelas';
-import { ApiError } from './services/parcelas.service';
+import { ParcelasHeader } from '../components/ParcelasHeader';
+import { ParcelasList } from '../components/ParcelasList';
+import { ParcelaDetail } from '../components/ParcelaDetail';
+import { AgregarParcelaForm, ParcelaFormPayload } from '../components/AgregarParcelaForm';
+import { TraspasarParcelaModal } from '../components/TraspasarParcelaModal';
+import { AsignarTitularModal } from '../components/AsignarTitularModal';
+import { Comunero } from '../../comuneros/types/types';
+import { Parcela } from '../types/domain.types';
+import { useParcelas } from '../hooks/useParcelas';
+import { ApiError } from '../services/parcelas.service';
 
 interface ParcelasFeatureProps {
   comunerosRegistrados?: Comunero[];
