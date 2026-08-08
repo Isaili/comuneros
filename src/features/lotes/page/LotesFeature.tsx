@@ -7,7 +7,6 @@ import { LoteDetail } from '../components/LoteDetail';
 
 import { AgregarLoteForm } from '../components/AgregarLoteForm';
 import { TraspasarLoteModal } from '../components/TraspasarLoteModal';
-import { AsignarTitularLoteModal, TitularLoteAsignado } from '../components/AsignarTitularLoteModal';
 import { Lote as LoteCompleto, PropietarioHistoricoLote } from '../types/typesLotes';
 import { Comunero } from '../../comuneros/types/types';
 
@@ -29,9 +28,7 @@ const MOCK_LOTES: LoteSimplificado[] = [
   { id: 'l5', numero: 'L-005', folio: 'L-005', superficie: '200.00 m²', propietarios: ['Carlos A. López Hernández'], estadoPredial: 'Pagar' },
   { id: 'l6', numero: 'L-006', folio: 'L-006', superficie: '275.00 m²', propietarios: ['Ana Laura Vázquez Pérez'], estadoPredial: 'Pagado' },
   { id: 'l7', numero: 'L-007', folio: 'L-007', superficie: '150.00 m²', propietarios: ['Miguel Ángel Martínez Gómez'], estadoPredial: 'Pagar' },
-  { id: 'l8', numero: 'L-008', folio: 'L-008', superficie: '400.00 m²', propietarios: ['Juan Carlos Pérez López'], estadoPredial: 'Pagado' },
-  // Ejemplo de lote registrado SIN titular todavía
-  { id: 'l9', numero: 'L-009', folio: 'L-009', superficie: '220.00 m²', propietarios: [], estadoPredial: 'Pagar' }
+  { id: 'l8', numero: 'L-008', folio: 'L-008', superficie: '400.00 m²', propietarios: ['Juan Carlos Pérez López'], estadoPredial: 'Pagado' }
 ];
 
 const MOCK_COMUNEROS: Comunero[] = [
@@ -42,7 +39,7 @@ const MOCK_COMUNEROS: Comunero[] = [
     tipo: "comunero",
     fechaNacimiento: "1975-04-12",
     edad: 51,
-   
+    estadoCivil: 'casado',
     direccion: "Av. de los Ejidos #45",
     colonia: "San Isidro",
     telefono: "9511234567",
@@ -60,7 +57,7 @@ const MOCK_COMUNEROS: Comunero[] = [
     tipo: "avecindado",
     fechaNacimiento: "1988-11-23",
     edad: 37,
-
+    estadoCivil: 'soltero',
     direccion: "Calle Benito Juárez #10",
     colonia: "Centro",
     telefono: "9519876543",
@@ -78,7 +75,7 @@ const MOCK_COMUNEROS: Comunero[] = [
     tipo: "comunero",
     fechaNacimiento: "1980-03-15",
     edad: 46,
-
+    estadoCivil: 'casado',
     direccion: "Calle Miguel Hidalgo #123",
     colonia: "Santa Ana",
     telefono: "9611234567",
@@ -101,7 +98,6 @@ export const LotesFeature: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [loteEdicionCompleto, setLoteEdicionCompleto] = useState<LoteCompleto | null>(null);
   const [loteATraspasar, setLoteATraspasar] = useState<LoteCompleto | null>(null);
-  const [loteAAsignarTitular, setLoteAAsignarTitular] = useState<LoteCompleto | null>(null);
 
   const filteredLotes = lotes.filter(l => 
     l.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -124,23 +120,14 @@ export const LotesFeature: React.FC = () => {
       superficieM2: superficieNumerica,
       fechaRegistro: new Date().toISOString().split('T')[0],
       estadoPredial: loteSimplificado.estadoPredial,
-      // ✅ Ya no rellenamos con 'Sin propietario asignado': una cadena vacía
-      // representa correctamente "sin titular" para la lógica de bloqueo.
-      propietario: loteSimplificado.propietarios[0] || '',
-      certificado: loteSimplificado.propietarios[0] ? `CERT-${loteSimplificado.folio}` : '',
-      calidadAgraria: loteSimplificado.propietarios[0] ? 'Ejidatario' : '',
-      actoJuridico: loteSimplificado.propietarios[0] ? 'Asignación Directa' : '',
+      propietario: loteSimplificado.propietarios[0] || 'Sin propietario asignado',
+      certificado: `CERT-${loteSimplificado.folio}`, 
+      calidadAgraria: 'Ejidatario',
+      actoJuridico: 'Asignación Directa',
       historialPropietarios: [],
       historialPrediales: [],
       observaciones: ''
     };
-  };
-
-  const sinTitular = (lote: LoteSimplificado | LoteCompleto) => {
-    if ('propietarios' in lote) {
-      return !lote.propietarios || lote.propietarios.length === 0 || !lote.propietarios[0]?.trim();
-    }
-    return !lote.propietario || !lote.propietario.trim();
   };
 
   const activarEdicionDeLote = (loteSimplificado: LoteSimplificado) => {
@@ -149,31 +136,9 @@ export const LotesFeature: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  // 🔒 Punto de control: si el lote no tiene titular, "Traspasar" abre
-  // en su lugar el modal de asignación de titular.
   const activarTraspasoDeLote = (loteSimplificado: LoteSimplificado) => {
     setSelectedLote(null);
-    const loteCompleto = adaptarLoteACompleto(loteSimplificado);
-    if (sinTitular(loteSimplificado)) {
-      setLoteAAsignarTitular(loteCompleto);
-    } else {
-      setLoteATraspasar(loteCompleto);
-    }
-  };
-
-  // Confirma la asignación inicial de titular a un lote que nació sin dueño
-  const handleConfirmarAsignacionLote = (titular: TitularLoteAsignado) => {
-    if (!loteAAsignarTitular) return;
-
-    setLotes(prev => prev.map(l => {
-      if (l.id !== loteAAsignarTitular.id && l.folio !== loteAAsignarTitular.folioInterno) return l;
-      return {
-        ...l,
-        propietarios: [titular.nombreCompleto]
-      };
-    }));
-
-    setLoteAAsignarTitular(null);
+    setLoteATraspasar(adaptarLoteACompleto(loteSimplificado));
   };
 
   const handleEliminarLote = (loteAEliminar: LoteSimplificado) => {
@@ -191,8 +156,7 @@ export const LotesFeature: React.FC = () => {
       numero: loteProcesado.numeroLote,
       folio: loteProcesado.folioInterno,
       superficie: `${loteProcesado.superficieM2.toFixed(2)} m²`,
-      // ✅ Si no hay propietario, guardamos el arreglo vacío en vez de forzar un texto.
-      propietarios: loteProcesado.propietario ? [loteProcesado.propietario] : [],
+      propietarios: [loteProcesado.propietario],
       estadoPredial: loteProcesado.estadoPredial
     };
 
@@ -285,13 +249,9 @@ export const LotesFeature: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => activarTraspasoDeLote(selectedLote)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${
-                    sinTitular(selectedLote)
-                      ? 'bg-amber-50 text-amber-700 hover:bg-amber-100/80'
-                      : 'bg-amber-50 text-amber-700 hover:bg-amber-100/80'
-                  }`}
+                  className="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100/80 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
                 >
-                  {sinTitular(selectedLote) ? 'Agregar Titular' : 'Traspasar'}
+                   Traspasar
                 </button>
                 <button
                   onClick={() => activarEdicionDeLote(selectedLote)}
@@ -317,6 +277,7 @@ export const LotesFeature: React.FC = () => {
       {/* Modal Agregar/Editar Lote */}
       {isAddModalOpen && (
         <AgregarLoteForm 
+          comunerosRegistrados={comuneros} 
           onClose={handleCancelarFormulario} 
           onGuardar={handleGuardarLote} 
           loteAEditar={loteEdicionCompleto} 
@@ -330,16 +291,6 @@ export const LotesFeature: React.FC = () => {
           comunerosRegistrados={comuneros}
           onClose={() => setLoteATraspasar(null)}
           onConfirmar={handleEjecutarTraspasoLote}
-        />
-      )}
-
-      {/* Modal Asignar Titular (lote sin dueño) */}
-      {loteAAsignarTitular && (
-        <AsignarTitularLoteModal
-          lote={loteAAsignarTitular}
-          comunerosRegistrados={comuneros}
-          onClose={() => setLoteAAsignarTitular(null)}
-          onAsignar={handleConfirmarAsignacionLote}
         />
       )}
 

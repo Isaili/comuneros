@@ -1,15 +1,36 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Search, DollarSign } from 'lucide-react';
-import { Parcela } from '@/features/parcelas/types/types'; 
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Parcela } from '@/features/parcelas/types/domain.types';
 import { Lote } from '@/features/lotes/components/LotesList';
 import { ProcesarPagoModal } from './ProcesarPagoModal';
 
-// Datos dummy de ejemplo para visualizar el comportamiento de cobro
 const INITIAL_PARCELAS: Parcela[] = [
-  { id: 'p1', numero: 'Parcela 12', superficie: '2.50 ha', titularesCount: 1, propietarios: ['José Antonio Hernández'], estadoPredial: 'Pagar' },
-  { id: 'p2', numero: 'Parcela 45', superficie: '5.00 ha', titularesCount: 2, propietarios: ['María Guadalupe Pérez'], estadoPredial: 'Pagado' },
+  {
+    id: 'p1',
+    folioInterno: 'Parcela 12',
+    numero: 'Parcela 12',
+    superficie: '2.50 ha',
+    superficieHa: 2.5,
+    observaciones: '',
+    activo: true,
+    titularesCount: 1,
+    propietarios: ['José Antonio Hernández'],
+    estadoPredial: 'Pagar',
+  },
+  {
+    id: 'p2',
+    folioInterno: 'Parcela 45',
+    numero: 'Parcela 45',
+    superficie: '5.00 ha',
+    superficieHa: 5,
+    observaciones: '',
+    activo: true,
+    titularesCount: 2,
+    propietarios: ['María Guadalupe Pérez'],
+    estadoPredial: 'Pagado',
+  },
 ];
 
 const INITIAL_LOTES: Lote[] = [
@@ -17,13 +38,15 @@ const INITIAL_LOTES: Lote[] = [
   { id: 'l2', numero: 'Lote 14-B', folio: 'F-1024', superficie: '400 m²', propietarios: ['Laura Estela Gómez'], estadoPredial: 'Pagado' },
 ];
 
-export const PagosPredialSection: React.FC = () => {
+interface PagosPredialSectionProps {
+  searchQuery: string;
+}
+
+export const PagosPredialSection: React.FC<PagosPredialSectionProps> = ({ searchQuery }) => {
   const [activeTab, setActiveTab] = useState<'parcelas' | 'lotes'>('parcelas');
-  const [searchQuery, setSearchQuery] = useState('');
   const [parcelas, setParcelas] = useState<Parcela[]>(INITIAL_PARCELAS);
   const [lotes, setLotes] = useState<Lote[]>(INITIAL_LOTES);
-  
-  // Estados para el modal de pago
+
   const [selectedItem, setSelectedItem] = useState<{ type: 'parcela' | 'lote'; data: any } | null>(null);
 
   const handleOpenPago = (type: 'parcela' | 'lote', item: any) => {
@@ -39,70 +62,46 @@ export const PagosPredialSection: React.FC = () => {
     setSelectedItem(null);
   };
 
-  // Filtros aplicados
-  const filteredParcelas = parcelas.filter(p => 
-    p.numero.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredParcelas = parcelas.filter(p =>
+    p.numero.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.propietarios[0]?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredLotes = lotes.filter(l => 
-    l.numero.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredLotes = lotes.filter(l =>
+    l.numero.toLowerCase().includes(searchQuery.toLowerCase()) ||
     l.propietarios[0]?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 space-y-6 w-full min-h-[600px]">
-      
-      {/* Encabezado Responsivo */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
-        <div>
-          <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight font-serif flex items-center gap-2">
-            <span className="p-1.5 bg-slate-100 rounded-lg text-slate-700 shrink-0">
-              <DollarSign className="w-5 h-5" />
-            </span>
-            Módulo de Pagos Prediales
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide mt-1">
-            Administración, cálculo de recargos y cobro de derechos comunales.
-          </p>
+    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col justify-between min-h-[600px] w-full">
+      <div>
+        {/* Tabs */}
+        <div className="flex items-center gap-1 border-b border-gray-100 w-full mb-4">
+          <button
+            onClick={() => setActiveTab('parcelas')}
+            className={`px-4 py-2 text-xs font-bold border-b-2 transition-all ${
+              activeTab === 'parcelas' ? 'border-[#006837] text-[#006837]' : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            Predial Parcelas
+          </button>
+          <button
+            onClick={() => setActiveTab('lotes')}
+            className={`px-4 py-2 text-xs font-bold border-b-2 transition-all ${
+              activeTab === 'lotes' ? 'border-[#006837] text-[#006837]' : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            Predial Lotes
+          </button>
         </div>
 
-        {/* Buscador */}
-        <div className="relative flex-1 w-full sm:max-w-[320px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input 
-           type="text" 
-            placeholder="Buscar por número o propietario..." 
-           value={searchQuery}
-           onChange={(e) => setSearchQuery(e.target.value)}
-           className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#006837] focus:ring-1 focus:ring-[#006837] transition-all placeholder-gray-500 text-gray-900"
-         />
-        </div>
-      </div>
+        {/* Encabezado descriptivo, igual que en LotesList */}
+        <h3 className="font-bold text-gray-900 mb-4 text-base">
+          {activeTab === 'parcelas'
+            ? `Lista de parcelas (${filteredParcelas.length})`
+            : `Lista de lotes (${filteredLotes.length})`}
+        </h3>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-gray-100 w-full">
-        <button 
-          onClick={() => { setActiveTab('parcelas'); setSearchQuery(''); }}
-          className={`px-4 py-2 text-xs font-bold border-b-2 transition-all ${
-            activeTab === 'parcelas' ? 'border-[#006837] text-[#006837]' : 'border-transparent text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          Predial Parcelas
-        </button>
-        <button 
-          onClick={() => { setActiveTab('lotes'); setSearchQuery(''); }}
-          className={`px-4 py-2 text-xs font-bold border-b-2 transition-all ${
-            activeTab === 'lotes' ? 'border-[#006837] text-[#006837]' : 'border-transparent text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          Predial Lotes
-        </button>
-      </div>
-
-      {/* RENDERIZADO DINÁMICO */}
-      <div className="w-full">
-        
         {/* ================= SECCIÓN PARCELAS ================= */}
         {activeTab === 'parcelas' && (
           <div>
@@ -132,12 +131,12 @@ export const PagosPredialSection: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <button
                       onClick={() => handleOpenPago('parcela', p)}
                       className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all text-center ${
-                        isPagado 
-                          ? 'border border-gray-200 text-emerald-700 bg-white hover:bg-emerald-50/20' 
+                        isPagado
+                          ? 'border border-gray-200 text-emerald-700 bg-white hover:bg-emerald-50/20'
                           : 'bg-[#006837] hover:bg-[#00522b] text-white shadow-sm'
                       }`}
                     >
@@ -184,8 +183,8 @@ export const PagosPredialSection: React.FC = () => {
                           <button
                             onClick={() => handleOpenPago('parcela', p)}
                             className={`px-4 py-2 border rounded-lg text-xs font-bold transition-all ${
-                              isPagado 
-                                ? 'border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600' 
+                              isPagado
+                                ? 'border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600'
                                 : 'bg-[#006837] hover:bg-[#00522b] text-white border-transparent shadow-sm'
                             }`}
                           >
@@ -230,12 +229,12 @@ export const PagosPredialSection: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <button
                       onClick={() => handleOpenPago('lote', l)}
                       className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all text-center ${
-                        isPagado 
-                          ? 'border border-gray-200 text-emerald-700 bg-white hover:bg-emerald-50/20' 
+                        isPagado
+                          ? 'border border-gray-200 text-emerald-700 bg-white hover:bg-emerald-50/20'
                           : 'bg-[#006837] hover:bg-[#00522b] text-white shadow-sm'
                       }`}
                     >
@@ -282,8 +281,8 @@ export const PagosPredialSection: React.FC = () => {
                           <button
                             onClick={() => handleOpenPago('lote', l)}
                             className={`px-4 py-2 border rounded-lg text-xs font-bold transition-all ${
-                              isPagado 
-                                ? 'border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600' 
+                              isPagado
+                                ? 'border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600'
                                 : 'bg-[#006837] hover:bg-[#00522b] text-white border-transparent shadow-sm'
                             }`}
                           >
@@ -298,12 +297,23 @@ export const PagosPredialSection: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
 
+      {/* Paginación, igual que en LotesList */}
+      <div className="hidden md:flex items-center justify-center gap-2 pt-6 border-t border-gray-50 text-xs font-bold text-gray-600 mt-4">
+        <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button className="w-8 h-8 rounded-lg bg-[#006837] text-white flex items-center justify-center">1</button>
+        <button className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center">2</button>
+        <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-400">
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Modal de Pago / Recibo */}
       {selectedItem && (
-        <ProcesarPagoModal 
+        <ProcesarPagoModal
           type={selectedItem.type}
           item={selectedItem.data}
           onClose={() => setSelectedItem(null)}

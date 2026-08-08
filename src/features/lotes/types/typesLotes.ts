@@ -1,4 +1,3 @@
-
 export interface PropietarioHistoricoLote {
   nombre: string;
   certificado: string;
@@ -14,7 +13,6 @@ export interface PredialHistoricoLote {
   estado: 'Pagado' | 'Pagar';
 }
 
-
 export interface Lote {
   id?: string;
   folioInterno: string;
@@ -29,6 +27,8 @@ export interface Lote {
   certificado: string;
   calidadAgraria: string;
   actoJuridico: string;
+  ubicacion?: string; // Campo opcional para UI
+  estatus?: 'asignado' | 'disponible'; // Campo opcional para UI
   historialPropietarios?: PropietarioHistoricoLote[];
   historialPrediales?: PredialHistoricoLote[];
 }

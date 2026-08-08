@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   LayoutGrid,
   Users,
@@ -13,7 +14,8 @@ import {
   ChevronDown,
   Menu,
   X,
-  Monitor
+  Monitor,
+  LogOut
 } from "lucide-react";
 
 // Estructura de navegación mapeada por 'view' en lugar de URLs físicas
@@ -27,7 +29,6 @@ const menuItems = [
   { name: "Reportes", view: "reportes", icon: ClipboardList },
   { name: "Kiosco QR", view: "kiosco-qr", icon: QrCode },
   { name: "Bienvenida Comunero", view: "Pantalla de Asistencia", icon: Monitor },
-
 ];
 
 // Definición estricta de las propiedades que controlan la SPA
@@ -38,7 +39,17 @@ interface SidebarProps {
 
 export default function Sidebar({ currentView, setView }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
   const toggleSidebar = () => setIsOpen(!isOpen);
+
+  const handleLogout = () => {
+    // Limpia cualquier dato de sesión almacenado localmente
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    // Redirige a la página de login real (fuera de la SPA por views)
+    router.push("/login");
+  };
 
   return (
     <>
@@ -135,9 +146,9 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
           </nav>
         </div>
 
-        {/* Pie de página: Tarjeta de Administrador */}
-        <div className="mt-4 pt-4 border-t border-white/20">
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/90 backdrop-blur-md border border-white/80 hover:bg-white transition-colors cursor-pointer group shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
+        {/* Pie de página: Tarjeta de Administrador + Cerrar Sesión */}
+        <div className="mt-4 pt-4 border-t border-white/20 space-y-2">
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/90 backdrop-blur-md border border-white/80 cursor-pointer group shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-full bg-[#1E4D3A]/10 text-[#1E4D3A] font-bold text-xs flex items-center justify-center shrink-0 border border-[#1E4D3A]/30">
                 AD
@@ -151,8 +162,16 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
                 </span>
               </div>
             </div>
-            <ChevronDown className="w-3.5 h-3.5 text-emerald-800 shrink-0 mr-1 transition-transform group-hover:translate-y-0.5" />
           </div>
+
+          {/* Botón Cerrar Sesión */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/90 backdrop-blur-md border border-white/80 text-red-600 hover:bg-red-50/90 hover:border-red-200 transition-all font-bold text-xs shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span className="tracking-wide">Cerrar sesión</span>
+          </button>
         </div>
 
       </aside>

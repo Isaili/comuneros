@@ -196,8 +196,8 @@ export const TraspasarLoteModal: React.FC<TraspasarLoteProps> = ({
                   {adquirentes.map((adq, index) => {
                     const query = busquedas[index] ?? adq.nombreCompleto;
                     const sugeridos = comunerosDisponibles.filter(c => 
-                      `${c.nombre} ${c.apellidos}`.toLowerCase().includes(query.toLowerCase()) ||
-                      c.folioComunero.toLowerCase().includes(query.toLowerCase())
+                      `${c.nombre} ${c.apellidos ?? ''}`.toLowerCase().includes(query.toLowerCase()) ||
+                      (c.folioComunero ?? '').toLowerCase().includes(query.toLowerCase())
                     ).slice(0, 5);
 
                     return (
