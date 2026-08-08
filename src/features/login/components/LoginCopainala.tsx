@@ -70,12 +70,10 @@ export default function LoginCopainala() {
   };
 
   return (
-   
     <div className="min-h-screen w-full bg-[#FAFAFA] flex flex-col items-center justify-start p-4 pt-6 sm:pt-10 relative overflow-y-auto font-sans">
       
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-5 bg-[url('https://www.transparenttextures.com/patterns/topography.png')]"></div>
 
-     
       <div className="w-full max-w-sm z-10 flex flex-col justify-between gap-6 min-h-[calc(100vh-3rem)]">
         
         {/* --- HEADER --- */}
@@ -116,7 +114,6 @@ export default function LoginCopainala() {
         </header>
 
         {/* --- CUERPO PRINCIPAL --- */}
-       
         <div className="w-full flex-1 flex flex-col justify-center">
           
           <div className="space-y-5 my-auto py-4">
@@ -241,7 +238,15 @@ export default function LoginCopainala() {
 
             <div className="w-full border-t border-gray-200 pt-2">
               <p className="text-[10px] font-medium text-gray-400">
-                Software desarrollado por <span className="font-bold text-[#C09E5F]">Softvana</span>
+                Software desarrollado por{' '}
+                <a 
+                  href="https://codex-softva.vercel.app/" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="font-bold text-[#C09E5F] hover:underline transition-all"
+                >
+                  Softvana
+                </a>
               </p>
             </div>
           </div>
