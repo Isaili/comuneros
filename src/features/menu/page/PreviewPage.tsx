@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import DashboardView from '../components/DashboardView';
 import { ComunerosFeature } from '../../comuneros/page/ComunerosFeature';
-import { ParcelasFeature } from '../../parcelas/page/ParcelasFeature';
+import { ParcelasFeature } from '../../parcelas/ParcelasFeature';
 import LotesFeature from '../../lotes/page/LotesFeature';
 import MultasAsistenciasFeature from '../../multas-asistencias/page/MultasAsistenciasFeature';
 import KioscoQRFeature from '../../kiosco-qr/page/KioscoQRFeature';
