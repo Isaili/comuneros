@@ -34,7 +34,40 @@
 .animate-scan-line {
   animation: scan-line 2.2s ease-in-out infinite;
 }
+@keyframes walk {
+  0%, 100% {
+    transform: translateX(-3px) rotate(-4deg);
+  }
+  50% {
+    transform: translateX(3px) rotate(4deg);
+  }
+}
 
+.animate-walk {
+  animation: walk 0.9s ease-in-out infinite;
+}
+@keyframes footstep-trail {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  92%, 100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+.animate-footstep {
+  animation: footstep-trail 5.6s ease-in-out infinite;
+}
 body {
   background: var(--background);
   color: var(--foreground);

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Sun, Moon, Users, Map, FileText, ShieldCheck, Home, BookOpen, BarChart3, RefreshCcw, Settings } from 'lucide-react';
+import React from 'react';
+import { Footprints, Users, Map, FileText, ShieldCheck, Home, BookOpen, BarChart3, RefreshCcw, Settings } from 'lucide-react';
 import StatCard from './StatCard';
 import PreviewAndAlerts from './PreviewAndAlerts';
 import SessionFooter from './SessionFooter';
@@ -41,9 +41,14 @@ const avisos = [
   },
 ];
 
-export default function DashboardHero() {
-  const [tema, setTema] = useState<'claro' | 'oscuro'>('claro');
 
+const footstepPositions = [
+  { top: '10%', left: '55%', flip: true, delay: 50.0 },
+  { top: '70%', left: '55%', flip: false, delay: 20.0 },
+  { top: '40%', left: '75%', flip: true, delay: 10.0 },
+];
+
+export default function DashboardHero() {
   return (
     <section className="relative min-h-screen w-full overflow-hidden font-sans flex flex-col justify-between">
       {/* --- FONDO --- */}
@@ -61,27 +66,21 @@ export default function DashboardHero() {
         {/* CONTENEDOR SUPERIOR */}
         <div className="flex flex-col justify-start w-full gap-4 mb-auto">
 
-          {/* Botón de Modo Claro / Oscuro */}
+          {/* Rastro de huellas caminando: van apareciendo una tras otra */}
           <div className="flex justify-end shrink-0">
-            <div className="inline-flex items-center gap-1 bg-black/20 border border-white/10 rounded-full p-0.5 backdrop-blur-sm">
-              <button
-                onClick={() => setTema('claro')}
-                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  tema === 'claro' ? 'bg-white text-gray-900' : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <Sun className="w-3 h-3" />
-                Claro
-              </button>
-              <button
-                onClick={() => setTema('oscuro')}
-                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  tema === 'oscuro' ? 'bg-white text-gray-900' : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <Moon className="w-3 h-3" />
-                Oscuro
-              </button>
+            <div className="relative w-24 h-9">
+              {footstepPositions.map((pos, i) => (
+                <Footprints
+                  key={i}
+                  className="w-3 h-3 text-[#E4C468] absolute animate-footstep"
+                  style={{
+                    top: pos.top,
+                    left: pos.left,
+                    transform: pos.flip ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%)',
+                    animationDelay: `${pos.delay}s`,
+                  }}
+                />
+              ))}
             </div>
           </div>
 
