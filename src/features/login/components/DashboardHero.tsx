@@ -43,9 +43,9 @@ const avisos = [
 
 
 const footstepPositions = [
-  { top: '10%', left: '55%', flip: true, delay: 50.0 },
-  { top: '70%', left: '55%', flip: false, delay: 20.0 },
-  { top: '40%', left: '75%', flip: true, delay: 10.0 },
+  { top: '10%', left: '55%', flip: true, delay: 2.0 },
+  { top: '70%', left: '55%', flip: false, delay: 0.0 },
+  { top: '40%', left: '75%', flip: true, delay: 1.0 },
 ];
 
 export default function DashboardHero() {
