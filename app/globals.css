@@ -66,7 +66,7 @@
 }
 
 .animate-footstep {
-  animation: footstep-trail 5.6s ease-in-out infinite;
+  animation: footstep-trail 9.6s ease-in-out infinite;
 }
 body {
   background: var(--background);
