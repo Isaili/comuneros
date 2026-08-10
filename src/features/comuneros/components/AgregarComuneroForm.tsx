@@ -78,7 +78,7 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
   const initialNombre = comuneroAEditar?.nombre ?? comuneroAEditar?.firstName ?? '';
   const initialApellidoPaterno = comuneroAEditar?.apellidoPaterno ?? comuneroAEditar?.paternalLastName ?? '';
   const initialApellidoMaterno = comuneroAEditar?.apellidoMaterno ?? comuneroAEditar?.maternalLastName ?? '';
-  
+
   const rawFechaNac = comuneroAEditar?.fechaNacimiento ?? comuneroAEditar?.birthDate;
   const initialFechaNacimiento = toInputDate(rawFechaNac);
 
@@ -86,20 +86,20 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
   const initialEstadoCivil = mapaEstadoCivilDesdeAPI[rawEstadoCivil] || 'soltero';
 
   const initialTelefono = comuneroAEditar?.telefono ?? comuneroAEditar?.phone ?? '';
-  
+
   const rawTipo = comuneroAEditar?.tipo ?? comuneroAEditar?.personType ?? 'comunero';
   const initialTipoComunero = (rawTipo === 'COMMUNER' || rawTipo === 'comunero') ? 'comunero' : 'avecindado';
 
-  const initialNeighborhoodId = 
-    comuneroAEditar?.neighborhoodId ?? 
-    comuneroAEditar?.neighborhood?.id ?? 
+  const initialNeighborhoodId =
+    comuneroAEditar?.neighborhoodId ??
+    comuneroAEditar?.neighborhood?.id ??
     '';
 
   const initialAddress = comuneroAEditar?.address ?? comuneroAEditar?.direccion ?? '';
 
-  const rawFechaReg = 
-    comuneroAEditar?.communityMemberSince ?? 
-    comuneroAEditar?.fechaRegistro ?? 
+  const rawFechaReg =
+    comuneroAEditar?.communityMemberSince ??
+    comuneroAEditar?.fechaRegistro ??
     comuneroAEditar?.createdAt;
   const initialCommunityMemberSince = toInputDate(rawFechaReg) || hoyStr;
 
@@ -148,7 +148,7 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
         }
       } catch (err) {
         console.error('Error al cargar vecindarios:', err);
-      }  {
+      } finally {
         setLoadingBarrios(false);
       }
     };
@@ -165,14 +165,48 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
     setIsCameraActive(true);
     setFotografia(null);
     setFotoFile(null);
+
+    // Verificación explícita de contexto seguro (necesario en Safari/iOS)
+    if (!window.isSecureContext) {
+      alert('La cámara requiere HTTPS o localhost. Este sitio no está en un contexto seguro.');
+      setIsCameraActive(false);
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      alert('Este navegador no soporta acceso a la cámara.');
+      setIsCameraActive(false);
+      return;
+    }
+
     try {
+      // Constraints relajados: facingMode como "ideal" en vez de exacto,
+      // sin width/height forzados (Safari es más estricto con constraints exactos)
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 640 },
+        video: { facingMode: { ideal: 'user' } },
         audio: false,
       });
-      if (videoRef.current) videoRef.current.srcObject = stream;
-    } catch {
-      alert('No se pudo acceder a la cámara.');
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        // En algunos navegadores (Safari incluido) hay que forzar play()
+        await videoRef.current.play().catch(() => {});
+      }
+    } catch (err: any) {
+      console.error('Error de cámara:', err?.name, err?.message, err);
+
+      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+        alert('Permiso de cámara denegado. Revisa los permisos del sitio en Ajustes/Configuración del navegador.');
+      } else if (err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError') {
+        alert('No se encontró ninguna cámara disponible en este dispositivo.');
+      } else if (err?.name === 'NotReadableError' || err?.name === 'TrackStartError') {
+        alert('La cámara ya está siendo usada por otra aplicación o pestaña.');
+      } else if (err?.name === 'OverconstrainedError') {
+        alert('La cámara no soporta la configuración solicitada.');
+      } else if (err?.name === 'SecurityError') {
+        alert('Acceso a la cámara bloqueado por política de seguridad del sitio (revisa Permissions-Policy / si está en un iframe).');
+      } else {
+        alert(`No se pudo acceder a la cámara: ${err?.message || err?.name || 'error desconocido'}`);
+      }
       setIsCameraActive(false);
     }
   };
@@ -180,7 +214,7 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
   const capturePhoto = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
-    
+
     const TARGET_WIDTH = 400;
     const TARGET_HEIGHT = 400;
 
@@ -297,7 +331,7 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
             </h4>
             <div className="relative w-28 h-28 rounded-full border-2 border-[#006837]/20 bg-slate-200 overflow-hidden shadow-inner flex items-center justify-center">
               {isCameraActive ? (
-                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
+                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
               ) : fotografia ? (
                 <img src={fotografia} alt="Foto" className="w-full h-full object-cover" />
               ) : (
