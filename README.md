@@ -77,8 +77,8 @@ Este sistema permite a las autoridades de una Comisaría Ejidal o de Bienes Comu
 ### Instalación
 
 ```bash
-git clone <url-del-repositorio>
-cd <nombre-del-proyecto>
+git clone <https://github.com/Isaili/comuneros.git>
+cd <Comuneros>
 npm install
 ```
 
