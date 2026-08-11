@@ -43,11 +43,6 @@ Este sistema permite a las autoridades de una Comisaría Ejidal o de Bienes Comu
 - Historial de adeudos por comunero y por parcela.
 - Generación y resguardo de comprobantes de pago.
 
-### 📜 Actas y acuerdos de asamblea
-- Documentación digital de las decisiones tomadas en asamblea.
-- Resguardo histórico de actas y acuerdos comunitarios.
-- Consulta rápida por fecha, tema o participantes.
-
 ### ⚖️ Multas y sanciones
 - Registro de multas y sanciones vinculado directamente al expediente del comunero.
 - Seguimiento del estado de cada sanción (pendiente, pagada, condonada, etc.).
