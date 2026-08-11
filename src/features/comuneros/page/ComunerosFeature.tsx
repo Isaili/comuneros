@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Comunero, CrearComuneroPayload } from '../types/types';
 import { comunerosApi } from '../services/comunerosApi';
 import { ComunerosHeader } from '../components/ComunerosHeader';
@@ -105,8 +106,36 @@ export const ComunerosFeature: React.FC = () => {
 
       <div className="w-full">
         {isLoading ? (
-          <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 text-sm">
-            Cargando comuneros...
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-6 flex flex-col justify-between min-h-[600px]">
+            <div>
+              <h3 className="font-bold text-gray-900 text-base mb-4">
+                Lista de comuneros <span className="text-gray-900 font-bold">(0)</span>
+              </h3>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="text-gray-400 font-bold text-xs uppercase tracking-wider border-b border-gray-100">
+                      <th className="py-3 px-2">Nombre</th>
+                      <th className="py-3 px-2">Tipo</th>
+                      <th className="py-3 px-2">Comunero Desde</th>
+                      <th className="py-3 px-2">Vecindario</th>
+                      <th className="py-3 px-2 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td colSpan={5} className="py-24">
+                        <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+                          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                          Cargando comuneros...
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         ) : filteredComuneros.length > 0 ? (
           <ComunerosList
