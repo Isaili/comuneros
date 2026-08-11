@@ -103,7 +103,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
               {esEdicion ? 'Modificar Expediente de Parcela Comunal' : 'Alta de Parcela Comunal'}
             </h3>
             <p className="text-xs text-gray-400 font-medium mt-0.5">
-              Registro físico y fiscal de la parcela. La asignación de titular(es) se realiza por separado, desde el expediente.
+              Registro físico y catastral de la parcela. La asignación de titular(es) se realiza por separado, desde el expediente.
             </p>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100"><X className="w-4 h-4" /></button>
@@ -234,7 +234,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider flex items-center gap-1 text-red-800">
-                <DollarSign className="w-4 h-4" /> Historial Fiscal Hacendario
+                <DollarSign className="w-4 h-4" /> Historial de Pagos Prediales
               </h4>
               <button type="button" onClick={agregarPredialHistorico} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-800 border border-red-200 rounded-lg hover:bg-red-100/60">
                 <Plus className="w-3.5 h-3.5 stroke-[3]" /> Cargar Año Anterior
