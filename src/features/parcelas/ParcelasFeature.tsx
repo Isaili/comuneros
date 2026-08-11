@@ -19,7 +19,7 @@ interface ParcelasFeatureProps {
 export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegistrados = [] }) => {
   const {
     parcelas,
-    loading,
+    initialLoading,
     error,
     page,
     totalPages,
@@ -119,7 +119,7 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
       <div className="w-full">
         <ParcelasList
           parcelas={parcelas}
-          loading={loading}
+          initialLoading={initialLoading}
           page={page}
           totalPages={totalPages}
           onPageChange={setPage}

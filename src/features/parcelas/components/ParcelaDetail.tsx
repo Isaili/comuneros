@@ -183,7 +183,6 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
       ) : (
         <div className="space-y-4 py-2">
           <div className="bg-amber-50/60 border border-amber-100 text-amber-800 rounded-xl p-3 text-[11px] flex gap-2">
-            <span className="text-base">📜</span>
             <p>Este módulo registra el tracto sucesivo agrario, según actas de asamblea.</p>
           </div>
 

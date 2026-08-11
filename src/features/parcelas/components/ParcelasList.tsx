@@ -7,7 +7,7 @@ import { Parcela } from '../types/domain.types';
 interface ListProps {
   parcelas: Parcela[];
   selectedId: string;
-  loading?: boolean;
+  initialLoading?: boolean;
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -20,7 +20,7 @@ interface ListProps {
 export const ParcelasList: React.FC<ListProps> = ({
   parcelas,
   selectedId,
-  loading = false,
+  initialLoading = false,
   page,
   totalPages,
   onPageChange,
@@ -39,11 +39,6 @@ export const ParcelasList: React.FC<ListProps> = ({
           <h3 className="font-bold text-gray-900 text-base">
             Lista de parcelas ({parcelas.length})
           </h3>
-          {loading && (
-            <span className="flex items-center gap-1.5 text-xs text-gray-400 font-semibold">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando...
-            </span>
-          )}
         </div>
 
         <div className="overflow-x-auto">
@@ -60,14 +55,24 @@ export const ParcelasList: React.FC<ListProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {parcelas.length === 0 && !loading && (
+              {initialLoading && (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-gray-400 text-sm">
+                  <td colSpan={7} className="py-24">
+                    <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Cargando parcelas...
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {!initialLoading && parcelas.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-24 text-center text-gray-400 text-sm">
                     No se encontraron parcelas.
                   </td>
                 </tr>
               )}
-              {parcelas.map((p) => {
+              {!initialLoading && parcelas.map((p) => {
                 const isSelected = selectedId === p.id;
                 return (
                   <tr
