@@ -2,14 +2,36 @@
 
 import React, { useState } from 'react';
 import { Search, DollarSign } from 'lucide-react';
-import { Parcela } from '@/features/parcelas/types/types'; 
+import { Parcela } from '@/features/parcelas/types/domain.types'; 
 import { Lote } from '@/features/lotes/components/LotesList';
 import { ProcesarPagoModal } from './ProcesarPagoModal';
 
 // Datos dummy de ejemplo para visualizar el comportamiento de cobro
 const INITIAL_PARCELAS: Parcela[] = [
-  { id: 'p1', numero: 'Parcela 12', superficie: '2.50 ha', titularesCount: 1, propietarios: ['José Antonio Hernández'], estadoPredial: 'Pagar' },
-  { id: 'p2', numero: 'Parcela 45', superficie: '5.00 ha', titularesCount: 2, propietarios: ['María Guadalupe Pérez'], estadoPredial: 'Pagado' },
+  {
+    id: 'p1',
+    folioInterno: 'P-0012',
+    numero: 'Parcela 12',
+    superficie: '2.50 ha',
+    superficieHa: 2.5,
+    observaciones: '',
+    activo: true,
+    titularesCount: 1,
+    propietarios: ['José Antonio Hernández'],
+    estadoPredial: 'Pagar',
+  },
+  {
+    id: 'p2',
+    folioInterno: 'P-0045',
+    numero: 'Parcela 45',
+    superficie: '5.00 ha',
+    superficieHa: 5,
+    observaciones: '',
+    activo: true,
+    titularesCount: 2,
+    propietarios: ['María Guadalupe Pérez'],
+    estadoPredial: 'Pagado',
+  },
 ];
 
 const INITIAL_LOTES: Lote[] = [
