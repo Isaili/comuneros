@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Plus, Trash2, Calculator, Landmark, FileText, History, DollarSign } from 'lucide-react';
 import { Parcela, PropietarioHistorico, PredialHistorico } from '../types/domain.types';
+import { FechaTextInput } from './shared/Fechatextinput';
 
 export interface ParcelaFormPayload {
   numero: string;
@@ -192,8 +193,22 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
                       <tr key={index} className="hover:bg-amber-50/10">
                         <td className="p-2"><input type="text" required value={hist.nombre} onChange={(e) => actualizarPropietarioHistorico(index, 'nombre', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800 font-bold focus:border-amber-500" /></td>
                         <td className="p-2"><input type="text" required value={hist.certificado} onChange={(e) => actualizarPropietarioHistorico(index, 'certificado', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800" /></td>
-                        <td className="p-2"><input type="text" required placeholder="DD/MM/YYYY" value={hist.fechaAdquisicion} onChange={(e) => actualizarPropietarioHistorico(index, 'fechaAdquisicion', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800 text-center" /></td>
-                        <td className="p-2"><input type="text" required placeholder="DD/MM/YYYY" value={hist.fechaCesion} onChange={(e) => actualizarPropietarioHistorico(index, 'fechaCesion', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800 text-center" /></td>
+                        <td className="p-2">
+                          <FechaTextInput
+                            required
+                            value={hist.fechaAdquisicion}
+                            onChange={(v) => actualizarPropietarioHistorico(index, 'fechaAdquisicion', v)}
+                            className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800 text-center"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <FechaTextInput
+                            required
+                            value={hist.fechaCesion}
+                            onChange={(v) => actualizarPropietarioHistorico(index, 'fechaCesion', v)}
+                            className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800 text-center"
+                          />
+                        </td>
                         <td className="p-2">
                           <select value={hist.actoJuridico} onChange={(e) => actualizarPropietarioHistorico(index, 'actoJuridico', e.target.value)} className="w-full px-1 py-2 bg-white border border-gray-200 rounded-lg outline-none cursor-pointer">
                             <option value="Cesión de derechos">Cesión de Derechos</option>
@@ -244,8 +259,8 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
                         <td className="p-2"><input type="number" step="0.01" required value={pred.monto} onChange={(e) => actualizarPredialHistorico(index, 'monto', Number(e.target.value))} className="w-full px-2 py-2 border border-gray-200 rounded-lg text-gray-800 outline-none font-mono" /></td>
                         <td className="p-2">
                           <select value={pred.estado} onChange={(e) => actualizarPredialHistorico(index, 'estado', e.target.value)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg outline-none font-bold cursor-pointer">
-                            <option value="Pagado">🟢 PAGADO</option>
-                            <option value="Pagar">🔴 POR PAGAR</option>
+                            <option value="Pagado">PAGADO</option>
+                            <option value="Pagar"> POR PAGAR</option>
                           </select>
                         </td>
                         <td className="p-2 text-center">

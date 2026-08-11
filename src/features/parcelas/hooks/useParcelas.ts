@@ -6,10 +6,7 @@ import { Parcela, PredialHistorico, PropietarioHistorico, TitularFila } from '..
 import { plotsService } from '../services/parcelas.service';
 import { plotToParcela, parcelaToCreatePayload, parcelaToUpdatePayload } from '../adapters/parcela.adapter';
 
-// TODO_BACKEND: mientras no existan endpoints de titularidad/predial,
-// esta información se administra en memoria del lado del cliente,
-// indexada por el id de la parcela (Plot.id). Se pierde al recargar
-// la página; en cuanto exista el endpoint real, se reemplaza aquí.
+
 interface ParcelaExtras {
   estadoPredial: 'Pagado' | 'Pagar';
   propietarios: string[];
@@ -36,6 +33,7 @@ export function useParcelas(options: UseParcelasOptions = {}) {
 
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
@@ -69,6 +67,7 @@ export function useParcelas(options: UseParcelasOptions = {}) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la lista de parcelas.');
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [searchTerm, activeFilter, page, pageSize, mergeConExtras]);
 
@@ -84,7 +83,6 @@ export function useParcelas(options: UseParcelasOptions = {}) {
 
   useEffect(() => {
     fetchParcelas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchParcelas]);
 
   const createParcela = useCallback(async (input: {
@@ -150,9 +148,7 @@ export function useParcelas(options: UseParcelasOptions = {}) {
     await fetchParcelas();
   }, [fetchParcelas]);
 
-  // --- Acciones locales: asignación y traspaso de titular ---
-  // TODO_BACKEND: reemplazar por llamadas reales cuando exista el
-  // endpoint de titularidad de parcelas.
+
   const asignarTitular = useCallback((parcelaId: string, _comuneroId: string, nombreCompleto: string) => {
     const previas = extrasRef.current.get(parcelaId) ?? extrasVacias();
     extrasRef.current.set(parcelaId, {
@@ -212,6 +208,7 @@ export function useParcelas(options: UseParcelasOptions = {}) {
   return {
     parcelas,
     loading,
+    initialLoading,
     error,
     page,
     totalPages,
