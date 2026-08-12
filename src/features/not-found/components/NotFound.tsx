@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function NotFound() {
-  const router = useRouter();
+  let router;
+  try {
+    router = useRouter();
+  } catch (e) {
+    // Storybook / test environments may not mount the Next App Router; provide a fallback
+    router = { back: () => (typeof window !== 'undefined' ? window.history.back() : undefined) } as { back: () => void };
+  }
 
   function handleReport() {
     const subject = encodeURIComponent("Error 404 en la aplicación: recurso no encontrado");
