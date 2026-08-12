@@ -42,3 +42,5 @@ next-env.d.ts
 
 certificates/
 *.pem
+*storybook.log
+storybook-static
