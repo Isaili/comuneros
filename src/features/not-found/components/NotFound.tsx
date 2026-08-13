@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+type GeoJSONFeatureCollection = {
+  type: string;
+  features: any[];
+};
 
 export default function NotFound() {
   // Router fallback for test/Storybook
@@ -13,29 +18,142 @@ export default function NotFound() {
     router = { back: () => (typeof window !== "undefined" ? window.history.back() : undefined) } as { back: () => void };
   }
 
-  const [copied, setCopied] = useState(false);
+  // Interactive map state: pan/zoom and tilt (3D-like)
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const lastPos = useRef<{ x: number; y: number } | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [tilt, setTilt] = useState(12); // degrees for 3D tilt
+  const [isTilted, setIsTilted] = useState(true);
 
-  function handleReport() {
-    const subject = encodeURIComponent("REPORTE SISTEMA EJIDAL: Recurso no localizado (Error 404)");
-    const body = encodeURIComponent(
-      `Estimada Mesa Directiva y Soporte Técnico,\n\nSe reporta un problema dentro del Portal Ejidal.\n\n` +
-      `📌 Ubicación: ${typeof window !== "undefined" ? window.location.href : "(Desconocida)"}\n` +
-      `📅 Fecha/Hora: ${new Date().toLocaleString()}\n` +
-      `📝 Descripción del trámite o consulta intentada:\n- `
-    );
-    window.location.href = `mailto:mesadirectiva@comisariaejidal.gob.mx?subject=${subject}&body=${body}`;
+  // GeoJSON dynamic layers (optional)
+  const [layers, setLayers] = useState<GeoJSONFeatureCollection[]>([]);
+
+  useEffect(() => {
+    // Try to fetch optional GeoJSON layers from public/data
+    async function loadLayers() {
+      const urls = [
+        "/data/parcelas.geojson",
+        "/data/municipios.geojson",
+        "/data/limites.geojson",
+      ];
+      const loaded: GeoJSONFeatureCollection[] = [];
+      for (const url of urls) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const json = await res.json();
+          if (json?.type === "FeatureCollection") loaded.push(json);
+        } catch (e) {
+          // ignore missing files
+        }
+      }
+      setLayers(loaded);
+    }
+    loadLayers();
+  }, []);
+
+  // Basic bounding box for Chiapas (approximate) to project lat/lon into SVG coords
+  // These bounds can be refined later or replaced by GeoJSON extents
+  const minLat = 14.9; // south (Tapachula approx)
+  const maxLat = 17.6; // north (Palenque approx)
+  const minLon = -94.8; // west
+  const maxLon = -91.5; // east
+
+  // SVG viewBox used for the map silhouette
+  const viewWidth = 600;
+  const viewHeight = 700;
+
+  function project([lon, lat]: [number, number]) {
+    // simple equirectangular projection mapped into our SVG viewbox area used for the silhouette
+    const x = ((lon - minLon) / (maxLon - minLon)) * (viewWidth * 0.85) + viewWidth * 0.07;
+    // invert lat because SVG y grows downward
+    const y = (1 - (lat - minLat) / (maxLat - minLat)) * (viewHeight * 0.85) + viewHeight * 0.07;
+    return [x, y];
   }
 
-  async function handleCopyLink() {
-    if (typeof window === "undefined") return;
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch (e) {
-      // silent fallback
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+  // Markers with real-ish coordinates (approximate lat/lon)
+  const markers = [
+    { id: 'copainala', name: 'Copainalá', lat: 16.58, lon: -93.06, primary: true }, // approximate
+    { id: 'tuxtla', name: 'Tuxtla Gutiérrez', lat: 16.753, lon: -93.116, primary: false },
+    { id: 'sancristobal', name: 'San Cristóbal', lat: 16.737, lon: -92.637, primary: false },
+    { id: 'palenque', name: 'Palenque', lat: 17.481, lon: -91.974, primary: false },
+    { id: 'comitan', name: 'Comitán', lat: 16.254, lon: -92.127, primary: false },
+    { id: 'tapachula', name: 'Tapachula', lat: 14.900, lon: -92.258, primary: false },
+  ];
+
+  // Pan handlers
+  function handlePointerDown(e: React.PointerEvent) {
+    setIsPanning(true);
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    (e.target as Element).setPointerCapture(e.pointerId);
+  }
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!isPanning || !lastPos.current) return;
+    const dx = e.clientX - lastPos.current.x;
+    const dy = e.clientY - lastPos.current.y;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+  }
+  function handlePointerUp(e: React.PointerEvent) {
+    setIsPanning(false);
+    lastPos.current = null;
+  }
+
+  // Wheel to zoom
+  function handleWheel(e: React.WheelEvent) {
+    e.preventDefault();
+    const delta = -e.deltaY;
+    const zoomFactor = delta > 0 ? 1.08 : 0.92;
+    setScale(s => Math.min(3, Math.max(0.6, +(s * zoomFactor).toFixed(3))));
+  }
+
+  // Convert GeoJSON coordinates to SVG path (supports Polygon and MultiPolygon)
+  function geojsonToPath(feature: any) {
+    if (!feature || !feature.geometry) return '';
+    const { type, coordinates } = feature.geometry;
+    if (type === 'Polygon') {
+      return coordinates.map((ring: [number, number][]) => {
+        return 'M ' + ring.map((pt: [number, number]) => {
+          const [x, y] = project(pt);
+          return `${x.toFixed(2)} ${y.toFixed(2)}`;
+        }).join(' L ') + ' Z';
+      }).join(' ');
+    }
+    if (type === 'MultiPolygon') {
+      return coordinates.map((poly: any) => poly.map((ring: any) => 'M ' + ring.map((pt: [number, number]) => {
+        const [x, y] = project(pt);
+        return `${x.toFixed(2)} ${y.toFixed(2)}`;
+      }).join(' L ') + ' Z').join(' ')).join(' ');
+    }
+    return '';
+  }
+
+  // Tilt transform for 3D-like effect
+  const tiltTransform = isTilted ? `rotateX(${tilt}deg)` : 'rotateX(0deg)';
+
+  // Click handler for reporting a problem (used by the Reportar problema button)
+  function handleReport(e?: React.MouseEvent<HTMLButtonElement>) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const subject = 'Reporte: página no encontrada (404)';
+    const body = `Encontré una página 404 en: ${url}\n\nDescribe el problema aquí:\n`;
+    const mailto = `mailto:soporte@comisaria.example?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    // Prefer Web Share API when available (better UX on mobile), otherwise fallback to mailto
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      try {
+        (navigator as any).share({ title: subject, text: body, url });
+        return;
+      } catch (err) {
+        // ignore and fallback to mail client
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.location.href = mailto;
     }
   }
 
@@ -45,17 +163,27 @@ export default function NotFound() {
       aria-labelledby="notfound-title"
       className="min-h-screen flex items-center justify-center p-4 sm:p-8 font-sans relative bg-gradient-to-b from-[#061914] via-[#07271b] to-[#0a2f22]"
     >
-      <div className="max-w-6xl w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-stone-200/5 relative z-10">
+      <div className="max-w-6xl w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-stone-200/5 relative z-10 bg-opacity-80">
 
-        {/* LEFT PANEL: Map rendered as inline SVG */}
+        {/* LEFT PANEL: Map as inline SVG with interactivity */}
         <aside className="lg:w-5/12 bg-[#04221a] text-stone-100 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden shrink-0">
 
           <div className="absolute top-6 right-6 flex items-center gap-3 z-20">
-            <button aria-pressed="true" className="bg-[#083329] text-emerald-300 px-3 py-1 rounded-md text-sm border border-emerald-800/40">3D</button>
-            <button className="bg-transparent text-emerald-300 px-3 py-1 rounded-md text-sm border border-emerald-800/30">2D</button>
+            <button
+              onClick={() => { setIsTilted(true); setTilt(16); }}
+              aria-pressed={isTilted}
+              className={`px-3 py-1 rounded-md text-sm border ${isTilted ? 'bg-[#083329] text-emerald-300 border-emerald-800/40' : 'bg-transparent text-emerald-300 border-emerald-800/30'}`}>
+              3D
+            </button>
+            <button
+              onClick={() => { setIsTilted(false); setTilt(0); }}
+              aria-pressed={!isTilted}
+              className={`px-3 py-1 rounded-md text-sm border ${!isTilted ? 'bg-[#083329] text-emerald-300 border-emerald-800/40' : 'bg-transparent text-emerald-300 border-emerald-800/30'}`}>
+              2D
+            </button>
           </div>
 
-          <div className="flex items-center gap-4 pb-4">
+          <div className="flex items-center gap-4 pb-4 z-20">
             <div className="w-12 h-12 rounded-xl bg-transparent border border-amber-500/50 flex items-center justify-center text-amber-400 font-serif font-black text-xl shadow-inner shrink-0">CE</div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500">República Mexicana</p>
@@ -64,80 +192,71 @@ export default function NotFound() {
             </div>
           </div>
 
-          <div className="mt-4 mb-4 w-full flex-1 flex items-center justify-center relative">
-            <div className="w-full max-w-[420px] h-[480px] relative">
+          <div
+            ref={containerRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+            onWheel={handleWheel}
+            className="mt-4 mb-4 w-full flex-1 flex items-center justify-center relative z-10 touch-none"
+          >
+            <div className="w-full max-w-[420px] h-[480px] relative" style={{ perspective: 1200 }}>
 
-              <svg viewBox="0 0 600 700" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-lg rounded-lg overflow-hidden">
-                <defs>
-                  <linearGradient id="gTerrain" x1="0" x2="1">
-                    <stop offset="0%" stopColor="#06281c" />
-                    <stop offset="50%" stopColor="#0f3a27" />
-                    <stop offset="100%" stopColor="#154e36" />
-                  </linearGradient>
-                  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="6" result="coloredBlur" />
-                    <feMerge>
-                      <feMergeNode in="coloredBlur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                  <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#02190f" floodOpacity="0.35"/>
-                  </filter>
-                </defs>
+              <div style={{ transformStyle: 'preserve-3d', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 220ms ease' }} className="map-viewport origin-center">
+                <svg ref={svgRef} viewBox={`0 0 ${viewWidth} ${viewHeight}`} xmlns="http://www.w3.org/2000/svg" className="w-full h-full rounded-lg overflow-hidden" style={{ transform: tiltTransform, transformOrigin: 'center center' }}>
+                  <defs>
+                    <linearGradient id="gTerrain2" x1="0" x2="1">
+                      <stop offset="0%" stopColor="#063023" />
+                      <stop offset="50%" stopColor="#0e3f2b" />
+                      <stop offset="100%" stopColor="#1a5b3c" />
+                    </linearGradient>
+                    <filter id="softShadow2" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="12" stdDeviation="18" floodColor="#00140b" floodOpacity="0.45" />
+                    </filter>
+                  </defs>
 
-                {/* Stylized silhouette of Chiapas (illustrative) */}
-                <path d="M50,600 C80,520 120,480 160,470 C210,460 240,430 290,420 C330,412 360,394 400,370 C440,345 480,320 540,260 C560,240 580,200 560,150 C540,100 500,90 460,80 C420,70 380,74 340,90 C300,106 280,130 250,140 C220,150 180,160 160,140 C140,120 120,90 90,80 C60,70 40,90 30,120 C20,150 10,200 20,260 C30,320 40,380 60,440 C80,500 40,620 50,600 Z"
-                  fill="url(#gTerrain)" stroke="#0b3b25" strokeWidth="4" filter="url(#softShadow)" />
+                  {/* Silhouette */}
+                  <path d="M50,600 C80,520 120,480 160,470 C210,460 240,430 290,420 C330,412 360,394 400,370 C440,345 480,320 540,260 C560,240 580,200 560,150 C540,100 500,90 460,80 C420,70 380,74 340,90 C300,106 280,130 250,140 C220,150 180,160 160,140 C140,120 120,90 90,80 C60,70 40,90 30,120 C20,150 10,200 20,260 C30,320 40,380 60,440 C80,500 40,620 50,600 Z"
+                    fill="url(#gTerrain2)" stroke="#083b2a" strokeWidth="3" filter={isTilted ? 'url(#softShadow2)' : undefined} />
 
-                {/* Topographic ridges (simple curves) */}
-                <g stroke="#072b1c" strokeWidth="2" opacity="0.7" fill="none">
-                  <path d="M80,540 C120,480 160,460 200,450" />
-                  <path d="M120,460 C160,420 210,400 260,390" />
-                  <path d="M240,360 C290,340 340,320 380,300" />
-                  <path d="M340,200 C370,190 410,180 450,170" />
-                </g>
-
-                {/* Coastline glow */}
-                <path d="M60,440 C80,500 40,620 50,600" fill="none" stroke="#0efc9a" strokeWidth="2" opacity="0.5" />
-
-                {/* Markers for main localities (illustrative coords) */}
-                <g fontFamily="Inter, system-ui, sans-serif" fontWeight="700" fill="#e6fff0">
-                  <g transform="translate(200,260)">
-                    <circle r="10" fill="#ffb84d" stroke="#fff2d9" strokeWidth="2" />
-                    <text x="16" y="6" fontSize="13" fill="#f8fff6">Tuxtla Gutiérrez</text>
+                  {/* Topo lines */}
+                  <g stroke="#07311f" strokeWidth="1.2" opacity="0.7">
+                    <path d="M80,540 C120,480 160,460 200,450" />
+                    <path d="M120,460 C160,420 210,400 260,390" />
+                    <path d="M240,360 C290,340 340,320 380,300" />
+                    <path d="M340,200 C370,190 410,180 450,170" />
                   </g>
-                  <g transform="translate(320,220)">
-                    <circle r="7" fill="#9fe6b6" stroke="#dfffe9" strokeWidth="1.5" />
-                    <text x="12" y="5" fontSize="11">San Cristóbal</text>
-                  </g>
-                  <g transform="translate(420,110)">
-                    <circle r="7" fill="#9fe6b6" stroke="#dfffe9" strokeWidth="1.5" />
-                    <text x="12" y="5" fontSize="11">Palenque</text>
-                  </g>
-                  <g transform="translate(480,280)">
-                    <circle r="7" fill="#9fe6b6" stroke="#dfffe9" strokeWidth="1.5" />
-                    <text x="12" y="5" fontSize="11">Comitán</text>
-                  </g>
-                  <g transform="translate(140,520)">
-                    <circle r="7" fill="#9fe6b6" stroke="#dfffe9" strokeWidth="1.5" />
-                    <text x="12" y="5" fontSize="11">Tapachula</text>
-                  </g>
-                </g>
 
-                {/* Selected parcel glow and X marker */}
-                <g>
-                  <ellipse cx="205" cy="270" rx="28" ry="12" fill="#ffd67a" opacity="0.12" />
-                  <circle cx="200" cy="260" r="5" fill="#ffb84d" />
-                  <text x="210" y="260" fontSize="10" fill="#fff8ea" fontWeight="700">Predio no localizado</text>
-                </g>
+                  {/* Optional layers from GeoJSON */}
+                  {layers.map((col, idx) => (
+                    <g key={idx} fill="none" stroke="#2b6a4a" strokeWidth={0.8} opacity={0.7}>
+                      {col.features.map((f, i) => (
+                        <path key={i} d={geojsonToPath(f)} />
+                      ))}
+                    </g>
+                  ))}
 
-              </svg>
+                  {/* Markers rendered from lat/lon */}
+                  <g>
+                    {markers.map(m => {
+                      const [x, y] = project([m.lon, m.lat]);
+                      return (
+                        <g key={m.id} transform={`translate(${x}, ${y})`} className="cursor-pointer">
+                          <circle r={m.primary ? 9 : 6} fill={m.primary ? '#ffd28a' : '#9fe6b6'} stroke="#fff2d9" strokeWidth={m.primary ? 2.5 : 1.2} />
+                          <text x={m.primary ? 14 : 12} y={m.primary ? 6 : 5} fontSize={m.primary ? 13 : 11} fill="#f8fff6" fontWeight={700}>{m.name}</text>
+                        </g>
+                      );
+                    })}
+                  </g>
 
-              {/* Zoom controls (visual only) */}
+                </svg>
+              </div>
+
+              {/* Zoom controls visual */}
               <div className="absolute left-3 bottom-6 flex flex-col bg-[#05231c]/60 rounded-lg p-2 gap-2 border border-emerald-800/40">
-                <button aria-label="zoom in" className="text-white w-8 h-8 flex items-center justify-center rounded-md border border-emerald-700/30">+</button>
-                <button aria-label="zoom out" className="text-white w-8 h-8 flex items-center justify-center rounded-md border border-emerald-700/30">-</button>
+                <button aria-label="zoom in" onClick={() => setScale(s => Math.min(3, +(s * 1.12).toFixed(3)))} className="text-white w-8 h-8 flex items-center justify-center rounded-md border border-emerald-700/30">+</button>
+                <button aria-label="zoom out" onClick={() => setScale(s => Math.max(0.6, +(s / 1.12).toFixed(3)))} className="text-white w-8 h-8 flex items-center justify-center rounded-md border border-emerald-700/30">-</button>
               </div>
 
               {/* Legend */}
@@ -160,7 +279,7 @@ export default function NotFound() {
 
         </aside>
 
-        {/* RIGHT PANEL */}
+        {/* RIGHT PANEL: 404 content */}
         <section className="lg:w-7/12 p-8 sm:p-12 flex flex-col justify-between bg-stone-50 relative">
 
           <div>
@@ -170,8 +289,14 @@ export default function NotFound() {
             </div>
 
             <h1 className="text-7xl sm:text-8xl font-black text-[#05231c] tracking-tight leading-none mb-3">404</h1>
-            <h2 id="notfound-title" className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight mb-3">No encontramos la página solicitada</h2>
-            <p className="text-stone-600 text-sm leading-relaxed max-w-xl mb-8">Es posible que el enlace haya expirado, la clave catastral o expediente haya cambiado de formato, o la página haya sido removida del portal oficial.</p>
+            <h2 id="notfound-title" className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight mb-3">Predio o página no localizada</h2>
+            <p className="text-stone-600 text-sm leading-relaxed max-w-xl mb-6">Es posible que el enlace haya expirado, la clave catastral o expediente haya cambiado de formato, o la página haya sido removida del portal oficial.</p>
+
+            {/* Search box */}
+            <div className="flex items-center gap-3 max-w-xl mb-6">
+              <input aria-label="buscar" placeholder="Buscar expediente, parcela, reglamento, actas..." className="flex-1 px-4 py-3 rounded-md border border-stone-200" />
+              <button className="px-4 py-3 bg-emerald-800 text-white rounded-md">Buscar</button>
+            </div>
 
             <div className="pt-4">
               <div className="relative flex items-center justify-center mb-6">
