@@ -101,7 +101,7 @@ export default function NotFound() {
         </section>
 
         <footer className="pb-2 text-center text-sm text-stone-300">
-          <span className="font-semibold text-[#a6f35a]">Comisaría Ejidal</span> © 2024 · Todos los derechos reservados
+          <span className="font-semibold text-[#a6f35a]">Comisaría Ejidal</span> © 2026 · Todos los derechos reservados
         </footer>
       </div>
     </main>
