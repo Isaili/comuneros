@@ -192,9 +192,9 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
                 const esActual = idx === 0;
                 return (
                   <div key={idx} className="relative">
-                    <div className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full border-2 bg-white flex items-center justify-center ${esActual ? 'border-[#006837] ring-4 ring-[#006837]/10' : 'border-slate-300'}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${esActual ? 'bg-[#006837]' : 'bg-slate-300'}`} />
-                    </div>
+                  <div className={`absolute -left-[33px] top-1 w-4 h-4 rounded-full border-2 bg-white ${esActual ? 'border-[#006837] ring-4 ring-[#006837]/10' : 'border-slate-300'}`}>
+                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${esActual ? 'bg-[#006837]' : 'bg-slate-300'}`} />
+                  </div>
                     <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3 space-y-1.5 text-[11px]">
                       <div className="flex justify-between items-start gap-2">
                         <div>

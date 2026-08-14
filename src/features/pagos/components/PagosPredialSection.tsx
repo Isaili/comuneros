@@ -9,7 +9,8 @@ import { ProcesarPagoModal } from './ProcesarPagoModal';
 const INITIAL_PARCELAS: Parcela[] = [
   {
     id: 'p1',
-    folioInterno: 'Parcela 12',
+
+    folioInterno: 'P-0012',
     numero: 'Parcela 12',
     superficie: '2.50 ha',
     superficieHa: 2.5,
@@ -21,7 +22,9 @@ const INITIAL_PARCELAS: Parcela[] = [
   },
   {
     id: 'p2',
-    folioInterno: 'Parcela 45',
+
+    folioInterno: 'P-0045',
+
     numero: 'Parcela 45',
     superficie: '5.00 ha',
     superficieHa: 5,

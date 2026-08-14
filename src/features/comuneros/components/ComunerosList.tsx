@@ -117,7 +117,7 @@ export const ComunerosList: React.FC<ListProps> = ({
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-gray-900 text-base">
-            Lista de comuneros <span className="text-gray-400 font-medium">({comuneros.length})</span>
+            Lista de comuneros ({comuneros.length})
           </h3>
         </div>
 

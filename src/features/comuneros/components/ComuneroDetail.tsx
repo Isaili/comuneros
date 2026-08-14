@@ -153,29 +153,40 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
       </div>
 
       {/* Grid de Fotografía y QR */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
+        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center text-center">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Fotografía</p>
-          {foto && !imgError ? (
-            <img
-              src={foto}
-              alt="Identificación"
-              className="w-32 h-32 rounded-xl object-cover shadow-sm border border-gray-200"
-            />
-          ) : (
-            <div className="w-32 h-32 rounded-xl bg-gray-200/60 flex items-center justify-center text-gray-400 font-bold text-xl border border-gray-200">
-              Sin foto
-            </div>
-          )}
+
+          <div className="flex-1 flex items-center justify-center">
+            {foto && !imgError ? (
+              <img
+                src={foto}
+                alt="Identificación"
+                className="w-32 h-32 rounded-xl object-cover shadow-sm border border-gray-200"
+              />
+            ) : (
+              <div className="w-32 h-32 rounded-xl bg-gray-200/60 flex items-center justify-center text-gray-400 font-bold text-xl border border-gray-200">
+                Sin foto
+              </div>
+            )}
+          </div>
+
+          <span className="text-[11px] font-extrabold tracking-wider mt-2 px-2.5 py-1 rounded invisible select-none">
+            FOLIO: {folio}
+          </span>
         </div>
 
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center text-center">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <QrCode className="w-3.5 h-3.5 text-gray-400" /> Código QR
+            Código QR
           </p>
-          <div className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-inner">
-            <img src={qrUrl} alt={`Código QR - ${folio}`} className="w-28 h-28 object-contain" />
+
+          <div className="flex-1 flex items-center justify-center">
+            <div className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-inner">
+              <img src={qrUrl} alt={`Código QR - ${folio}`} className="w-28 h-28 object-contain" />
+            </div>
           </div>
+
           <span className="text-[11px] font-extrabold text-[#006837] tracking-wider mt-2 bg-emerald-50 px-2.5 py-1 rounded">
             FOLIO: {folio}
           </span>
