@@ -64,7 +64,7 @@ export default function NotFound() {
                 Casa de Bienes Comunales
               </h1>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#9ff76a]">
-                Copainalá, Chiapas
+                Copainalá, Chiapas.
               </p>
             </div>
           </div>
