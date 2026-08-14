@@ -1,5 +1,5 @@
 
-import ParcelasFeature from '@/features/parcelas/ParcelasFeature';
+import ParcelasFeature from '@/features/parcelas/page/ParcelasFeature';
 
 export default function MenuPage() {
   return <ParcelasFeature />;
