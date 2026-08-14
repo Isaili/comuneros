@@ -52,15 +52,14 @@ export default function DashboardHero() {
   return (
     <section className="relative min-h-screen w-full overflow-hidden font-sans flex flex-col justify-between">
       {/* --- FONDO --- */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundColor: '#1d3f2c',
-          backgroundImage: "linear-gradient(rgba(11, 20, 13, 0.18), rgba(11, 20, 13, 0.32)), url('/img1.webp')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
+     <div
+  className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+  style={{
+    backgroundImage: "url('/mejora.webp')",
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  }}
+/>
       <div className="absolute inset-0 bg-gradient-to-b from-[#0F1A12]/90 via-[#12201580] to-[#0B140D]/95" />
 
       {/* --- CONTENIDO PRINCIPAL --- */}

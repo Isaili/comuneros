@@ -32,7 +32,7 @@ export default function NotFound() {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(5, 22, 17, 0.45), rgba(5, 22, 17, 0.78)), url('/img1.webp')",
+            "linear-gradient(rgba(5, 22, 17, 0.45), rgba(5, 22, 17, 0.78)), url('/mejora.webp')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: "saturate(1.2) contrast(1.08) brightness(0.82)",
@@ -57,12 +57,14 @@ export default function NotFound() {
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[#9ff76a] bg-[#0a1d18]/70 text-lg font-black text-[#9ff76a] shadow-[0_0_20px_rgba(159,247,106,0.25)]">
-              CE
+              CBC
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-white md:text-3xl">Comisaría</h1>
+              <h1 className="text-xl font-black tracking-tight text-white md:text-2xl">
+                Casa de Bienes Comunales
+              </h1>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#9ff76a]">
-                Ejidal
+                Copainalá, Chiapas
               </p>
             </div>
           </div>
@@ -82,13 +84,13 @@ export default function NotFound() {
           </div>
 
           <h2 className="mt-3 text-[1.8rem] font-black leading-tight text-white md:text-[3.6rem]">
-            ¡Ups! Predio o página no localizada
+            ¡Ups! página no encontrada
           </h2>
 
           <p className="mt-6 max-w-3xl text-base text-stone-200 md:text-xl">
             La información que buscas no existe o fue movida.
             <br />
-            Verifica la clave catastral o expediente, pero no te preocupes, sigamos explorando.
+            pero no te preocupes, sigamos explorando.
           </p>
 
           <button
