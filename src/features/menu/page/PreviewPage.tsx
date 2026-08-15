@@ -11,6 +11,7 @@ import KioscoQRFeature from '../../kiosco-qr/page/KioscoQRFeature';
 import BienvenidaComuneroFeature from '../../bienvenida-comunero/page/BienvenidaComuneroFeature';
 import ReportesFeature from '../../reportes/page/ReportesFeature';
 import { PredialPagos } from '../../pagos/page/PredialPagos';
+import ConfiguracionPage from '../../configure/page/page';
 
 export const PreviewPage: React.FC = () => {
   const [currentView, setView] = useState<string>('dashboard');
@@ -26,6 +27,7 @@ export const PreviewPage: React.FC = () => {
     'reportes',
     'kiosco-qr',
     'Pantalla de Asistencia',
+    'configuracion',
   ];
 
   return (
@@ -68,6 +70,9 @@ export const PreviewPage: React.FC = () => {
 
         {/* VISTA: Pantalla de Asistencia */}
         {currentView === 'Pantalla de Asistencia' && <BienvenidaComuneroFeature />}
+
+        {/* VISTA: Configuración */}
+        {currentView === 'configuracion' && <ConfiguracionPage />}
 
         {/* VISTAS EN DESARROLLO */}
         {!vistasValidas.includes(currentView) && (

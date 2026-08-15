@@ -11,7 +11,6 @@ import {
   ClipboardList,
   QrCode,
   ShieldCheck,
-  ChevronDown,
   Menu,
   X,
   Monitor,
@@ -29,6 +28,7 @@ const menuItems = [
   { name: "Reportes", view: "reportes", icon: ClipboardList },
   { name: "Kiosco QR", view: "kiosco-qr", icon: QrCode },
   { name: "Bienvenida Comunero", view: "Pantalla de Asistencia", icon: Monitor },
+  { name: "Configuración", view: "configuracion", icon: ShieldCheck },
 ];
 
 // Definición estricta de las propiedades que controlan la SPA
