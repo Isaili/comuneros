@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🏛️ Sistema de Gestión para Comisaría Ejidal/Comunal
+# 🏛️ Sistema de Gestión para Comisaría Comunal
 
-**Plataforma web integral para la modernización administrativa de comisarías ejidales y comunales**
+**Plataforma web integral para la modernización administrativa de comisarías y bienes comunales**
 
 Digitaliza procesos que tradicionalmente se llevan en papel y centraliza la información del núcleo agrario en un solo sistema, accesible y seguro.
 
@@ -23,12 +23,12 @@ Digitaliza procesos que tradicionalmente se llevan en papel y centraliza la info
 
 ## 📋 Descripción
 
-Este sistema permite a las autoridades de una Comisaría Ejidal o de Bienes Comunales llevar el control administrativo, jurídico y financiero del núcleo agrario desde una sola plataforma, sustituyendo el manejo en papel por expedientes digitales, trazabilidad de pagos y respaldo de decisiones asamblearias.
+Este sistema permite a las autoridades de una Comisaría Comunal o de Bienes Comunales llevar el control administrativo, jurídico y financiero del núcleo agrario desde una sola plataforma, sustituyendo el manejo en papel por expedientes digitales, trazabilidad de pagos y respaldo de decisiones asamblearias.
 
 ## ✨ Funcionalidades principales
 
-### 👥 Padrón de comuneros y ejidatarios
-- Expedientes digitales individuales por comunero/ejidatario.
+### 👥 Padrón de comuneros
+- Expedientes digitales individuales por comunero.
 - Historial completo de parcelas asociadas, pagos y actos jurídicos.
 - Alta, edición y consulta de datos personales y documentación.
 - Captura de fotografía vía cámara del dispositivo para el expediente.

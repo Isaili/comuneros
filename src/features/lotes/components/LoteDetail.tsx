@@ -142,7 +142,7 @@ export const LoteDetail: React.FC<DetailProps> = ({ lote }) => {
                     </td>
                     <td className="py-2.5 font-mono text-gray-600 font-medium whitespace-nowrap">CERT-{lote.numero}</td>
                     <td className="py-2.5 text-gray-900">{idx === 0 && lote.propietarios.length > 1 ? coposesion + (100 % lote.propietarios.length) : coposesion}%</td>
-                    <td className="py-2.5 font-medium text-gray-600">Ejidatario</td>
+                    <td className="py-2.5 font-medium text-gray-600">Comunero</td>
                     <td className="py-2.5 font-medium text-gray-600 whitespace-nowrap">Cesión de derechos</td>
                     <td className="py-2.5 text-gray-500 font-medium leading-tight whitespace-nowrap">
                       15/03/2012<br/><span className="text-[9px] text-gray-300">—</span>

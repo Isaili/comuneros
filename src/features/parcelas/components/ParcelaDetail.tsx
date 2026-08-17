@@ -113,7 +113,7 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
                       const detalle = titularesDetalle?.[index];
                       const hectareas = detalle?.hectareasPosesion ?? (parcela.superficieHa / listaPropietarios.length);
                       const certificado = detalle?.certificado ?? '—';
-                      const calidad = detalle?.calidadAgraria ?? 'Ejidatario';
+                      const calidad = detalle?.calidadAgraria ?? 'Comunero';
                       const acto = detalle?.actoJuridico ?? 'Cesión de derechos';
                       const [primerNombre, ...resto] = propietario.split(' ');
 

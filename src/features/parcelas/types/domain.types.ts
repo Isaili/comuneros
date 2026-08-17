@@ -29,7 +29,7 @@ export interface TitularFila {
   nombreCompleto: string;
   certificado: string;
   hectareasPosesion: number;
-  calidadAgraria: 'Ejidatario' | 'Avecindado' | 'Posesionario' | string;
+  calidadAgraria: 'Comunero' | 'Avecindado' | 'Posesionario' | string;
   actoJuridico: 'Asignación' | 'Cesión de derechos' | 'Sucesión' | string;
   vigencia: 'Vigente' | string;
 }

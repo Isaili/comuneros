@@ -122,7 +122,7 @@ export const LotesFeature: React.FC = () => {
       estadoPredial: loteSimplificado.estadoPredial,
       propietario: loteSimplificado.propietarios[0] || 'Sin propietario asignado',
       certificado: `CERT-${loteSimplificado.folio}`, 
-      calidadAgraria: 'Ejidatario',
+      calidadAgraria: 'Comunero',
       actoJuridico: 'Asignación Directa',
       historialPropietarios: [],
       historialPrediales: [],

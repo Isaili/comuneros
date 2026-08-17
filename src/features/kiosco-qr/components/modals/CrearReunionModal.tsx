@@ -105,7 +105,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
               type="text"
               value={lugar}
               onChange={(e) => setLugar(e.target.value)}
-              placeholder="Ej. Salón ejidal principal"
+              placeholder="Ej. Salón comunal principal"
               className={`mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-[#1E4D3A]/20 focus:border-[#1E4D3A]/40 ${
                 errores.lugar ? 'border-red-300' : 'border-gray-200'
               }`}

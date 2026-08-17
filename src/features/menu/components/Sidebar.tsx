@@ -158,7 +158,7 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
                   Administrador
                 </span>
                 <span className="text-[10px] text-emerald-800 font-bold truncate mt-0.5">
-                  Comisaría Ejidal
+                  Comisaría Comunal
                 </span>
               </div>
             </div>

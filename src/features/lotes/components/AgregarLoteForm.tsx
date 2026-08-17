@@ -37,7 +37,7 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
   const [comuneroId, setComuneroId] = useState<string>('');
   const [nombreCompleto, setNombreCompleto] = useState<string>('');
   const [certificado, setCertificado] = useState<string>('');
-  const [calidadAgraria, setCalidadAgraria] = useState<string>('Ejidatario');
+  const [calidadAgraria, setCalidadAgraria] = useState<string>('Comunero');
   const [actoJuridico, setActoJuridico] = useState<string>('Asignación');
 
   // 3. Historiales vinculados
@@ -58,7 +58,7 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
       setAncho(loteAEditar.ancho || 20);
       setEstadoPredialActual(loteAEditar.estadoPredial);
       setCertificado(loteAEditar.certificado || '');
-      setCalidadAgraria(loteAEditar.calidadAgraria || 'Ejidatario');
+      setCalidadAgraria(loteAEditar.calidadAgraria || 'Comunero');
       setActoJuridico(loteAEditar.actoJuridico || 'Asignación');
       setHistorialPropietarios(loteAEditar.historialPropietarios || []);
       setHistorialPrediales(loteAEditar.historialPrediales || []);
@@ -327,7 +327,7 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
                 <div className="space-y-1.5">
                   <label className="text-gray-500 font-bold block">Calidad Agraria</label>
                   <select value={calidadAgraria} onChange={(e) => setCalidadAgraria(e.target.value)} className="w-full px-1.5 py-2 bg-white border border-gray-200 rounded-lg outline-none text-xs">
-                    <option value="Ejidatario">Ejidatario(a)</option>
+                    <option value="Comunero">Comunero(a)</option>
                     <option value="Avecindado">Avecindado(a)</option>
                     <option value="Posesionario">Posesionario(a)</option>
                   </select>
