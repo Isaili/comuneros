@@ -8,6 +8,40 @@ import {
 } from '../types/types';
 import { mapearComuneroDesdeBackend } from './comunero.mapper';
 
+export const generarQrUnico = (seed?: string): string => {
+  const normalizedSeed = (seed || `${Date.now()}-${Math.random().toString(16).slice(2)}`)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .slice(0, 12)
+    .toUpperCase();
+
+  const baseSeed = normalizedSeed || 'MIEMBRO';
+
+  const stableHash = (value: string) => {
+    let hash = 0;
+    for (let i = 0; i < value.length; i += 1) {
+      hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+    }
+    return hash.toString(16).toUpperCase().padStart(12, '0');
+  };
+
+  const randomPart = seed
+    ? stableHash(seed)
+    : (typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()
+      : `${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`);
+
+  return `COM-${baseSeed}-${randomPart}`.slice(0, 28);
+};
+
+export const resolverQrCode = (valor?: string | null, seed?: string): string => {
+  const valorLimpio = (valor ?? '').trim();
+  if (valorLimpio) return valorLimpio.toUpperCase();
+
+  const seedBase = seed || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return generarQrUnico(seedBase).toUpperCase();
+};
 
 const construirFormData = (payload: Partial<CrearComuneroPayload>, fotoFile?: File | Blob | null): FormData => {
   const formData = new FormData();

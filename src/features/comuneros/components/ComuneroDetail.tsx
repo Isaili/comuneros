@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Calendar, Heart, MapPin, Phone, FileText, Edit2, Trash2, UserCheck, UserPlus, QrCode } from 'lucide-react';
+import { Calendar, Heart, MapPin, Phone, FileText, Edit2, Trash2, UserCheck, UserPlus, QrCode, Download, Copy } from 'lucide-react';
 import { Comunero } from '@/features/comuneros/types/types';
+import { resolverQrCode } from '../services/comunerosApi';
 
 interface DetailProps {
   comunero: Comunero | any;
@@ -67,8 +68,43 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
 
   const folio = comunero.folioComunero ?? comunero.folio ?? id.substring(0, 8).toUpperCase();
 
-  // QR Code: Usa la URL del backend o genera uno dinámico con el folio/ID usando QuickChart API
-  const qrUrl = comunero.qrCode || comunero.qr_code || `https://quickchart.io/qr?text=${encodeURIComponent(folio)}&size=200`;
+  // QR Code: usa un valor consistente para mostrarse y validarse después desde el kiosco
+  const qrValue = resolverQrCode(comunero.qrCode ?? comunero.qr_code, `${id}-${folio}-${nombreCompleto}`);
+  const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(qrValue)}&size=1200&margin=2&ecLevel=H&format=png`;
+
+  const handleDownloadQr = async () => {
+    try {
+      const response = await fetch(qrUrl);
+      if (!response.ok) throw new Error('No se pudo generar la imagen del QR');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const safeName = `${nombreCompleto || folio}`
+        .replace(/[^a-zA-Z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .toLowerCase() || 'qr-comunero';
+
+      link.href = url;
+      link.download = `${safeName}.png`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error al descargar el QR:', error);
+      alert('No se pudo descargar el QR. Intenta de nuevo.');
+    }
+  };
+
+  const handleCopyQrValue = async () => {
+    try {
+      await navigator.clipboard.writeText(qrValue);
+      alert('Código QR copiado al portapapeles.');
+    } catch (error) {
+      console.error('Error al copiar el QR:', error);
+      alert('No se pudo copiar el código QR.');
+    }
+  };
 
   // Manejo de terrenos (evita errores si terrenos viene undefined)
   const terrenos = Array.isArray(comunero.terrenos) ? comunero.terrenos : [];
@@ -187,8 +223,27 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
             </div>
           </div>
 
+          <div className="mt-3 flex items-center gap-2 flex-wrap justify-center">
+            <button
+              type="button"
+              onClick={handleDownloadQr}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#006837] text-white text-[11px] font-bold shadow-sm hover:bg-[#00552f] transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Descargar QR
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyQrValue}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-[11px] font-bold hover:bg-gray-50 transition-colors"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              Copiar código
+            </button>
+          </div>
+
           <span className="text-[11px] font-extrabold text-[#006837] tracking-wider mt-2 bg-emerald-50 px-2.5 py-1 rounded">
-            FOLIO: {folio}
+            {qrValue}
           </span>
         </div>
       </div>

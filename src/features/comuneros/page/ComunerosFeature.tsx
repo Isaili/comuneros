@@ -9,6 +9,14 @@ import { ComunerosList } from '../components/ComunerosList';
 import { ComuneroDetail } from '../components/ComuneroDetail';
 import { AgregarComuneroForm } from '../components/AgregarComuneroForm';
 
+const deduplicarComuneros = (items: Comunero[]) => {
+  const mapa = new Map<string, Comunero>();
+  items.forEach((item) => {
+    if (item?.id) mapa.set(item.id, item);
+  });
+  return Array.from(mapa.values());
+};
+
 export const ComunerosFeature: React.FC = () => {
   const [comuneros, setComuneros] = useState<Comunero[]>([]);
 
@@ -26,7 +34,8 @@ export const ComunerosFeature: React.FC = () => {
     setIsLoading(true);
     try {
       const { comuneros: lista, totalPages: paginasTotales } = await comunerosApi.listar(paginaActual, limit);
-      setComuneros(lista);
+      const listaSinDuplicados = deduplicarComuneros(lista);
+      setComuneros(listaSinDuplicados);
       setTotalPages(paginasTotales);
     } catch (err) {
       console.error('Error al cargar comuneros:', err);

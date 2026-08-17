@@ -14,6 +14,8 @@ import { AvisoProximoCierre } from '../components/Avisoproximocierre';
 import { Reunion, AsistenteRegistro } from '../types/types';
 import { reunionesMock } from '../mocks/reunionesMock';
 import { comunerosMock } from '../mocks/comunerosMock';
+import { Comunero } from '../../comuneros/types/types';
+import { comunerosApi, resolverQrCode } from '../../comuneros/services/comunerosApi';
 import { crearCanalAsistencia, publicarEvento, guardarSnapshot } from '../../bienvenida-comunero/model/asistenciaChannel';
 
 const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`).getTime();
@@ -31,12 +33,35 @@ export default function KioscoQRFeature() {
   const [avisoProximoCierre, setAvisoProximoCierre] = useState<string | null>(null);
   const [notificacionCierre, setNotificacionCierre] = useState<string | null>(null);
   const [salidasHabilitadas, setSalidasHabilitadas] = useState(false);
+  const [comunerosRegistrados, setComunerosRegistrados] = useState<Comunero[]>([]);
+  const [estadoEscaneo, setEstadoEscaneo] = useState<'idle' | 'valid' | 'warning' | 'invalid' | 'entrada' | 'salida'>('idle');
+  const [ultimoCodigo, setUltimoCodigo] = useState('');
+  const [mensajeEscaneo, setMensajeEscaneo] = useState('Esperando QR');
 
   const canalRef = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
     canalRef.current = crearCanalAsistencia();
     return () => canalRef.current?.close();
+  }, []);
+
+  useEffect(() => {
+    let activo = true;
+
+    const cargarComuneros = async () => {
+      try {
+        const { comuneros } = await comunerosApi.listar(1, 500);
+        if (activo) setComunerosRegistrados(comuneros);
+      } catch (error) {
+        console.error('Error al cargar comuneros para el kiosco QR:', error);
+        if (activo) setComunerosRegistrados([]);
+      }
+    };
+
+    cargarComuneros();
+    return () => {
+      activo = false;
+    };
   }, []);
 
   const reunionActiva = useMemo(
@@ -138,39 +163,121 @@ export default function KioscoQRFeature() {
     setSalidasHabilitadas(true);
   };
 
-  const simularEscaneo = () => {
+  const simularEscaneo = (codigoEscaneado?: string) => {
     if (!reunionActiva) return;
 
-    if (salidasHabilitadas) {
-      const dentro = asistentes.filter((a) => !a.horaSalida);
-      if (dentro.length === 0) return;
+    const codigoIngresado = (codigoEscaneado ?? '').trim();
+    setUltimoCodigo(codigoIngresado);
 
-      const elegido = dentro[Math.floor(Math.random() * dentro.length)];
-      const actualizado: AsistenteRegistro = { ...elegido, horaSalida: new Date().toISOString() };
-      setAsistentes((prev) => prev.map((a) => (a.id === actualizado.id ? actualizado : a)));
-      setComuneroSeleccionado(actualizado);
+    type ComuneroQrCandidate = Partial<Comunero> & {
+      id: string;
+      nombre?: string;
+      apellidoPaterno?: string;
+      fotografia?: string;
+      folioComunero?: string;
+      qrCode?: string;
+    };
+
+    const listaBase: ComuneroQrCandidate[] = (comunerosRegistrados.length > 0 ? comunerosRegistrados : (comunerosMock as unknown as ComuneroQrCandidate[]));
+    const codigoNormalizado = codigoIngresado.toUpperCase();
+
+    let comunero: ComuneroQrCandidate | null = null;
+
+    if (codigoNormalizado) {
+      comunero = listaBase.find((c) => {
+        const qrEsperado = resolverQrCode(c.qrCode ?? undefined, `${c.id ?? ''}-${c.folioComunero ?? ''}`);
+        return qrEsperado.toUpperCase() === codigoNormalizado;
+      }) ?? null;
+    }
+
+    if (!comunero && !codigoEscaneado) {
+      comunero = listaBase.find((c) => (c.qrCode ?? '').trim()) ?? null;
+    }
+
+    if (!comunero) {
+      setEstadoEscaneo('invalid');
+      setMensajeEscaneo(`QR no registrado: ${codigoIngresado || 'sin código'}`);
+      return;
+    }
+
+    const historial = asistentes.filter((a) => a.comuneroId === comunero.id);
+    const registroActivo = historial.find((a) => !a.horaSalida);
+    const ultimoRegistro = historial[historial.length - 1];
+    const nombreComunero = `${comunero.nombre ?? ''} ${comunero.apellidoPaterno ?? ''}`.trim();
+    setEstadoEscaneo('valid');
+
+    if (salidasHabilitadas) {
+      if (registroActivo) {
+        const actualizado: AsistenteRegistro = { ...registroActivo, horaSalida: new Date().toISOString() };
+        setAsistentes((prev) => prev.map((a) => (a.id === actualizado.id ? actualizado : a)));
+        setComuneroSeleccionado(actualizado);
+        setEstadoEscaneo('salida');
+        setMensajeEscaneo(`Salida válida: ${nombreComunero}`);
+
+        publicarEvento(canalRef.current, {
+          tipo: 'salida',
+          timestamp: actualizado.horaSalida!,
+          reunion: reunionActiva,
+          asistente: actualizado,
+        });
+        return;
+      }
+
+      if (ultimoRegistro && ultimoRegistro.horaSalida) {
+        setComuneroSeleccionado(ultimoRegistro);
+        setEstadoEscaneo('invalid');
+        setMensajeEscaneo(`Código ya registrado: ${nombreComunero} ya registró su entrada y salida.`);
+        return;
+      }
+
+      const nuevoRegistro: AsistenteRegistro = {
+        id: `${comunero.id}-${Date.now()}`,
+        comuneroId: comunero.id,
+        nombre: nombreComunero,
+        folio: comunero.folioComunero ?? comunero.id,
+        fotografia: comunero.fotografia ?? '',
+        horaEntrada: new Date().toISOString(),
+      };
+      setAsistentes((prev) => [...prev, nuevoRegistro]);
+      setComuneroSeleccionado(nuevoRegistro);
+      setEstadoEscaneo('entrada');
+      setMensajeEscaneo(`Entrada válida: ${nombreComunero}`);
 
       publicarEvento(canalRef.current, {
-        tipo: 'salida',
-        timestamp: actualizado.horaSalida!,
+        tipo: 'entrada',
+        timestamp: nuevoRegistro.horaEntrada,
         reunion: reunionActiva,
-        asistente: actualizado,
+        asistente: nuevoRegistro,
       });
       return;
     }
 
-    const disponibles = comunerosMock.filter((c) => !asistentes.some((a) => a.comuneroId === c.id && !a.horaSalida));
-    const comunero = disponibles[Math.floor(Math.random() * disponibles.length)] ?? comunerosMock[0];
+    if (registroActivo) {
+      setComuneroSeleccionado(registroActivo);
+      setEstadoEscaneo('warning');
+      setMensajeEscaneo(`Código ya ingresado: ${nombreComunero} ya está registrado.`);
+      return;
+    }
+
+    if (ultimoRegistro && ultimoRegistro.horaSalida) {
+      setComuneroSeleccionado(ultimoRegistro);
+      setEstadoEscaneo('invalid');
+      setMensajeEscaneo(`Código ya registrado: ${nombreComunero} ya ingresó y salió.`);
+      return;
+    }
+
     const nuevoRegistro: AsistenteRegistro = {
       id: `${comunero.id}-${Date.now()}`,
       comuneroId: comunero.id,
-      nombre: comunero.nombre,
-      folio: comunero.folio,
-      fotografia: comunero.fotografia,
+      nombre: nombreComunero,
+      folio: comunero.folioComunero ?? comunero.id,
+      fotografia: comunero.fotografia ?? '',
       horaEntrada: new Date().toISOString(),
     };
     setAsistentes((prev) => [...prev, nuevoRegistro]);
     setComuneroSeleccionado(nuevoRegistro);
+    setEstadoEscaneo('entrada');
+    setMensajeEscaneo(`Entrada válida: ${nombreComunero}`);
 
     publicarEvento(canalRef.current, {
       tipo: 'entrada',
@@ -202,6 +309,9 @@ export default function KioscoQRFeature() {
               activo={!!reunionActiva}
               reunionId={reunionActiva?.id}
               salidasHabilitadas={salidasHabilitadas}
+              estadoEscaneo={estadoEscaneo}
+              ultimoCodigo={ultimoCodigo}
+              mensajeEscaneo={mensajeEscaneo}
               onSimularEscaneo={simularEscaneo}
             />
             <AsistentesEnVivoGrid asistentes={asistentes} onSeleccionar={setComuneroSeleccionado} />

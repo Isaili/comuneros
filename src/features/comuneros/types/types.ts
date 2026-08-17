@@ -57,10 +57,11 @@ export interface CrearComuneroPayload {
   birthDate: string;
   maritalStatus: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | 'FREE_UNION';
   phone?: string;
-  neighborhoodId: string;       
-  communityMemberSince: string; 
-  address: string;              
-  neighborhood?: string;        
+  neighborhoodId: string;
+  communityMemberSince: string;
+  address: string;
+  neighborhood?: string;
+  qrCode?: string;
 }
 
 export interface ApiEnvelope<T> {

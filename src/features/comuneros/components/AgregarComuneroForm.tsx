@@ -5,6 +5,7 @@ import { User, Camera, Upload, RotateCcw, Save, X } from 'lucide-react';
 import * as Yup from 'yup';
 import { Comunero, CrearComuneroPayload } from '../types/types';
 import { getNeighborhoods, Neighborhood } from '../services/neighborhoodsApi';
+import { generarQrUnico } from '../services/comunerosApi';
 
 interface AgregarComuneroFormProps {
   onClose: () => void;
@@ -266,6 +267,8 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     try {
       // Al crear se requiere foto, al editar la foto existente es válida
       if (!fotoFile && !fotografia && !esEdicion) {
@@ -287,6 +290,7 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
         neighborhoodId: formData.neighborhoodId,
         communityMemberSince: formData.communityMemberSince,
         address: formData.address,
+        qrCode: comuneroAEditar?.qrCode || generarQrUnico(`${formData.nombre}-${formData.apellidoPaterno}-${formData.apellidoMaterno}-${Date.now()}`),
       };
 
       onGuardar(payload, fotoFile);

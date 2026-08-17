@@ -1,31 +1,53 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ScanLine, Camera, QrCode, CameraOff, Smartphone, LogIn } from 'lucide-react';
+import jsQR from 'jsqr';
+import { ScanLine, Camera, QrCode, CameraOff, Smartphone, LogIn, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 
 interface EscanerQrPanelProps {
   activo: boolean;
   reunionId?: string;
   salidasHabilitadas: boolean;
-  onSimularEscaneo: () => void;
+  estadoEscaneo?: 'idle' | 'valid' | 'warning' | 'invalid' | 'entrada' | 'salida';
+  ultimoCodigo?: string;
+  mensajeEscaneo?: string;
+  onSimularEscaneo: (codigoEscaneado?: string) => void;
 }
 
 export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
   activo,
   reunionId,
   salidasHabilitadas,
+  estadoEscaneo = 'idle',
+  ultimoCodigo = '',
+  mensajeEscaneo = 'Esperando QR',
   onSimularEscaneo,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const ultimoCodigoRef = useRef<string | null>(null);
   const [errorCamara, setErrorCamara] = useState<string | null>(null);
   const [camaraLista, setCamaraLista] = useState(false);
+  const [codigoManual, setCodigoManual] = useState('');
+
+  const estadoMeta = {
+    idle: { label: 'Esperando', color: 'bg-slate-100 text-slate-600 border-slate-200', icon: QrCode },
+    valid: { label: 'QR válido', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
+    warning: { label: 'Ya ingresado', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: AlertTriangle },
+    invalid: { label: 'QR no válido', color: 'bg-red-50 text-red-700 border-red-200', icon: XCircle },
+    entrada: { label: 'Entrada válida', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
+    salida: { label: 'Salida válida', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
+  }[estadoEscaneo];
+
+  const StatusIcon = estadoMeta.icon;
 
   useEffect(() => {
     if (!activo) {
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       setCamaraLista(false);
+      ultimoCodigoRef.current = null;
       return;
     }
 
@@ -63,6 +85,57 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
     };
   }, [activo]);
 
+  useEffect(() => {
+    if (!activo || !camaraLista || !videoRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) return;
+
+    canvasRef.current = canvas;
+
+    let rafId = 0;
+    let lastScanAt = 0;
+
+    const escanear = () => {
+      if (!video.videoWidth || !video.videoHeight) {
+        rafId = requestAnimationFrame(escanear);
+        return;
+      }
+
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      canvas.width = width;
+      canvas.height = height;
+      context.drawImage(video, 0, 0, width, height);
+
+      const imageData = context.getImageData(0, 0, width, height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+      if (code?.data) {
+        const codigo = code.data.trim();
+        const ahora = Date.now();
+
+        if (codigo && codigo !== ultimoCodigoRef.current && ahora - lastScanAt > 1500) {
+          ultimoCodigoRef.current = codigo;
+          lastScanAt = ahora;
+          setCodigoManual(codigo);
+          onSimularEscaneo(codigo);
+        }
+      }
+
+      rafId = requestAnimationFrame(escanear);
+    };
+
+    rafId = requestAnimationFrame(escanear);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      ultimoCodigoRef.current = null;
+    };
+  }, [activo, camaraLista, onSimularEscaneo]);
+
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 flex flex-col items-center">
       <div className="w-full flex items-center justify-between mb-4">
@@ -77,6 +150,17 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
           <span className={`w-1.5 h-1.5 rounded-full ${activo && camaraLista ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
           {activo && camaraLista ? 'Escaneando' : activo ? 'Activando cámara…' : 'En espera'}
         </span>
+      </div>
+
+      <div className={`w-full mb-4 rounded-xl border px-3 py-2 text-left ${estadoMeta.color}`}>
+        <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em]">
+          <StatusIcon className="w-3.5 h-3.5" />
+          {estadoMeta.label}
+        </div>
+        <p className="mt-1 text-[11px] font-semibold break-all">
+          {ultimoCodigo ? `Código: ${ultimoCodigo}` : 'Sin código leído'}
+        </p>
+        <p className="mt-1 text-[11px] font-medium">{mensajeEscaneo}</p>
       </div>
 
       <div className="relative w-full max-w-xs aspect-square rounded-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
@@ -131,20 +215,31 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
       </p>
 
       {activo && (
-        <button
-          onClick={onSimularEscaneo}
-          className="mt-4 w-full max-w-xs flex items-center justify-center gap-1.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors"
-        >
-          {salidasHabilitadas ? (
-            <>
-              <Smartphone className="w-3.5 h-3.5" /> Simular escaneo (entrada o salida)
-            </>
-          ) : (
-            <>
-              <LogIn className="w-3.5 h-3.5" /> Simular escaneo (solo entrada)
-            </>
-          )}
-        </button>
+        <div className="mt-4 w-full max-w-xs space-y-2">
+          <label className="block text-[10px] font-bold uppercase tracking-[0.14em] text-gray-400">
+            Código QR a validar
+          </label>
+          <input
+            value={codigoManual}
+            onChange={(e) => setCodigoManual(e.target.value)}
+            placeholder="Ej. COM-ABC123"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-gray-700 text-xs font-semibold outline-none focus:border-[#1E4D3A]"
+          />
+          <button
+            onClick={() => onSimularEscaneo(codigoManual.trim() || undefined)}
+            className="w-full flex items-center justify-center gap-1.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors"
+          >
+            {salidasHabilitadas ? (
+              <>
+                <Smartphone className="w-3.5 h-3.5" /> Simular escaneo (entrada o salida)
+              </>
+            ) : (
+              <>
+                <LogIn className="w-3.5 h-3.5" /> Simular escaneo (solo entrada)
+              </>
+            )}
+          </button>
+        </div>
       )}
     </div>
   );
