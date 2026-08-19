@@ -17,7 +17,7 @@ export const EstadoReunionBanner: React.FC<EstadoReunionBannerProps> = ({ reunio
     return (
       <div className="flex items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm px-6 py-4">
         <span className="inline-flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-md bg-gray-100 text-gray-500">
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Sin reunión activa.
+          <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Sin reunión activa
         </span>
         <p className="text-sm text-gray-400 font-semibold">Esperando a que se abra una asamblea en el kiosco.</p>
       </div>
