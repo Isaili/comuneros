@@ -43,6 +43,11 @@ export async function POST(req: Request) {
     // Determine intent: NLU if present, otherwise rule-based
     const intentText = intentFromNLU ?? text;
 
+    // 0) Greetings / small talk
+    if ((intentFromNLU === 'greeting') || /^(hola|buenas|buenos días|buenas tardes|buenas noches|hey|buen día|buenas noches)(\b|!|\.)/i.test(message || '')) {
+      return NextResponse.json({ intent: 'greeting', text: '¡Hola! 👋 Soy el asistente del sistema. Puedes preguntar cosas como: "¿Quién tiene más multas?", "¿Cuánto ingresó por multas en julio 2026?" o "¿Cuántas personas asistieron a la última reunión?"', actions: [{ label: 'Ejemplos', view: 'reportes', params: {} }] });
+    }
+
     // Handle top/least multados
     if ((intentFromNLU === 'top_multados') || /quien|quién|quien tiene|quién tiene|mas multas|más multas|mayor número de multas/.test(text) || (intentFromNLU === 'least_multados') || /menos multas|quien tiene menos|quién tiene menos/.test(text)) {
       const top = getTopMultados(100);
