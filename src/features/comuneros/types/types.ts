@@ -1,4 +1,4 @@
-export type TipoPersona = 'comunero' | 'avecindado';
+export type TipoPersona = 'comunero' | 'avecindado' | 'poblador'
 export type EstadoCivil = 'soltero' | 'casado' | 'divorciado' | 'viudo' | 'union_libre';
 
 export interface Comunero {

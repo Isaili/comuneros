@@ -475,16 +475,31 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
           {/* Tipo de Miembro */}
           <div className="space-y-2">
             <label className="text-gray-500 font-bold block">Tipo de Miembro <span className="text-red-500">*</span></label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className={`border rounded-2xl p-3 flex items-center gap-3 cursor-pointer ${formData.tipoComunero === 'comunero' ? 'border-[#006837] bg-[#006837]/5 text-[#006837]' : 'border-gray-200 bg-white'}`}>
-                <input type="radio" name="tipoComunero" value="comunero" checked={formData.tipoComunero === 'comunero'} onChange={handleChange} className="sr-only" />
-                <div className="min-w-0"><p className="font-bold text-xs">Comunero</p><p className="text-[9px] text-gray-400 font-medium">Derechos de tierra</p></div>
-              </label>
-              <label className={`border rounded-2xl p-3 flex items-center gap-3 cursor-pointer ${formData.tipoComunero === 'avecindado' ? 'border-emerald-600 bg-emerald-50/25 text-emerald-800' : 'border-gray-200 bg-white'}`}>
-                <input type="radio" name="tipoComunero" value="avecindado" checked={formData.tipoComunero === 'avecindado'} onChange={handleChange} className="sr-only" />
-                <div className="min-w-0"><p className="font-bold text-xs">Avecindado</p><p className="text-[9px] text-gray-400 font-medium">Residente sin título</p></div>
-              </label>
-            </div>
+            <div className="grid grid-cols-3 gap-2">
+  <label className={`border rounded-xl px-2 py-2 flex flex-col items-center text-center gap-1 cursor-pointer ${formData.tipoComunero === 'comunero' ? 'border-[#006837] bg-[#006837]/5 text-[#006837]' : 'border-gray-200 bg-white'}`}>
+    <input type="radio" name="tipoComunero" value="comunero" checked={formData.tipoComunero === 'comunero'} onChange={handleChange} className="sr-only" />
+    <div className="min-w-0">
+      <p className="font-bold text-[10px] leading-tight">Comunero</p>
+      <p className="text-[8px] text-gray-400 font-medium leading-tight">Derechos de tierra</p>
+    </div>
+  </label>
+
+  <label className={`border rounded-xl px-2 py-2 flex flex-col items-center text-center gap-1 cursor-pointer ${formData.tipoComunero === 'avecindado' ? 'border-emerald-600 bg-emerald-50/25 text-emerald-800' : 'border-gray-200 bg-white'}`}>
+    <input type="radio" name="tipoComunero" value="avecindado" checked={formData.tipoComunero === 'avecindado'} onChange={handleChange} className="sr-only" />
+    <div className="min-w-0">
+      <p className="font-bold text-[10px] leading-tight">Avecindado</p>
+      <p className="text-[8px] text-gray-400 font-medium leading-tight">Residente sin título</p>
+    </div>
+  </label>
+
+  <label className={`border rounded-xl px-2 py-2 flex flex-col items-center text-center gap-1 cursor-pointer ${formData.tipoComunero === 'poblador' ? 'border-emerald-600 bg-emerald-50/25 text-emerald-800' : 'border-gray-200 bg-white'}`}>
+    <input type="radio" name="tipoComunero" value="poblador" checked={formData.tipoComunero === 'poblador'} onChange={handleChange} className="sr-only" />
+    <div className="min-w-0">
+      <p className="font-bold text-[10px] leading-tight">Poblador</p>
+      <p className="text-[8px] text-gray-400 font-medium leading-tight">Residente con título</p>
+    </div>
+  </label>
+</div>
             {errors.tipoComunero && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.tipoComunero}</p>}
           </div>
         </div>
