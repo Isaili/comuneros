@@ -15,7 +15,7 @@ interface EditarMultaFormProps {
 const multaValidationSchema = Yup.object().shape({
   comuneroId: Yup.string().required('Selecciona un comunero'),
   tipo: Yup.string().oneOf(['inasistencia', 'otro']).required(),
-  cantidad: Yup.number().typeError('Debe ser un número').positive('Debe ser mayor a 0').required('La cantidad es obligatoria'),
+  // cantidad is read-only and comes from the original record; don't validate here
   fechaGeneracion: Yup.string().required('La fecha es obligatoria'),
   descripcion: Yup.string().min(5, 'Describe brevemente el motivo').required('La descripción es obligatoria'),
   asambleaNombre: Yup.string().when('tipo', {
@@ -31,7 +31,8 @@ export const EditarMultaForm: React.FC<EditarMultaFormProps> = ({ multa, onClose
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const [tipo, setTipo] = useState<TipoMulta>(multa.tipo);
-  const [cantidad, setCantidad] = useState(String(multa.cantidad));
+  const [cantidad] = useState(String(multa.cantidad)); // read-only, use original multa.cantidad when saving
+
   const [fechaGeneracion, setFechaGeneracion] = useState(multa.fechaGeneracion.slice(0, 10));
   const [descripcion, setDescripcion] = useState(multa.descripcion);
   const [asambleaNombre, setAsambleaNombre] = useState(multa.asamblea?.nombre ?? '');
@@ -57,7 +58,9 @@ export const EditarMultaForm: React.FC<EditarMultaFormProps> = ({ multa, onClose
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = { comuneroId, tipo, cantidad, fechaGeneracion, descripcion, asambleaNombre };
+    // cantidad es de solo lectura: usar el valor original de la multa para evitar modificaciones por DOM.
+    const cantidadFinal = multa.cantidad;
+    const formData = { comuneroId, tipo, fechaGeneracion, descripcion, asambleaNombre };
     try {
       await multaValidationSchema.validate(formData, { abortEarly: false });
       const comunero = comunerosSelectMock.find((c) => c.id === comuneroId);
@@ -69,7 +72,7 @@ export const EditarMultaForm: React.FC<EditarMultaFormProps> = ({ multa, onClose
         comuneroNombre: comunero.nombre,
         comuneroFotografia: comunero.fotografia,
         tipo,
-        cantidad: Number(cantidad),
+        cantidad: cantidadFinal,
         fechaGeneracion,
         descripcion,
         asamblea: tipo === 'inasistencia' ? { id: multa.asamblea?.id ?? Date.now().toString(), nombre: asambleaNombre, fecha: asambleaFecha } : undefined,
@@ -194,18 +197,19 @@ export const EditarMultaForm: React.FC<EditarMultaFormProps> = ({ multa, onClose
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-gray-500 font-bold block">Cantidad *</label>
+              <label className="text-gray-500 font-bold block">Cantidad (registrada)</label>
               <div className="relative">
                 <CircleDollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="number"
                   value={cantidad}
-                  onChange={(e) => setCantidad(e.target.value)}
+                  readOnly
+                  aria-readonly="true"
                   placeholder="0.00"
-                  className={`w-full pl-9 pr-3 py-2.5 border rounded-xl outline-none focus:border-[#1E4D3A] ${errors.cantidad ? 'border-red-500' : 'border-gray-200'}`}
+                  className={`w-full pl-9 pr-3 py-2.5 border rounded-xl outline-none bg-gray-100 text-gray-500 cursor-not-allowed ${errors.cantidad ? 'border-red-500' : 'border-gray-200'}`}
                 />
               </div>
-              {errors.cantidad && <p className="text-red-500 text-xs font-bold mt-1">{errors.cantidad}</p>}
+              <p className="text-[11px] text-gray-500 font-medium">La cantidad no puede editarse: se mantiene como en el registro original.</p>
             </div>
 
             <div className="space-y-1.5">

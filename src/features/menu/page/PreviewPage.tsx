@@ -12,9 +12,20 @@ import BienvenidaComuneroFeature from '../../bienvenida-comunero/page/Bienvenida
 import ReportesFeature from '../../reportes/page/ReportesFeature';
 import { PredialPagos } from '../../pagos/page/PredialPagos';
 import ConfiguracionPage from '../../configure/page/page';
+import ChatWidget from '@/components/ChatWidget';
 
 export const PreviewPage: React.FC = () => {
   const [currentView, setView] = useState<string>('dashboard');
+
+  // Listen to navigation requests from the ChatWidget
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      const view = e?.detail?.view;
+      if (view) setView(view);
+    };
+    window.addEventListener('app:navigate', handler as EventListener);
+    return () => window.removeEventListener('app:navigate', handler as EventListener);
+  }, []);
 
   // Arreglo centralizado de vistas activas/válidas
   const vistasValidas = [
@@ -73,6 +84,9 @@ export const PreviewPage: React.FC = () => {
 
         {/* VISTA: Configuración */}
         {currentView === 'configuracion' && <ConfiguracionPage />}
+
+        {/* Chat assistant widget */}
+        <ChatWidget />
 
         {/* VISTAS EN DESARROLLO */}
         {!vistasValidas.includes(currentView) && (
