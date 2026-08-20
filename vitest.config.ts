@@ -15,6 +15,14 @@ export default defineConfig({
   test: {
     projects: [
       {
+        test: {
+          name: 'unit',
+          environment: 'jsdom',
+          setupFiles: ['./vitest.setup.ts'],
+          include: ['src/**/*.test.{ts,tsx}'],
+        },
+      },
+      {
         extends: true,
         plugins: [
           // The plugin will run tests for the stories defined in your Storybook config
@@ -23,6 +31,7 @@ export default defineConfig({
         ],
         test: {
           name: 'storybook',
+          include: ['src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
           browser: {
             enabled: true,
             headless: true,

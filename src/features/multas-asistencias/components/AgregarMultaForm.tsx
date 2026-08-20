@@ -11,6 +11,21 @@ interface AgregarMultaFormProps {
   onGuardar: (multa: Multa) => void;
 }
 
+const obtenerValorMultaConfigurado = (): number => {
+  if (typeof window === 'undefined') return 800;
+
+  try {
+    const almacenado = window.localStorage.getItem('configuracionSistema');
+    if (!almacenado) return 800;
+
+    const configuracion = JSON.parse(almacenado) as { valorMultas?: number };
+    const valor = Number(configuracion.valorMultas ?? 800);
+    return Number.isFinite(valor) && valor > 0 ? valor : 800;
+  } catch {
+    return 800;
+  }
+};
+
 const multaValidationSchema = Yup.object().shape({
   comuneroId: Yup.string().required('Selecciona un comunero'),
   tipo: Yup.string().oneOf(['inasistencia', 'otro']).required(),
@@ -31,7 +46,7 @@ export const AgregarMultaForm: React.FC<AgregarMultaFormProps> = ({ onClose, onG
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const [tipo, setTipo] = useState<TipoMulta>('inasistencia');
-  const [cantidad, setCantidad] = useState('');
+  const [cantidad] = useState(() => String(obtenerValorMultaConfigurado()));
   const [fechaGeneracion, setFechaGeneracion] = useState(new Date().toISOString().slice(0, 10));
   const [descripcion, setDescripcion] = useState('');
   const [asambleaNombre, setAsambleaNombre] = useState('');
@@ -194,17 +209,19 @@ export const AgregarMultaForm: React.FC<AgregarMultaFormProps> = ({ onClose, onG
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-gray-500 font-bold block">Cantidad *</label>
+              <label className="text-gray-500 font-bold block">Cantidad (configurada)</label>
               <div className="relative">
                 <CircleDollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="number"
                   value={cantidad}
-                  onChange={(e) => setCantidad(e.target.value)}
+                  readOnly
+                  aria-readonly="true"
                   placeholder="0.00"
-                  className={`w-full pl-9 pr-3 py-2.5 border rounded-xl outline-none focus:border-[#1E4D3A] ${errors.cantidad ? 'border-red-500' : 'border-gray-200'}`}
+                  className={`w-full pl-9 pr-3 py-2.5 border rounded-xl outline-none bg-gray-100 text-gray-500 cursor-not-allowed ${errors.cantidad ? 'border-red-500' : 'border-gray-200'}`}
                 />
               </div>
+              <p className="text-[11px] text-gray-500 font-medium">Se toma del valor definido en la configuración del sistema.</p>
               {errors.cantidad && <p className="text-red-500 text-xs font-bold mt-1">{errors.cantidad}</p>}
             </div>
 
