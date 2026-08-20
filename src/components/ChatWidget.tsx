@@ -2,10 +2,17 @@
 
 import React, { useEffect, useState } from 'react';
 
-type Msg = { id: string; sender: 'user' | 'assistant'; text: string; data?: any };
+type Action = { label: string; view?: string; params?: Record<string, unknown> };
+
+type AssistantData = {
+  intent?: string;
+  actions?: Action[];
+  [key: string]: unknown;
+};
+
+type Msg = { id: string; sender: 'user' | 'assistant'; text: string; data?: AssistantData };
 
 const STORAGE_KEY = 'assistantChatHistory';
-const SNAPSHOT_KEY = 'kiosco-asistencia:snapshot';
 
 export default function ChatWidget() {
   const [messages, setMessages] = useState<Msg[]>(() => {
@@ -49,7 +56,9 @@ export default function ChatWidget() {
         const el = document.getElementById('chat-scroll');
         if (el) el.scrollTop = el.scrollHeight;
       }, 50);
-    } catch (err) {
+    } catch (error) {
+      // Log error for debugging and show a friendly message to the user
+      console.error('Assistant request failed', error);
       const errMsg: Msg = { id: Date.now().toString() + '-e', sender: 'assistant', text: 'Error al contactar al asistente.' };
       setMessages((m) => [...m, errMsg]);
     } finally {
@@ -64,7 +73,7 @@ export default function ChatWidget() {
     }
   };
 
-  const handleAction = (action: any) => {
+  const handleAction = (action: Action) => {
     // Dispatch an event so the app can handle navigation
     if (action.view) {
       window.dispatchEvent(new CustomEvent('app:navigate', { detail: { view: action.view, params: action.params } }));
@@ -75,7 +84,15 @@ export default function ChatWidget() {
   return (
     <div className="fixed right-4 bottom-4 z-50">
       {!open && (
-        <button onClick={() => setOpen(true)} className="w-12 h-12 rounded-full bg-[#1E4D3A] text-white flex items-center justify-center shadow-lg">🗨️</button>
+        <button onClick={() => setOpen(true)} className="w-12 h-12 rounded-full bg-[#1E4D3A] text-white flex items-center justify-center shadow-lg" aria-label="Abrir asistente">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor">
+            <rect x="3" y="7" width="18" height="10" rx="2" strokeWidth="1.5" stroke="white" fill="transparent" />
+            <circle cx="8" cy="11" r="1" fill="white" />
+            <circle cx="16" cy="11" r="1" fill="white" />
+            <rect x="9" y="13" width="6" height="1.2" rx="0.6" fill="white" />
+            <rect x="11" y="4" width="2" height="2" rx="0.6" fill="white" />
+          </svg>
+        </button>
       )}
 
       {open && (
@@ -92,7 +109,7 @@ export default function ChatWidget() {
                     {m.text}
                     {m.sender === 'assistant' && m.data?.actions && (
                       <div className="mt-2 flex gap-2">
-                        {m.data.actions.map((a: any, idx: number) => (
+                        {m.data.actions.map((a: Action, idx: number) => (
                           <button key={idx} onClick={() => handleAction(a)} className="text-sm bg-white border rounded px-3 py-1">
                             {a.label}
                           </button>
@@ -104,17 +121,32 @@ export default function ChatWidget() {
               ))}
             </div>
 
-            <div className="p-3 border-t border-gray-100 bg-white flex gap-2">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKey}
-                placeholder="Pregunta: ¿Quién tiene más multas?"
-                className="flex-1 px-3 py-2 border bg-white rounded-xl outline-none"
-              />
-              <button onClick={sendMessage} disabled={loading} className="px-4 py-2 bg-[#1E4D3A] text-white rounded-xl font-bold disabled:opacity-60">
-                {loading ? '...' : 'Enviar'}
-              </button>
+            <div className="p-3 border-t border-gray-100 bg-white">
+              <div className="flex gap-2 mb-2">
+                {['¿Quién tiene más multas?', '¿Quién tiene menos multas?', '¿Cuánto ingresó por multas este mes?', '¿Cuántas personas asistieron a la última reunión?'].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => { setInput(q); setTimeout(() => sendMessage(), 50); }}
+                    className="text-sm px-3 py-1 rounded-lg border border-gray-200 bg-[#f6fff6] text-[#065f46] hover:bg-[#ecfdf3] shadow-sm truncate max-w-[48%] text-left"
+                    title={q}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKey}
+                  placeholder="Pregunta: ¿Quién tiene más multas?"
+                  className="flex-1 px-3 py-2 border bg-white rounded-xl outline-none"
+                />
+                <button onClick={sendMessage} disabled={loading} className="px-4 py-2 bg-[#1E4D3A] text-white rounded-xl font-bold disabled:opacity-60">
+                  {loading ? '...' : 'Enviar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
