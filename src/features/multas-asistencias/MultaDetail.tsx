@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { X, CircleDollarSign, Printer } from 'lucide-react';
-import { Multa } from '../types/types';
-import { AsistenciaHistorial } from './AsistenciaHistorial';
-import { historialMock } from '../mocks/historialMock';
+import { Multa } from './types/types';
+import { AsistenciaHistorial } from './components/AsistenciaHistorial';
+import { historialMock } from './mocks/historialMock';
 
 interface DetailProps {
   multa: Multa;

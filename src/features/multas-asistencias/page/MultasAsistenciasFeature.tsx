@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { MultasHeader } from '../components/MultasHeader';
 import { MultasList } from '../components/MultasList';
-import { MultaDetail } from '../components/MultaDetail';
+import { MultaDetail } from '../MultaDetail';
 import { PagarMultaModal } from '../components/modals/PagarMultaModal';
 import { ReciboPagoModal } from '../components/modals/ReciboPagoModal';
 import { AgregarMultaForm } from '../components/AgregarMultaForm';
