@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { LotesHeader } from '../components/LotesHeader';
 import { LotesList, Lote as LoteSimplificado } from '../components/LotesList';
 import { LoteDetail } from '../components/LoteDetail';
 
 import { AgregarLoteForm } from '../components/AgregarLoteForm';
 import { TraspasarLoteModal } from '../components/TraspasarLoteModal';
+import { DividirLoteModal } from '../components/DividirLoteModal';
 import { Lote as LoteCompleto, PropietarioHistoricoLote } from '../types/typesLotes';
 import { Comunero } from '../../comuneros/types/types';
-
+import { comunerosApi } from '../../comuneros/services/comunerosApi';
 
 interface DatosTraspasoLotePayload {
   nuevosPropietarios?: Array<{
@@ -19,6 +20,56 @@ interface DatosTraspasoLotePayload {
   actoJuridico?: string;
   fecha?: string;
 }
+
+const LOTES_STORAGE_KEY = 'lotes_titulares_local';
+const COMUNEROS_STORAGE_KEY = 'lotes_comuneros_registrados';
+
+const leerTitularesLocal = (): Record<string, { propietarios: string[]; historialPropietarios: PropietarioHistoricoLote[] }> => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(LOTES_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const guardarTitularesLocal = (value: Record<string, { propietarios: string[]; historialPropietarios: PropietarioHistoricoLote[] }>) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(LOTES_STORAGE_KEY, JSON.stringify(value));
+  } catch {
+    // noop
+  }
+};
+
+const leerComunerosCache = (): Comunero[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(COMUNEROS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const normalizarTexto = (value?: string | null) => String(value ?? '').replace(/\s+/g, ' ').trim();
+
+const normalizarPropietarios = (propietarios?: string[]) =>
+  Array.from(new Set((propietarios ?? []).map((item) => normalizarTexto(item)).filter(Boolean)));
+
+const enriquecerLoteConHistorial = (lote: LoteSimplificado): LoteSimplificado => {
+  const local = leerTitularesLocal()[lote.id];
+  return {
+    ...lote,
+    propietarios: normalizarPropietarios(local?.propietarios ?? lote.propietarios),
+    historialPropietarios: local?.historialPropietarios ?? [],
+  };
+};
 
 const MOCK_LOTES: LoteSimplificado[] = [
   { id: 'l1', numero: 'L-001', folio: 'L-001', superficie: '300.00 m²', propietarios: ['José Antonio Hernández López'], estadoPredial: 'Pagado' },
@@ -90,23 +141,50 @@ const MOCK_COMUNEROS: Comunero[] = [
 
 export const LotesFeature: React.FC = () => {
   const [lotes, setLotes] = useState<LoteSimplificado[]>(MOCK_LOTES);
-  const [comuneros] = useState<Comunero[]>(MOCK_COMUNEROS);
-  
+  const [comuneros, setComuneros] = useState<Comunero[]>(() => leerComunerosCache());
+
+  useEffect(() => {
+    let isMounted = true;
+    const cargarComuneros = async () => {
+      try {
+        const { comuneros: lista } = await comunerosApi.listar(1, 200);
+        if (!isMounted) return;
+        setComuneros(lista);
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(COMUNEROS_STORAGE_KEY, JSON.stringify(lista));
+        }
+      } catch {
+        if (!isMounted) return;
+        setComuneros(leerComunerosCache());
+      }
+    };
+
+    cargarComuneros();
+    return () => { isMounted = false; };
+  }, []);
+
   const [selectedLote, setSelectedLote] = useState<LoteSimplificado | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [loteEdicionCompleto, setLoteEdicionCompleto] = useState<LoteCompleto | null>(null);
   const [loteATraspasar, setLoteATraspasar] = useState<LoteCompleto | null>(null);
+  const [loteADividir, setLoteADividir] = useState<LoteSimplificado | null>(null);
 
-  const filteredLotes = lotes.filter(l => 
-    l.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    l.folio.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    l.propietarios.some((prop: string) => prop.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredLotes = lotes
+    .map(enriquecerLoteConHistorial)
+    .filter((l) => {
+      const query = searchTerm.toLowerCase();
+      return (
+        l.numero.toLowerCase().includes(query) ||
+        l.folio.toLowerCase().includes(query) ||
+        l.propietarios.some((prop: string) => prop.toLowerCase().includes(query))
+      );
+    });
 
   // Convierte un LoteSimplificado a LoteCompleto para pasarlo a modales
   const adaptarLoteACompleto = (loteSimplificado: LoteSimplificado): LoteCompleto => {
+    const loteEnriquecido = enriquecerLoteConHistorial(loteSimplificado);
     const superficieNumerica = parseFloat(loteSimplificado.superficie) || 200;
     const largoCalculado = 20;
     const anchoCalculado = superficieNumerica / largoCalculado;
@@ -120,11 +198,12 @@ export const LotesFeature: React.FC = () => {
       superficieM2: superficieNumerica,
       fechaRegistro: new Date().toISOString().split('T')[0],
       estadoPredial: loteSimplificado.estadoPredial,
-      propietario: loteSimplificado.propietarios[0] || 'Sin propietario asignado',
-      certificado: `CERT-${loteSimplificado.folio}`, 
+      propietario: loteEnriquecido.propietarios[0] || 'Sin propietario asignado',
+      propietarios: loteEnriquecido.propietarios,
+      certificado: `CERT-${loteSimplificado.folio}`,
       calidadAgraria: 'Comunero',
       actoJuridico: 'Asignación Directa',
-      historialPropietarios: [],
+      historialPropietarios: loteEnriquecido.historialPropietarios ?? [],
       historialPrediales: [],
       observaciones: ''
     };
@@ -151,14 +230,33 @@ export const LotesFeature: React.FC = () => {
   };
 
   const handleGuardarLote = (loteProcesado: LoteCompleto) => {
+    const propietarios = loteProcesado.propietarios?.length ? loteProcesado.propietarios : [loteProcesado.propietario || 'Sin propietario asignado'];
     const loteAdaptado: LoteSimplificado = {
       id: loteProcesado.id || loteProcesado.folioInterno,
       numero: loteProcesado.numeroLote,
       folio: loteProcesado.folioInterno,
       superficie: `${loteProcesado.superficieM2.toFixed(2)} m²`,
-      propietarios: [loteProcesado.propietario],
+      propietarios,
       estadoPredial: loteProcesado.estadoPredial
     };
+
+    const titularesGuardados = leerTitularesLocal();
+    const loteId = loteAdaptado.id;
+    titularesGuardados[loteId] = {
+      propietarios,
+      historialPropietarios: loteProcesado.historialPropietarios ?? [
+        {
+          nombre: propietarios[0],
+          certificado: loteProcesado.certificado || `CERT-${loteAdaptado.folio}`,
+          fechaAdquisicion: loteProcesado.fechaRegistro || new Date().toISOString().split('T')[0],
+          fechaCesion: '— (Actual)',
+          actoJuridico: loteProcesado.actoJuridico || 'Asignación Directa',
+          adquirente: 'Titular activo',
+          esActual: true,
+        }
+      ],
+    };
+    guardarTitularesLocal(titularesGuardados);
 
     if (loteEdicionCompleto) {
       setLotes(prev => prev.map(l => l.folio === loteEdicionCompleto.folioInterno ? loteAdaptado : l));
@@ -174,36 +272,159 @@ export const LotesFeature: React.FC = () => {
     if (!loteATraspasar) return;
 
     const listaNuevos = datosTraspaso.nuevosPropietarios || [];
-
     const adquirentesValidos = listaNuevos
       .map(n => ({
-        nombre: n.nombre || '',
+        nombre: (n.nombre || '').trim(),
         certificado: n.certificado || 'CERT-S/N'
       }))
-      .filter(n => n.nombre.trim() !== '');
+      .filter(n => n.nombre !== '');
 
     if (adquirentesValidos.length === 0) {
-      alert("Error: Debe seleccionar adquirentes válidos para ejecutar el traspaso.");
+      alert('Error: Debe seleccionar adquirentes válidos para ejecutar el traspaso.');
       return;
     }
 
+    const propietariosActuales = loteATraspasar.propietarios?.length ? loteATraspasar.propietarios : [loteATraspasar.propietario || 'Sin propietario asignado'];
     const fechaOperacion = datosTraspaso.fecha || new Date().toLocaleDateString('es-MX');
     const acto = datosTraspaso.actoJuridico || 'Cesión de derechos';
 
-    // Actualizar la lista principal de lotes
+    const dueñosSalientes: PropietarioHistoricoLote[] = propietariosActuales.map(nombre => ({
+      nombre,
+      certificado: 'CERT-ANTECEDENTE',
+      fechaAdquisicion: loteATraspasar.fechaRegistro || '—',
+      fechaCesion: fechaOperacion,
+      actoJuridico: acto,
+      adquirente: adquirentesValidos.map(a => a.nombre).join(', '),
+      esActual: false,
+    }));
+
+    const nuevosRegistros: PropietarioHistoricoLote[] = adquirentesValidos.map((a) => ({
+      nombre: a.nombre,
+      certificado: a.certificado,
+      fechaAdquisicion: fechaOperacion,
+      fechaCesion: '— (Actual)',
+      actoJuridico: acto,
+      adquirente: 'Titular activo',
+      esActual: true,
+    }));
+
+    const historialCombinado = [...nuevosRegistros, ...dueñosSalientes, ...(loteATraspasar.historialPropietarios ?? [])];
+    const nuevosNombres = adquirentesValidos.map(a => a.nombre);
+
+    const titularesPorLote = leerTitularesLocal();
+    titularesPorLote[loteATraspasar.id || loteATraspasar.folioInterno] = {
+      propietarios: nuevosNombres,
+      historialPropietarios: historialCombinado,
+    };
+    guardarTitularesLocal(titularesPorLote);
+
     setLotes(prev => prev.map(l => {
       if (l.folio !== loteATraspasar.folioInterno && l.id !== loteATraspasar.id) return l;
-
-      const nombresNuevosPropietarios = adquirentesValidos.map(a => a.nombre);
-
       return {
         ...l,
-        propietarios: nombresNuevosPropietarios
+        propietarios: nuevosNombres,
       };
     }));
 
     setLoteATraspasar(null);
     setSelectedLote(null);
+  };
+
+  const dividirLote = (loteOrigen: LoteSimplificado) => {
+    setLoteADividir(loteOrigen);
+  };
+
+  const handleConfirmarDivisionLote = (payload: {
+    comuneroId: string;
+    nombreCompleto: string;
+    largo: number;
+    ancho: number;
+    superficieFraccion: number;
+    motivo: string;
+  }) => {
+    if (!loteADividir) return;
+
+    const loteOrigen = loteADividir;
+    const superficieOriginal = Number.parseFloat(loteOrigen.superficie) || 0;
+    const superficieNueva = Math.max(payload.superficieFraccion, 0.01);
+    const nuevoId = `lote-${Date.now()}`;
+    const nombreBase = loteOrigen.numero.replace(/\s*[-–].*$/, '');
+    const fechaActual = new Date().toISOString().split('T')[0];
+
+    const historialOrigen = leerTitularesLocal()[loteOrigen.id] ?? {
+      propietarios: loteOrigen.propietarios,
+      historialPropietarios: [] as PropietarioHistoricoLote[]
+    };
+
+    const nuevoHistorialOriginal: PropietarioHistoricoLote[] = [
+      ...(historialOrigen.historialPropietarios ?? []),
+      {
+        nombre: payload.nombreCompleto.trim(),
+        certificado: `CERT-DIV-${Date.now().toString().slice(-6)}`,
+        fechaAdquisicion: fechaActual,
+        fechaCesion: '— (Fracción vendida)',
+        actoJuridico: payload.motivo || 'División de lote',
+        adquirente: 'Fracción segregada',
+        esActual: false,
+      },
+    ];
+
+    const loteRestante: LoteSimplificado = {
+      ...loteOrigen,
+      id: loteOrigen.id,
+      superficie: `${(superficieOriginal - superficieNueva).toFixed(2)} m²`,
+      propietarios: loteOrigen.propietarios,
+      estadoPredial: loteOrigen.estadoPredial,
+    };
+
+    const nuevoLote: LoteSimplificado = {
+      id: nuevoId,
+      numero: `${nombreBase} - Fracción`,
+      folio: `F-${Date.now().toString().slice(-6)}`,
+      superficie: `${superficieNueva.toFixed(2)} m²`,
+      propietarios: [payload.nombreCompleto.trim()],
+      estadoPredial: loteOrigen.estadoPredial,
+    };
+
+    const titularesPorLote = leerTitularesLocal();
+    titularesPorLote[loteRestante.id] = {
+      propietarios: loteRestante.propietarios,
+      historialPropietarios: nuevoHistorialOriginal,
+    };
+    titularesPorLote[nuevoLote.id] = {
+      propietarios: nuevoLote.propietarios,
+      historialPropietarios: [
+        {
+          nombre: payload.nombreCompleto.trim(),
+          certificado: `CERT-DIV-${Date.now().toString().slice(-6)}`,
+          fechaAdquisicion: fechaActual,
+          fechaCesion: '— (Actual)',
+          actoJuridico: payload.motivo || 'División de lote',
+          adquirente: 'Titular activo',
+          esActual: true,
+        },
+        {
+          nombre: loteOrigen.propietarios[0] || 'Titular de origen',
+          certificado: 'CERT-ORIGEN',
+          fechaAdquisicion: fechaActual,
+          fechaCesion: fechaActual,
+          actoJuridico: payload.motivo || 'División de lote',
+          adquirente: payload.nombreCompleto.trim(),
+          esActual: false,
+        },
+      ],
+    };
+    guardarTitularesLocal(titularesPorLote);
+
+    setLotes(prev => {
+      const sinOriginal = prev.filter(item => item.id !== loteOrigen.id);
+      return [loteRestante, nuevoLote, ...sinOriginal];
+    });
+
+    if (selectedLote?.id === loteOrigen.id) {
+      setSelectedLote(enriquecerLoteConHistorial(loteRestante));
+    }
+    setLoteADividir(null);
   };
 
   const handleCancelarFormulario = () => {
@@ -227,7 +448,7 @@ export const LotesFeature: React.FC = () => {
           <LotesList 
             lotes={filteredLotes}
             selectedId={selectedLote?.id ?? ""} 
-            onSelect={setSelectedLote}
+            onSelect={(lote) => setSelectedLote(enriquecerLoteConHistorial(lote))}
             onEdit={activarEdicionDeLote}
             onDelete={handleEliminarLote}
             onTraspasar={activarTraspasoDeLote}
@@ -268,7 +489,7 @@ export const LotesFeature: React.FC = () => {
               </div>
             </div>
             <div className="p-5 sm:p-6">
-              <LoteDetail lote={selectedLote} />
+              <LoteDetail lote={selectedLote} onDividir={dividirLote} />
             </div>
           </div>
         </div>
@@ -291,6 +512,15 @@ export const LotesFeature: React.FC = () => {
           comunerosRegistrados={comuneros}
           onClose={() => setLoteATraspasar(null)}
           onConfirmar={handleEjecutarTraspasoLote}
+        />
+      )}
+
+      {loteADividir && (
+        <DividirLoteModal
+          lote={loteADividir}
+          comunerosRegistrados={comuneros}
+          onClose={() => setLoteADividir(null)}
+          onConfirmar={handleConfirmarDivisionLote}
         />
       )}
 

@@ -28,6 +28,31 @@ interface UseParcelasOptions {
   pageSize?: number;
 }
 
+const TITULARES_STORAGE_KEY = 'parcelas_titulares_local';
+
+const readTitularesLocal = (): Record<string, { comuneroId: string; nombreCompleto: string }> => {
+  if (typeof window === 'undefined') return {};
+
+  try {
+    const raw = window.localStorage.getItem(TITULARES_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeTitularesLocal = (map: Record<string, { comuneroId: string; nombreCompleto: string }>) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(TITULARES_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // Ignorar errores de almacenamiento del navegador.
+  }
+};
+
 export function useParcelas(options: UseParcelasOptions = {}) {
   const pageSize = options.pageSize ?? 10;
 
@@ -45,8 +70,18 @@ export function useParcelas(options: UseParcelasOptions = {}) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const mergeConExtras = useCallback((plots: PlotDTO[]) => {
+    const titularesLocales = readTitularesLocal();
+
     return plots.map((plot) => {
-      const extras = extrasRef.current.get(plot.id) ?? extrasVacias();
+      const baseExtras = extrasRef.current.get(plot.id) ?? extrasVacias();
+      const titularLocal = titularesLocales[plot.id];
+      const extras = titularLocal
+        ? {
+            ...baseExtras,
+            propietarios: [titularLocal.nombreCompleto],
+            titularesCount: 1,
+          }
+        : baseExtras;
       return plotToParcela(plot, extras);
     });
   }, []);
@@ -149,8 +184,12 @@ export function useParcelas(options: UseParcelasOptions = {}) {
   }, [fetchParcelas]);
 
 
-  const asignarTitular = useCallback((parcelaId: string, _comuneroId: string, nombreCompleto: string) => {
+  const asignarTitular = useCallback((parcelaId: string, comuneroId: string, nombreCompleto: string) => {
     const previas = extrasRef.current.get(parcelaId) ?? extrasVacias();
+    const titularesLocales = readTitularesLocal();
+    titularesLocales[parcelaId] = { comuneroId, nombreCompleto };
+    writeTitularesLocal(titularesLocales);
+
     extrasRef.current.set(parcelaId, {
       ...previas,
       propietarios: [nombreCompleto],
@@ -176,6 +215,8 @@ export function useParcelas(options: UseParcelasOptions = {}) {
       fechaCesion: datos.fecha,
       actoJuridico: datos.actoJuridico,
       adquirente: datos.adquirentes.map(a => a.nombre).join(', '),
+      posesionHa: 0,
+      esActual: false,
     }));
 
     const nuevosRegistros: PropietarioHistorico[] = datos.adquirentes.map(a => ({
@@ -185,6 +226,8 @@ export function useParcelas(options: UseParcelasOptions = {}) {
       fechaCesion: '— (Actual)',
       actoJuridico: datos.actoJuridico,
       adquirente: 'Titular Activo',
+      posesionHa: 0,
+      esActual: true,
     }));
 
     const nuevasExtras: ParcelaExtras = {

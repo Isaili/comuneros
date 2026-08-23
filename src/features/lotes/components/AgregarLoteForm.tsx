@@ -18,6 +18,18 @@ interface AgregarLoteFormProps {
   loteAEditar?: Lote | null;
 }
 
+const normalizarNombreCompleto = (valor?: string | null) => String(valor ?? '').replace(/\s+/g, ' ').trim();
+
+const nombreCompletoDeComunero = (comunero: Comunero) => {
+  const apellidos = normalizarNombreCompleto(
+    (comunero as any).apellidos ?? [
+      (comunero as any).apellidoPaterno,
+      (comunero as any).apellidoMaterno,
+    ].filter(Boolean).join(' ')
+  );
+  return [normalizarNombreCompleto(comunero.nombre), apellidos].filter(Boolean).join(' ').trim();
+};
+
 export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
   comunerosRegistrados,
   onClose,
@@ -64,17 +76,19 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
       setHistorialPrediales(loteAEditar.historialPrediales || []);
       setObservaciones(loteAEditar.observaciones || '');
       
-      if (loteAEditar.propietario) {
+      const propietarioEditar = loteAEditar.propietario ?? '';
+      if (propietarioEditar) {
         const comuneroEncontrado = comunerosRegistrados.find(
-          c => `${c.nombre} ${c.apellidos}`.toLowerCase() === loteAEditar.propietario.toLowerCase()
+          c => nombreCompletoDeComunero(c).toLowerCase() === propietarioEditar.toLowerCase()
         );
         if (comuneroEncontrado) {
+          const nombreFormateado = nombreCompletoDeComunero(comuneroEncontrado);
           setComuneroId(comuneroEncontrado.id);
-          setNombreCompleto(`${comuneroEncontrado.nombre} ${comuneroEncontrado.apellidos}`);
-          setBusqueda(`${comuneroEncontrado.nombre} ${comuneroEncontrado.apellidos}`);
+          setNombreCompleto(nombreFormateado);
+          setBusqueda(nombreFormateado);
         } else {
-          setNombreCompleto(loteAEditar.propietario);
-          setBusqueda(loteAEditar.propietario);
+          setNombreCompleto(propietarioEditar);
+          setBusqueda(propietarioEditar);
         }
       }
     } else {
@@ -154,10 +168,12 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
     onGuardar(nuevoLote);
   };
 
-  const filteredComuneros = comunerosRegistrados.filter(c => 
-    `${c.nombre} ${c.apellidos ?? ''}`.toLowerCase().includes(busqueda.toLowerCase()) ||
-    (c.folioComunero ?? '').toLowerCase().includes(busqueda.toLowerCase())
-  ).slice(0, 5);
+  const filteredComuneros = comunerosRegistrados
+    .filter((c) => {
+      const nombre = nombreCompletoDeComunero(c).toLowerCase();
+      return nombre.includes(busqueda.toLowerCase()) || (c.folioComunero ?? '').toLowerCase().includes(busqueda.toLowerCase());
+    })
+    .slice(0, 5);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 overflow-y-auto">
@@ -297,8 +313,9 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
                             type="button"
                             onClick={() => {
                               setComuneroId(c.id);
-                              setNombreCompleto(`${c.nombre} ${c.apellidos}`);
-                              setBusqueda(`${c.nombre} ${c.apellidos}`);
+                              const nombreFormateado = nombreCompletoDeComunero(c);
+                              setNombreCompleto(nombreFormateado);
+                              setBusqueda(nombreFormateado);
                               setMenuAbierto(false);
                             }}
                             className="w-full text-left px-3 py-2 hover:bg-emerald-50 text-gray-700 font-semibold flex items-center justify-between border-b border-gray-50 last:border-0"

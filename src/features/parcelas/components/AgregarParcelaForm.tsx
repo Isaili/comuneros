@@ -59,14 +59,19 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
   const pagoPredialCalculado = superficie * costoPorHectarea;
 
   const agregarPropietarioHistorico = () => {
-    setHistorialPropietarios(prev => [...prev, { nombre: '', certificado: '', fechaAdquisicion: '', fechaCesion: '', actoJuridico: 'Cesión de derechos', adquirente: '' }]);
+    setHistorialPropietarios(prev => [...prev, { nombre: '', certificado: '', fechaAdquisicion: '', fechaCesion: '', actoJuridico: 'Cesión de derechos', adquirente: '', posesionHa: 0 }]);
   };
   const eliminarPropietarioHistorico = (index: number) => {
     setHistorialPropietarios(prev => prev.filter((_, i) => i !== index));
   };
-  const actualizarPropietarioHistorico = (index: number, campo: keyof PropietarioHistorico, valor: string) => {
+  const actualizarPropietarioHistorico = (index: number, campo: keyof PropietarioHistorico, valor: string | number) => {
     setHistorialPropietarios(prev => prev.map((item, i) => i === index ? { ...item, [campo]: valor } : item));
   };
+
+  // Suma de hectáreas declaradas en el historial — debe cuadrar con la superficie total de la parcela
+  const totalHaHistorico = historialPropietarios.reduce((acc, h) => acc + (Number(h.posesionHa) || 0), 0);
+  const haCuadra = superficie > 0 && Math.abs(totalHaHistorico - superficie) < 0.0001;
+  const porcentajeDe = (ha: number) => (superficie > 0 ? ((Number(ha) || 0) / superficie) * 100 : 0);
 
   const agregarPredialHistorico = () => {
     const ultimoAnio = historialPrediales.length > 0 ? Math.min(...historialPrediales.map(p => p.anio)) - 1 : new Date().getFullYear() - 1;
@@ -169,9 +174,16 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
               <h4 className="text-gray-900 font-black text-xs uppercase tracking-wider flex items-center gap-1 text-amber-800">
                 <History className="w-4 h-4" /> Historial Registral de Dueños Anteriores
               </h4>
-              <button type="button" onClick={agregarPropietarioHistorico} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg hover:bg-amber-100/60">
-                <Plus className="w-3.5 h-3.5 stroke-[3]" /> Registrar Dueño Pasado
-              </button>
+              <div className="flex items-center gap-2">
+                {historialPropietarios.length > 0 && (
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black border ${haCuadra ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                    Suma: {totalHaHistorico.toFixed(4)} ha {haCuadra ? '✓' : `(debe ser ${superficie.toFixed(4)} ha)`}
+                  </span>
+                )}
+                <button type="button" onClick={agregarPropietarioHistorico} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg hover:bg-amber-100/60">
+                  <Plus className="w-3.5 h-3.5 stroke-[3]" /> Registrar Dueño Pasado
+                </button>
+              </div>
             </div>
 
             <div className="border border-gray-100 rounded-xl shadow-xs overflow-hidden bg-white">
@@ -180,11 +192,12 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
                   <thead>
                     <tr className="bg-amber-50/40 text-gray-500 font-black uppercase border-b border-gray-100">
                       <th className="p-3">Nombre del Ex-Dueño</th>
-                      <th className="p-3 w-[120px]">Certificado</th>
-                      <th className="p-3 w-[120px]">Adquisición</th>
-                      <th className="p-3 w-[120px]">Fecha Cesión</th>
-                      <th className="p-3 w-[140px]">Acto de Transmisión</th>
+                      <th className="p-3 w-[110px]">Certificado</th>
+                      <th className="p-3 w-[110px]">Adquisición</th>
+                      <th className="p-3 w-[110px]">Fecha Cesión</th>
+                      <th className="p-3 w-[130px]">Acto de Transmisión</th>
                       <th className="p-3">Adquirente</th>
+                      <th className="p-3 w-[110px]">Posesión (ha)</th>
                       <th className="p-3 w-[50px] text-center">Quitar</th>
                     </tr>
                   </thead>
@@ -218,6 +231,22 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
                           </select>
                         </td>
                         <td className="p-2"><input type="text" required value={hist.adquirente} onChange={(e) => actualizarPropietarioHistorico(index, 'adquirente', e.target.value)} className="w-full px-2 py-2 border border-gray-200 rounded-lg outline-none text-gray-800" /></td>
+                        <td className="p-2">
+                          <div className="relative">
+                            <input
+                              type="number"
+                              step="0.0001"
+                              min="0"
+                              max={superficie || undefined}
+                              required
+                              value={hist.posesionHa ?? 0}
+                              onChange={(e) => actualizarPropietarioHistorico(index, 'posesionHa', Number(e.target.value))}
+                              className="w-full pl-2 pr-6 py-2 border border-gray-200 rounded-lg outline-none text-gray-800 font-bold text-right focus:border-amber-500"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold pointer-events-none text-[10px]">ha</span>
+                          </div>
+                          <p className="text-[9px] text-gray-400 font-medium text-right mt-0.5">{porcentajeDe(hist.posesionHa).toFixed(2)}%</p>
+                        </td>
                         <td className="p-2 text-center">
                           <button type="button" onClick={() => eliminarPropietarioHistorico(index)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
                         </td>
@@ -229,6 +258,11 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
                 <div className="p-4 text-center text-gray-400 font-medium text-[11px]">Sin transferencias registradas.</div>
               )}
             </div>
+            {historialPropietarios.length > 0 && !haCuadra && (
+              <p className="text-[10px] text-red-600 font-bold">
+                La posesión declarada en el historial ({totalHaHistorico.toFixed(4)} ha) debe sumar la superficie total de la parcela ({superficie.toFixed(4)} ha).
+              </p>
+            )}
           </div>
 
           <div className="space-y-3 pt-2">

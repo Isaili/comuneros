@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ChevronLeft, ChevronRight, Pencil, Trash2, ArrowRightLeft } from 'lucide-react';
+import type { PropietarioHistoricoLote } from '../types/typesLotes';
 
 export interface Lote {
   id: string;
@@ -10,6 +11,7 @@ export interface Lote {
   superficie: string;
   propietarios: string[];
   estadoPredial: 'Pagado' | 'Pagar';
+  historialPropietarios?: PropietarioHistoricoLote[];
 }
 
 interface ListProps {

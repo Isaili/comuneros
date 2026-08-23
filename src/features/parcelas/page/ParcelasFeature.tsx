@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ParcelasHeader } from '../components/ParcelasHeader';
 import { ParcelasList } from '../components/ParcelasList';
 import { ParcelaDetail } from '../components/ParcelaDetail';
@@ -8,6 +8,7 @@ import { AgregarParcelaForm, ParcelaFormPayload } from '../components/AgregarPar
 import { TraspasarParcelaModal } from '../components/TraspasarParcelaModal';
 import { AsignarTitularModal } from '../components/AsignarTitularModal';
 import { Comunero } from '../../comuneros/types/types';
+import { comunerosApi } from '../../comuneros/services/comunerosApi';
 import { Parcela } from '../types/domain.types';
 import { useParcelas } from '../hooks/useParcelas';
 import { ApiError } from '../services/parcelas.service';
@@ -16,7 +17,27 @@ interface ParcelasFeatureProps {
   comunerosRegistrados?: Comunero[];
 }
 
+const COMUNEROS_CACHE_KEY = 'parcelas_comuneros_registrados';
+
+const leerComunerosCache = (): Comunero[] => {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(COMUNEROS_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegistrados = [] }) => {
+  const [comunerosLocal, setComunerosLocal] = useState<Comunero[]>(() => {
+    if (comunerosRegistrados.length > 0) return comunerosRegistrados;
+    return leerComunerosCache();
+  });
+
   const {
     parcelas,
     initialLoading,
@@ -39,6 +60,37 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
   const [parcelaATraspasar, setParcelaATraspasar] = useState<Parcela | null>(null);
   const [parcelaAAsignarTitular, setParcelaAAsignarTitular] = useState<Parcela | null>(null);
   const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    if (comunerosRegistrados.length > 0) {
+      setComunerosLocal(comunerosRegistrados);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(COMUNEROS_CACHE_KEY, JSON.stringify(comunerosRegistrados));
+      }
+      return;
+    }
+
+    let isMounted = true;
+
+    const cargarComuneros = async () => {
+      try {
+        const { comuneros } = await comunerosApi.listar(1, 200);
+        if (!isMounted) return;
+        setComunerosLocal(comuneros);
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(COMUNEROS_CACHE_KEY, JSON.stringify(comuneros));
+        }
+      } catch {
+        if (!isMounted) return;
+        setComunerosLocal(leerComunerosCache());
+      }
+    };
+
+    cargarComuneros();
+    return () => {
+      isMounted = false;
+    };
+  }, [comunerosRegistrados]);
 
   const handleGuardarParcela = async (payload: ParcelaFormPayload) => {
     setGuardando(true);
@@ -77,6 +129,22 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
 
   const handleConfirmarAsignacion = (comuneroId: string, nombreCompleto: string) => {
     if (!parcelaAAsignarTitular) return;
+
+    const asignacionesGuardadas = (() => {
+      if (typeof window === 'undefined') return {} as Record<string, { comuneroId: string; nombreCompleto: string }>;
+      try {
+        const raw = window.localStorage.getItem('parcelas_titulares_local');
+        return raw ? JSON.parse(raw) : {};
+      } catch {
+        return {} as Record<string, { comuneroId: string; nombreCompleto: string }>;
+      }
+    })();
+
+    asignacionesGuardadas[parcelaAAsignarTitular.id] = { comuneroId, nombreCompleto };
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('parcelas_titulares_local', JSON.stringify(asignacionesGuardadas));
+    }
+
     asignarTitular(parcelaAAsignarTitular.id, comuneroId, nombreCompleto);
     setParcelaAAsignarTitular(null);
   };
@@ -160,7 +228,7 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
       {parcelaATraspasar && (
         <TraspasarParcelaModal
           parcela={parcelaATraspasar}
-          comunerosRegistrados={comunerosRegistrados}
+          comunerosRegistrados={comunerosLocal}
           onClose={() => setParcelaATraspasar(null)}
           onConfirmar={handleEjecutarTraspaso}
         />
@@ -168,7 +236,7 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
 
       {parcelaAAsignarTitular && (
         <AsignarTitularModal
-          comunerosRegistrados={comunerosRegistrados}
+          comunerosRegistrados={comunerosLocal}
           onClose={() => setParcelaAAsignarTitular(null)}
           onAsignar={handleConfirmarAsignacion}
         />

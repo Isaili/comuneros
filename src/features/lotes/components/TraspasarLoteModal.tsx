@@ -22,6 +22,18 @@ interface TraspasarLoteProps {
   }) => void;
 }
 
+const normalizarTexto = (valor?: string | null) => String(valor ?? '').replace(/\s+/g, ' ').trim();
+
+const nombreCompletoDeComunero = (comunero: Comunero) => {
+  const apellidos = normalizarTexto(
+    (comunero as any).apellidos ?? [
+      (comunero as any).apellidoPaterno,
+      (comunero as any).apellidoMaterno,
+    ].filter(Boolean).join(' ')
+  );
+  return [normalizarTexto(comunero.nombre), apellidos].filter(Boolean).join(' ').trim();
+};
+
 export const TraspasarLoteModal: React.FC<TraspasarLoteProps> = ({
   lote,
   comunerosRegistrados,
@@ -107,10 +119,12 @@ export const TraspasarLoteModal: React.FC<TraspasarLoteProps> = ({
     });
   };
 
-  // Filtrar para evitar auto-traspasarse al propietario actual
-  const comunerosDisponibles = comunerosRegistrados.filter(
-    c => `${c.nombre} ${c.apellidos}`.toLowerCase() !== lote.propietario.toLowerCase()
-  );
+  const propietariosActuales = lote.propietarios?.length ? lote.propietarios : [lote.propietario || 'Sin propietario asignado'];
+
+  const comunerosDisponibles = comunerosRegistrados.filter(c => {
+    const nombreComunero = nombreCompletoDeComunero(c);
+    return !propietariosActuales.some(prop => normalizarTexto(prop).toLowerCase() === nombreComunero.toLowerCase());
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
@@ -195,10 +209,10 @@ export const TraspasarLoteModal: React.FC<TraspasarLoteProps> = ({
                 <tbody className="divide-y divide-gray-50">
                   {adquirentes.map((adq, index) => {
                     const query = busquedas[index] ?? adq.nombreCompleto;
-                    const sugeridos = comunerosDisponibles.filter(c => 
-                      `${c.nombre} ${c.apellidos ?? ''}`.toLowerCase().includes(query.toLowerCase()) ||
-                      (c.folioComunero ?? '').toLowerCase().includes(query.toLowerCase())
-                    ).slice(0, 5);
+                    const sugeridos = comunerosDisponibles.filter(c => {
+                      const nombre = nombreCompletoDeComunero(c).toLowerCase();
+                      return nombre.includes(query.toLowerCase()) || (c.folioComunero ?? '').toLowerCase().includes(query.toLowerCase());
+                    }).slice(0, 5);
 
                     return (
                       <tr key={index} className="hover:bg-slate-50/20">
@@ -223,7 +237,7 @@ export const TraspasarLoteModal: React.FC<TraspasarLoteProps> = ({
                               <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto">
                                 {sugeridos.length > 0 ? (
                                   sugeridos.map(c => {
-                                    const nombre = `${c.nombre} ${c.apellidos}`;
+                                    const nombre = nombreCompletoDeComunero(c);
                                     return (
                                       <button
                                         key={c.id}
@@ -238,7 +252,7 @@ export const TraspasarLoteModal: React.FC<TraspasarLoteProps> = ({
                                       >
                                         <div>
                                           <p className="font-bold text-gray-900">{nombre}</p>
-                                          <p className="text-[10px] text-gray-400 font-medium">{c.tipo.toUpperCase()} • {c.folioComunero}</p>
+                                          <p className="text-[10px] text-gray-400 font-medium">{(c.tipo ?? 'comunero').toUpperCase()} • {(c.folioComunero ?? 'Sin folio')}</p>
                                         </div>
                                         {adq.comuneroId === c.id && <Check className="w-3.5 h-3.5 text-[#006837]" />}
                                       </button>

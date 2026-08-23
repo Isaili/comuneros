@@ -5,6 +5,7 @@ export interface PropietarioHistoricoLote {
   fechaCesion: string;
   actoJuridico: string;
   adquirente: string;
+  esActual?: boolean;
 }
 
 export interface PredialHistoricoLote {
@@ -23,12 +24,16 @@ export interface Lote {
   fechaRegistro: string;
   observaciones: string;
   estadoPredial: 'Pagado' | 'Pagar';
-  propietario: string; 
+  propietario?: string;
+  propietarios?: string[];
   certificado: string;
   calidadAgraria: string;
   actoJuridico: string;
-  ubicacion?: string; // Campo opcional para UI
-  estatus?: 'asignado' | 'disponible'; // Campo opcional para UI
+  ubicacion?: string;
+  estatus?: 'asignado' | 'disponible';
   historialPropietarios?: PropietarioHistoricoLote[];
   historialPrediales?: PredialHistoricoLote[];
+  origenLoteId?: string;
+  origenLoteNumero?: string;
+  esFraccion?: boolean;
 }

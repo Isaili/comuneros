@@ -16,6 +16,10 @@ export interface PropietarioHistorico {
   fechaCesion: string;
   actoJuridico: string;
   adquirente: string;
+  /** Hectáreas que poseía este dueño histórico. La suma del historial debe cuadrar con la superficie total de la parcela. */
+  posesionHa: number;
+  /** Indica si este titular es el/los propietario(s) actual(es) en la parcela. */
+  esActual?: boolean;
 }
 
 export interface PredialHistorico {

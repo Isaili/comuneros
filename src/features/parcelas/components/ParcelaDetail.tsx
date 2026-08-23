@@ -189,9 +189,9 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
           {historialPropietarios.length > 0 ? (
             <div className="relative pl-6 border-l-2 border-slate-100 space-y-6 ml-3">
               {historialPropietarios.map((historico, idx) => {
-                const esActual = idx === 0;
+                const esActual = historico.esActual ?? idx === 0;
                 return (
-                  <div key={idx} className="relative">
+                  <div key={`${historico.nombre}-${idx}`} className="relative">
                   <div className={`absolute -left-[33px] top-1 w-4 h-4 rounded-full border-2 bg-white ${esActual ? 'border-[#006837] ring-4 ring-[#006837]/10' : 'border-slate-300'}`}>
                     <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${esActual ? 'bg-[#006837]' : 'bg-slate-300'}`} />
                   </div>
