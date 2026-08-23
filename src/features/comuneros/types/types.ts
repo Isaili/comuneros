@@ -1,5 +1,6 @@
 export type TipoPersona = 'comunero' | 'avecindado' | 'poblador'
 export type EstadoCivil = 'soltero' | 'casado' | 'divorciado' | 'viudo' | 'union_libre';
+export type EstadoPersona = 'activo' | 'inactivo' | 'fallecido';
 
 export interface Comunero {
   id: string;
@@ -24,6 +25,7 @@ export interface Comunero {
   terrenos?: any[];
   edad?: number;
   activo?: boolean;
+  status?: 'ACTIVE' | 'INACTIVE' | 'DECEASED';
   fechaRegistro?: string;    
   telefono?: string;         
   fechaNacimiento?: string;  
@@ -33,7 +35,7 @@ export interface Comunero {
 
 export interface PersonaBackendDTO {
   id: string;
-  personType: 'COMMUNER' | 'RESIDENT';
+  personType: 'COMMUNER' | 'RESIDENT' | 'SETTLER';
   firstName: string;
   paternalLastName: string;
   maternalLastName: string;
@@ -42,7 +44,7 @@ export interface PersonaBackendDTO {
   neighborhood: string;
   neighborhoodId?: string;
   address?: string;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: 'ACTIVE' | 'INACTIVE' | 'DECEASED';
   communityMemberSince: string;
   phone?: string;
   birthDate?: string;
@@ -50,7 +52,8 @@ export interface PersonaBackendDTO {
 }
 
 export interface CrearComuneroPayload {
-  personType: 'COMMUNER' | 'RESIDENT';
+  personType: 'COMMUNER' | 'RESIDENT' | 'SETTLER';
+  status: 'ACTIVE' | 'INACTIVE' | 'DECEASED';
   firstName: string;
   paternalLastName: string;
   maternalLastName: string;

@@ -27,16 +27,20 @@ const comuneroValidationSchema = Yup.object().shape({
     .nullable()
     .transform((value, originalValue) => (originalValue === '' ? null : value)),
   tipoComunero: Yup.string()
-    .oneOf(['comunero', 'avecindado'], 'Selecciona un tipo de miembro válido')
+    .oneOf(['comunero', 'avecindado', 'poblador'], 'Selecciona un tipo de miembro válido')
     .required('El tipo de miembro es obligatorio'),
+  estadoPersona: Yup.string()
+    .oneOf(['activo', 'inactivo', 'fallecido'], 'Selecciona un estado válido')
+    .required('El estado de la persona es obligatorio'),
   neighborhoodId: Yup.string().required('Debe seleccionar un barrio o vecindario'),
   address: Yup.string().min(5, 'La dirección debe tener al menos 5 caracteres').required('La dirección es obligatoria'),
   communityMemberSince: Yup.string().required('La fecha de registro/ingreso es obligatoria'),
 });
 
-const mapaTipoAInglés: Record<'comunero' | 'avecindado', CrearComuneroPayload['personType']> = {
+const mapaTipoAInglés: Record<'comunero' | 'avecindado' | 'poblador', CrearComuneroPayload['personType']> = {
   comunero: 'COMMUNER',
   avecindado: 'RESIDENT',
+  poblador: 'SETTLER',
 };
 
 const mapaEstadoCivilAInglés: Record<string, CrearComuneroPayload['maritalStatus']> = {
@@ -59,6 +63,22 @@ const mapaEstadoCivilDesdeAPI: Record<string, string> = {
   divorciado: 'divorciado',
   viudo: 'viudo',
   union_libre: 'union_libre',
+};
+
+// Estado de la persona (activo / inactivo / fallecido)
+const mapaEstadoPersonaAInglés: Record<'activo' | 'inactivo' | 'fallecido', CrearComuneroPayload['status']> = {
+  activo: 'ACTIVE',
+  inactivo: 'INACTIVE',
+  fallecido: 'DECEASED',
+};
+
+const mapaEstadoPersonaDesdeAPI: Record<string, string> = {
+  ACTIVE: 'activo',
+  INACTIVE: 'inactivo',
+  DECEASED: 'fallecido',
+  activo: 'activo',
+  inactivo: 'inactivo',
+  fallecido: 'fallecido',
 };
 
 // Formatea fechas ISO a YYYY-MM-DD para los <input type="date">
@@ -89,7 +109,15 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
   const initialTelefono = comuneroAEditar?.telefono ?? comuneroAEditar?.phone ?? '';
 
   const rawTipo = comuneroAEditar?.tipo ?? comuneroAEditar?.personType ?? 'comunero';
-  const initialTipoComunero = (rawTipo === 'COMMUNER' || rawTipo === 'comunero') ? 'comunero' : 'avecindado';
+  const initialTipoComunero =
+    rawTipo === 'COMMUNER' || rawTipo === 'comunero'
+      ? 'comunero'
+      : rawTipo === 'SETTLER' || rawTipo === 'poblador'
+      ? 'poblador'
+      : 'avecindado';
+
+  const rawEstadoPersona = comuneroAEditar?.estado ?? comuneroAEditar?.status ?? 'activo';
+  const initialEstadoPersona = mapaEstadoPersonaDesdeAPI[rawEstadoPersona] || 'activo';
 
   const initialNeighborhoodId =
     comuneroAEditar?.neighborhoodId ??
@@ -112,6 +140,7 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
     estadoCivil: initialEstadoCivil,
     telefono: initialTelefono,
     tipoComunero: initialTipoComunero,
+    estadoPersona: initialEstadoPersona,
     neighborhoodId: initialNeighborhoodId,
     address: initialAddress,
     communityMemberSince: initialCommunityMemberSince,
@@ -280,7 +309,8 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
       setIsSubmitting(true);
 
       const payload: CrearComuneroPayload = {
-        personType: mapaTipoAInglés[formData.tipoComunero as 'comunero' | 'avecindado'],
+        personType: mapaTipoAInglés[formData.tipoComunero as 'comunero' | 'avecindado' | 'poblador'],
+        status: mapaEstadoPersonaAInglés[formData.estadoPersona as 'activo' | 'inactivo' | 'fallecido'],
         firstName: formData.nombre,
         paternalLastName: formData.apellidoPaterno,
         maternalLastName: formData.apellidoMaterno,
@@ -501,6 +531,37 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
   </label>
 </div>
             {errors.tipoComunero && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.tipoComunero}</p>}
+          </div>
+
+          {/* Estado de la Persona */}
+          <div className="space-y-2">
+            <label className="text-gray-500 font-bold block">Estado <span className="text-red-500">*</span></label>
+            <div className="grid grid-cols-3 gap-2">
+              <label className={`border rounded-xl px-2 py-2 flex flex-col items-center text-center gap-1 cursor-pointer ${formData.estadoPersona === 'activo' ? 'border-[#006837] bg-[#006837]/5 text-[#006837]' : 'border-gray-200 bg-white'}`}>
+                <input type="radio" name="estadoPersona" value="activo" checked={formData.estadoPersona === 'activo'} onChange={handleChange} className="sr-only" />
+                <div className="min-w-0">
+                  <p className="font-bold text-[10px] leading-tight">Activo</p>
+                  <p className="text-[8px] text-gray-400 font-medium leading-tight">En la comunidad</p>
+                </div>
+              </label>
+
+              <label className={`border rounded-xl px-2 py-2 flex flex-col items-center text-center gap-1 cursor-pointer ${formData.estadoPersona === 'inactivo' ? 'border-amber-500 bg-amber-50/40 text-amber-700' : 'border-gray-200 bg-white'}`}>
+                <input type="radio" name="estadoPersona" value="inactivo" checked={formData.estadoPersona === 'inactivo'} onChange={handleChange} className="sr-only" />
+                <div className="min-w-0">
+                  <p className="font-bold text-[10px] leading-tight">Inactivo</p>
+                  <p className="text-[8px] text-gray-400 font-medium leading-tight">Sin participación</p>
+                </div>
+              </label>
+
+              <label className={`border rounded-xl px-2 py-2 flex flex-col items-center text-center gap-1 cursor-pointer ${formData.estadoPersona === 'fallecido' ? 'border-gray-600 bg-gray-100/60 text-gray-700' : 'border-gray-200 bg-white'}`}>
+                <input type="radio" name="estadoPersona" value="fallecido" checked={formData.estadoPersona === 'fallecido'} onChange={handleChange} className="sr-only" />
+                <div className="min-w-0">
+                  <p className="font-bold text-[10px] leading-tight">Fallecido</p>
+                  <p className="text-[8px] text-gray-400 font-medium leading-tight">Requiere sucesión</p>
+                </div>
+              </label>
+            </div>
+            {errors.estadoPersona && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.estadoPersona}</p>}
           </div>
         </div>
 
