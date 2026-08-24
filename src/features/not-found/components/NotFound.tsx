@@ -56,12 +56,9 @@ export default function NotFound() {
       <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col px-5 pb-6 pt-6 md:px-8 lg:px-10">
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border-[3px] border-[#9ff76a] bg-[#0a1d18]/70 text-lg font-black text-[#9ff76a] shadow-[0_0_20px_rgba(159,247,106,0.25)]">
-              CBC
-            </div>
             <div>
               <h1 className="text-xl font-black tracking-tight text-white md:text-2xl">
-                Casa de Bienes Comunales
+                Bienes Comunales
               </h1>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#9ff76a]">
                 Copainalá, Chiapas

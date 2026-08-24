@@ -1,15 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Footprints, Users, Map, FileText, ShieldCheck, Home, BookOpen, BarChart3, RefreshCcw, Settings } from 'lucide-react';
 import StatCard from './StatCard';
 import PreviewAndAlerts from './PreviewAndAlerts';
 import SessionFooter from './SessionFooter';
+import { comunerosApi } from '../../comuneros/services/comunerosApi';
+import { plotsService } from '../../parcelas/services/parcelas.service';
 
-// --- Datos de ejemplo ---
-const stats = [
-  { icon: Users, label: 'COMUNEROS', value: '342', suffix: 'Registrados', trend: [4, 6, 3, 7, 5, 8, 6] },
-  { icon: Map, label: 'PARCELAS ACTIVAS', value: '289', suffix: 'Registradas', trend: [3, 5, 4, 6, 8, 5, 7] },
+const defaultStats = [
+  { icon: Users, label: 'COMUNEROS', value: '0', suffix: 'Registrados', trend: [4, 6, 3, 7, 5, 8, 6] },
+  { icon: Map, label: 'PARCELAS ACTIVAS', value: '0', suffix: 'Registradas', trend: [3, 5, 4, 6, 8, 5, 7] },
   { icon: FileText, label: 'LOTES REGISTRADOS', value: '128', suffix: 'Registradas', trend: [5, 3, 6, 4, 7, 6, 8] },
   { icon: ShieldCheck, label: 'MULTAS', value: '96', suffix: 'Emitidas', trend: [2, 4, 3, 6, 5, 7, 6] },
 ];
@@ -49,6 +50,52 @@ const footstepPositions = [
 ];
 
 export default function DashboardHero() {
+  const [stats, setStats] = useState(defaultStats);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const cargarEstadisticas = async () => {
+      try {
+        const [comunerosResponse, parcelasResponse] = await Promise.all([
+          comunerosApi.listar(1, 1),
+          plotsService.list({ page: 1, limit: 1, active: true }),
+        ]);
+
+        if (!isMounted) return;
+
+        setStats([
+          {
+            icon: Users,
+            label: 'COMUNEROS',
+            value: String(comunerosResponse.total || 0),
+            suffix: 'Registrados',
+            trend: [4, 6, 3, 7, 5, 8, 6],
+          },
+          {
+            icon: Map,
+            label: 'PARCELAS ACTIVAS',
+            value: String(parcelasResponse.data.total || 0),
+            suffix: 'Registradas',
+            trend: [3, 5, 4, 6, 8, 5, 7],
+          },
+          { icon: FileText, label: 'LOTES REGISTRADOS', value: '128', suffix: 'Registradas', trend: [5, 3, 6, 4, 7, 6, 8] },
+          { icon: ShieldCheck, label: 'MULTAS', value: '96', suffix: 'Emitidas', trend: [2, 4, 3, 6, 5, 7, 6] },
+        ]);
+      } catch {
+        if (isMounted) {
+          setStats(defaultStats);
+        }
+      }
+    };
+
+    cargarEstadisticas();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <section className="relative min-h-screen w-full overflow-hidden font-sans flex flex-col justify-between">
       {/* --- FONDO --- */}

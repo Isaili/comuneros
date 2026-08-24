@@ -9,10 +9,13 @@ import { HistorialReunionesList } from "../../menu/components/HistorialReuniones
 import { AsistentesReunionModal } from "../../menu/components/modals/AsistentesReunionModal";
 import { reunionesHistorialMock } from "../../reportes/mocks/reunionesHistorialMock";
 import { ReunionHistorial } from "../../reportes/types/types";
+import { comunerosApi } from '../../comuneros/services/comunerosApi';
+import { plotsService } from '../../parcelas/services/parcelas.service';
 
 export default function DashboardView() {
   const [fechaActual, setFechaActual] = useState<string>('');
   const [reunionSeleccionada, setReunionSeleccionada] = useState<ReunionHistorial | null>(null);
+  const [totales, setTotales] = useState({ comuneros: 0, parcelas: 0 });
 
   useEffect(() => {
     const opciones: Intl.DateTimeFormatOptions = {
@@ -23,6 +26,34 @@ export default function DashboardView() {
     };
     const fecha = new Date().toLocaleDateString('es-MX', opciones);
     setFechaActual(fecha.charAt(0).toUpperCase() + fecha.slice(1));
+
+    let isMounted = true;
+
+    const cargarTotales = async () => {
+      try {
+        const [comunerosResponse, parcelasResponse] = await Promise.all([
+          comunerosApi.listar(1, 1),
+          plotsService.list({ page: 1, limit: 1, active: true }),
+        ]);
+
+        if (!isMounted) return;
+
+        setTotales({
+          comuneros: comunerosResponse.total || 0,
+          parcelas: parcelasResponse.data.total || 0,
+        });
+      } catch {
+        if (isMounted) {
+          setTotales({ comuneros: 0, parcelas: 0 });
+        }
+      }
+    };
+
+    cargarTotales();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
@@ -50,16 +81,16 @@ export default function DashboardView() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 sm:rounded-2xl min-w-0">
         <StatCard
           title="Comuneros registrados"
-          value="428"
-          subtext="↗ 12 más que el mes pasado"
+          value={String(totales.comuneros)}
+          subtext="Total actual del padrón"
           icon={Users}
           iconBg="bg-[#E6F2E9]"
           iconColor="text-[#1F4D3C]"
         />
         <StatCard
           title="Parcelas registradas"
-          value="512"
-          subtext="↗ 8 nuevas este mes"
+          value={String(totales.parcelas)}
+          subtext="Total actual de parcelas activas"
           icon={FileText}
           iconBg="bg-[#E6F2E9]"
           iconColor="text-[#1F4D3C]"
