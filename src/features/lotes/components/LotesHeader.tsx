@@ -39,7 +39,7 @@ export const LotesHeader: React.FC<HeaderProps> = ({
             Analista de Lotes
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide mt-1">
-            Consulta y administra la información de todos los lotes comunales.
+            Consulta y administra la información de todos los lotes.
           </p>
         </div>
         

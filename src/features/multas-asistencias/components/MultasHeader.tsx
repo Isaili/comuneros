@@ -45,7 +45,7 @@ export const MultasHeader: React.FC<HeaderProps> = ({
             Multas y Asistencias
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide mt-1">
-            Consulta, liquida y registra multas de comuneros y avecindados.
+            Consulta, liquida y registra multas de comuneros, pobladores y avecindados.
           </p>
         </div>
 
