@@ -425,7 +425,7 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
                 <DollarSign className="w-4 h-4" /> 3. Historial de Pagos Prediales (Años Anteriores)
               </h4>
               <button type="button" onClick={agregarPredialHistorico} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-800 border border-red-200 rounded-lg hover:bg-red-100/60">
-                Registrar Año Fiscal Pasado
+                Registrar Año Pasado
               </button>
             </div>
 
@@ -434,7 +434,7 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-red-50/40 text-gray-500 font-black uppercase border-b border-gray-100">
-                      <th className="p-3 w-[150px]">Año Fiscal</th>
+                      <th className="p-3 w-[150px]">Año del Adeudo</th>
                       <th className="p-3 w-[180px]">Monto del Derecho ($)</th>
                       <th className="p-3">Estado del Pago</th>
                       <th className="p-3 w-[60px] text-center"></th>
@@ -451,8 +451,8 @@ export const AgregarLoteForm: React.FC<AgregarLoteFormProps> = ({
                         </td>
                         <td className="p-2">
                           <select value={pred.estado} onChange={(e) => actualizarPredialHistorico(index, 'estado', e.target.value)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg outline-none font-bold cursor-pointer">
-                            <option value="Pagado">🟢 PAGADO (Al corriente)</option>
-                            <option value="Pagar">🔴 POR PAGAR (Adeudo)</option>
+                            <option value="Pagado"> PAGADO (Al corriente)</option>
+                            <option value="Pagar">POR PAGAR (Adeudo)</option>
                           </select>
                         </td>
                         <td className="p-2 text-center">
