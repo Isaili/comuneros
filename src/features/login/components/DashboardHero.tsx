@@ -115,7 +115,7 @@ export default function DashboardHero() {
         {/* CONTENEDOR SUPERIOR */}
         <div className="flex flex-col justify-start w-full gap-4 mb-auto">
 
-          {/* Rastro de huellas caminando: van apareciendo una tras otra */}
+          
           <div className="flex justify-end shrink-0">
             <div className="relative w-24 h-9">
               {footstepPositions.map((pos, i) => (
