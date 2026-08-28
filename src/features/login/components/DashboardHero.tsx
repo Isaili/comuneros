@@ -30,7 +30,7 @@ const avisos = [
   },
   {
     icon: ShieldCheck,
-    titulo: 'Nuevos certificados emitidos',
+    titulo: 'Nuevos certificados ',
     subtitulo: 'Consulta los certificados disponibles',
     fecha: '10 Jul',
   },
