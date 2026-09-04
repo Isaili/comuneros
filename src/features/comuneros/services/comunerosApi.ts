@@ -59,7 +59,7 @@ const construirFormData = (payload: Partial<CrearComuneroPayload>, fotoFile?: Fi
 export const comunerosApi = {
   crear: async (payload: CrearComuneroPayload, fotoFile?: File | Blob | null): Promise<Comunero> => {
     const formData = construirFormData(payload, fotoFile);
-    const { data } = await apiClient.post<ApiEnvelope<PersonaBackendDTO>>('/people', formData, {
+    const { data } = await apiClient.post<ApiEnvelope<PersonaBackendDTO>>('/persons', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return mapearComuneroDesdeBackend(data.data);
@@ -67,41 +67,73 @@ export const comunerosApi = {
 
   listar: async (
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    filters?: { fullName?: string; personType?: PersonaBackendDTO['personType']; status?: PersonaBackendDTO['status'] },
+    options?: { incluirDetalle?: boolean }
   ): Promise<{ comuneros: Comunero[]; total: number; totalPages: number }> => {
-    const { data } = await apiClient.get<ApiEnvelope<PaginatedListDTO<PersonaBackendDTO>>>('/people', {
-      params: { page, limit },
+    const { data } = await apiClient.get<ApiEnvelope<PaginatedListDTO<PersonaBackendDTO>>>('/persons', {
+      params: { page, limit, status: filters?.status ?? 'ACTIVE', ...filters },
     });
 
     const { items, total, limit: limitRespuesta } = data.data;
     const limitNumerico = Number(limitRespuesta) || limit;
     const totalPages = Math.max(1, Math.ceil(total / limitNumerico));
 
+    const comuneros = items.map(mapearComuneroDesdeBackend);
+    const comunerosConDetalle = options?.incluirDetalle
+      ? await Promise.all(comuneros.map(async (comunero) => comunerosApi.obtenerPorId(comunero.id)))
+      : comuneros;
+
     return {
-      comuneros: items.map(mapearComuneroDesdeBackend),
+      comuneros: comunerosConDetalle,
       total,
       totalPages,
     };
   },
 
-  actualizar: async (
-    id: string,
-    payload: Partial<CrearComuneroPayload>,
-    fotoFile?: File | Blob | null
-  ): Promise<Comunero> => {
-    // Si hay foto nueva, la enviamos por FormData a PATCH /people/:id
-    if (fotoFile) {
-      const formData = construirFormData(payload, fotoFile);
-      const { data } = await apiClient.patch<ApiEnvelope<PersonaBackendDTO>>(`/people/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return mapearComuneroDesdeBackend(data.data);
-    }
-
-    // Si no hay foto, enviamos JSON plano directamente a PATCH /people/:id
-    const { data } = await apiClient.patch<ApiEnvelope<PersonaBackendDTO>>(`/people/${id}`, payload);
+  obtenerPorId: async (id: string): Promise<Comunero> => {
+    const { data } = await apiClient.get<ApiEnvelope<PersonaBackendDTO>>(`/persons/${id}`);
     return mapearComuneroDesdeBackend(data.data);
   },
 
-  eliminar: (id: string) => apiClient.delete(`/people/${id}`),
+  actualizar: async (
+    id: string,
+    payload: Partial<CrearComuneroPayload>,
+    fotoFile?: File | Blob | null,
+    statusActual?: PersonaBackendDTO['status'],
+    eliminarFoto = false
+  ): Promise<Comunero> => {
+    const { personType: _personType, status: nuevoStatus, phone: _phone, ...datosPersonales } = payload;
+    if (Object.keys(datosPersonales).length > 0) {
+      await apiClient.patch<ApiEnvelope<PersonaBackendDTO>>(`/persons/${id}`, datosPersonales);
+    }
+
+    if (nuevoStatus && nuevoStatus !== statusActual) {
+      if (nuevoStatus === 'DECEASED') {
+        await apiClient.patch(`/persons/${id}/deceased`);
+      } else {
+        const action = nuevoStatus === 'ACTIVE' ? 'ACTIVATE' : 'INACTIVE';
+        await apiClient.patch(`/persons/${id}/status`, { status: action });
+      }
+    }
+
+    if (fotoFile) {
+      const formData = new FormData();
+      formData.append('photo', fotoFile);
+      await apiClient.patch<ApiEnvelope<{ url: string }>>(`/persons/${id}/photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    } else if (eliminarFoto) {
+      await comunerosApi.eliminarFoto(id);
+    }
+
+    return comunerosApi.obtenerPorId(id);
+  },
+
+  actualizarEstado: (id: string, status: 'ACTIVATE' | 'INACTIVE') =>
+    apiClient.patch(`/persons/${id}/status`, { status }),
+
+  marcarFallecido: (id: string) => apiClient.patch(`/persons/${id}/deceased`),
+
+  eliminarFoto: (id: string) => apiClient.delete(`/persons/${id}/photo`),
 };

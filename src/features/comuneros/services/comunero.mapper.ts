@@ -2,9 +2,9 @@ import { Comunero, PersonaBackendDTO, TipoPersona, EstadoCivil } from '../types/
 import { resolverQrCode } from './comunerosApi';
 
 const mapaTipo: Record<PersonaBackendDTO['personType'], TipoPersona> = {
-  COMMUNER: 'comunero',
+  COMMONER: 'comunero',
   RESIDENT: 'avecindado',
-  SETTLER: 'poblador',
+  INHABITANT: 'poblador',
 };
 
 const mapaEstadoCivil: Record<PersonaBackendDTO['maritalStatus'], EstadoCivil> = {
@@ -24,13 +24,13 @@ export function mapearComuneroDesdeBackend(dto: PersonaBackendDTO): Comunero {
     tipo: mapaTipo[dto.personType] ?? 'comunero',
     estadoCivil: mapaEstadoCivil[dto.maritalStatus] ?? 'soltero',
     fotografia: dto.photo,
-    vecindario: dto.neighborhood,
+    vecindario: dto.neighborhoodName,
     neighborhoodId: dto.neighborhoodId,
     address: dto.address,
     status: dto.status,
     activo: dto.status === 'ACTIVE',
     fechaRegistro: dto.communityMemberSince,
-    telefono: dto.phone ?? '',
+    telefono: dto.phoneNumber ?? '',
     fechaNacimiento: dto.birthDate ?? '',
     qrCode: resolverQrCode(dto.qrCode, dto.id),
   };

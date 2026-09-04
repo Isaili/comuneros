@@ -35,36 +35,34 @@ export interface Comunero {
 
 export interface PersonaBackendDTO {
   id: string;
-  personType: 'COMMUNER' | 'RESIDENT' | 'SETTLER';
+  personType: 'COMMONER' | 'RESIDENT' | 'INHABITANT';
   firstName: string;
   paternalLastName: string;
   maternalLastName: string;
   maritalStatus: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | 'FREE_UNION';
-  photo: string;
-  neighborhood: string;
+  photo?: string;
+  neighborhoodName?: string;
   neighborhoodId?: string;
   address?: string;
   status: 'ACTIVE' | 'INACTIVE' | 'DECEASED';
   communityMemberSince: string;
-  phone?: string;
+  phoneNumber?: string;
   birthDate?: string;
   qrCode?: string;
 }
 
 export interface CrearComuneroPayload {
-  personType: 'COMMUNER' | 'RESIDENT' | 'SETTLER';
+  personType: 'COMMONER' | 'RESIDENT' | 'INHABITANT';
   status: 'ACTIVE' | 'INACTIVE' | 'DECEASED';
   firstName: string;
   paternalLastName: string;
   maternalLastName: string;
   birthDate: string;
   maritalStatus: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED' | 'FREE_UNION';
-  phone?: string;
+  phone: string;
   neighborhoodId: string;
   communityMemberSince: string;
   address: string;
-  neighborhood?: string;
-  qrCode?: string;
 }
 
 export interface ApiEnvelope<T> {

@@ -21,9 +21,10 @@ export const ComunerosFeature: React.FC = () => {
   const [comuneros, setComuneros] = useState<Comunero[]>([]);
 
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   const [selectedComunero, setSelectedComunero] = useState<Comunero | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -33,7 +34,12 @@ export const ComunerosFeature: React.FC = () => {
   const cargarComuneros = useCallback(async (paginaActual: number) => {
     setIsLoading(true);
     try {
-      const { comuneros: lista, totalPages: paginasTotales } = await comunerosApi.listar(paginaActual, limit);
+      const { comuneros: lista, totalPages: paginasTotales } = await comunerosApi.listar(
+        paginaActual,
+        limit,
+        { fullName: searchTerm || undefined },
+        { incluirDetalle: true }
+      );
       const listaSinDuplicados = deduplicarComuneros(lista);
       setComuneros(listaSinDuplicados);
       setTotalPages(paginasTotales);
@@ -43,13 +49,28 @@ export const ComunerosFeature: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [limit]);
+  }, [limit, searchTerm]);
 
   useEffect(() => {
     cargarComuneros(page);
   }, [page, cargarComuneros]);
 
-  const handleSearch = (text: string) => setSearchTerm(text);
+  const handleSelectComunero = async (comunero: Comunero) => {
+    setSelectedComunero(comunero);
+    setIsDetailLoading(true);
+    try {
+      setSelectedComunero(await comunerosApi.obtenerPorId(comunero.id));
+    } catch (err) {
+      console.error('Error al cargar el detalle del comunero:', err);
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
+
+  const handleSearch = (text: string) => {
+    setSearchTerm(text);
+    setPage(1);
+  };
 
   const handleAddComunero = () => {
     setComuneroAEditar(null);
@@ -58,14 +79,21 @@ export const ComunerosFeature: React.FC = () => {
 
   const handleGuardarNuevoComunero = async (
     payload: CrearComuneroPayload,
-    fotoFile?: File | Blob | string | null
+    fotoFile?: File | Blob | string | null,
+    eliminarFoto = false
   ) => {
     try {
       // Si recibes un File/Blob lo envía directamente; si es un string o null no fuerza el archivo
       const archivoAEnviar = fotoFile instanceof Blob ? fotoFile : null;
 
       if (comuneroAEditar) {
-        await comunerosApi.actualizar(comuneroAEditar.id, payload, archivoAEnviar);
+        await comunerosApi.actualizar(
+          comuneroAEditar.id,
+          payload,
+          archivoAEnviar,
+          comuneroAEditar.status,
+          eliminarFoto
+        );
       } else {
         await comunerosApi.crear(payload, archivoAEnviar);
       }
@@ -85,18 +113,26 @@ export const ComunerosFeature: React.FC = () => {
     }
   };
 
-  const handleEdit = (id: string) => {
+  const handleEdit = async (id: string) => {
     const comuneroBuscado = comuneros.find((c) => c.id === id);
-    if (comuneroBuscado) {
-      setComuneroAEditar(comuneroBuscado);
-      setIsAddModalOpen(true);
+    if (!comuneroBuscado) return;
+
+    try {
+      const comuneroCompleto = await comunerosApi.obtenerPorId(id);
+      setComuneroAEditar(comuneroCompleto);
+    } catch (err) {
+      console.error('Error al cargar el expediente para editar:', err);
+      alert('No se pudo cargar la información completa del comunero.');
+      return;
     }
+
+    setIsAddModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
+    if (!confirm('¿Estás seguro de que deseas dar de baja este registro?')) return;
     try {
-      await comunerosApi.eliminar(id);
+      await comunerosApi.actualizarEstado(id, 'INACTIVE');
       await cargarComuneros(page);
       if (selectedComunero?.id === id) setSelectedComunero(null);
     } catch (err) {
@@ -104,10 +140,6 @@ export const ComunerosFeature: React.FC = () => {
       alert('No se pudo eliminar el registro.');
     }
   };
-
-  const filteredComuneros = comuneros.filter((c) =>
-    `${c.nombre} ${c.apellidoPaterno} ${c.apellidoMaterno}`.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
@@ -146,11 +178,11 @@ export const ComunerosFeature: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : filteredComuneros.length > 0 ? (
+        ) : comuneros.length > 0 ? (
           <ComunerosList
-            comuneros={filteredComuneros}
+            comuneros={comuneros}
             selectedId={selectedComunero?.id ?? ''}
-            onSelect={setSelectedComunero}
+            onSelect={handleSelectComunero}
             onEdit={handleEdit}
             onDelete={handleDelete}
             page={page}
@@ -178,14 +210,16 @@ export const ComunerosFeature: React.FC = () => {
               </button>
             </div>
             <div className="p-6">
-              <ComuneroDetail
+              {isDetailLoading ? (
+                <div className="py-12 text-center text-gray-500">Cargando expediente...</div>
+              ) : <ComuneroDetail
                 comunero={selectedComunero}
                 onEdit={(id) => {
                   setSelectedComunero(null);
                   handleEdit(id);
                 }}
                 onDelete={handleDelete}
-              />
+              />}
             </div>
           </div>
         </div>

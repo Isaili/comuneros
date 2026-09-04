@@ -5,11 +5,10 @@ import { User, Camera, Upload, RotateCcw, Save, X } from 'lucide-react';
 import * as Yup from 'yup';
 import { Comunero, CrearComuneroPayload } from '../types/types';
 import { getNeighborhoods, Neighborhood } from '../services/neighborhoodsApi';
-import { generarQrUnico } from '../services/comunerosApi';
 
 interface AgregarComuneroFormProps {
   onClose: () => void;
-  onGuardar: (payload: CrearComuneroPayload, fotoFile?: File | Blob | null) => void;
+  onGuardar: (payload: CrearComuneroPayload, fotoFile?: File | Blob | null, eliminarFoto?: boolean) => void;
   comuneroAEditar?: Comunero | any;
 }
 
@@ -23,9 +22,7 @@ const comuneroValidationSchema = Yup.object().shape({
     .required('El estado civil es obligatorio'),
   telefono: Yup.string()
     .matches(/^[0-9]{10}$/, 'El teléfono debe tener exactamente 10 dígitos numéricos')
-    .optional()
-    .nullable()
-    .transform((value, originalValue) => (originalValue === '' ? null : value)),
+    .required('El teléfono es obligatorio'),
   tipoComunero: Yup.string()
     .oneOf(['comunero', 'avecindado', 'poblador'], 'Selecciona un tipo de miembro válido')
     .required('El tipo de miembro es obligatorio'),
@@ -38,9 +35,9 @@ const comuneroValidationSchema = Yup.object().shape({
 });
 
 const mapaTipoAInglés: Record<'comunero' | 'avecindado' | 'poblador', CrearComuneroPayload['personType']> = {
-  comunero: 'COMMUNER',
+  comunero: 'COMMONER',
   avecindado: 'RESIDENT',
-  poblador: 'SETTLER',
+  poblador: 'INHABITANT',
 };
 
 const mapaEstadoCivilAInglés: Record<string, CrearComuneroPayload['maritalStatus']> = {
@@ -106,13 +103,13 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
   const rawEstadoCivil = comuneroAEditar?.estadoCivil ?? comuneroAEditar?.maritalStatus ?? 'soltero';
   const initialEstadoCivil = mapaEstadoCivilDesdeAPI[rawEstadoCivil] || 'soltero';
 
-  const initialTelefono = comuneroAEditar?.telefono ?? comuneroAEditar?.phone ?? '';
+  const initialTelefono = comuneroAEditar?.telefono ?? comuneroAEditar?.phoneNumber ?? comuneroAEditar?.phone ?? '';
 
   const rawTipo = comuneroAEditar?.tipo ?? comuneroAEditar?.personType ?? 'comunero';
   const initialTipoComunero =
-    rawTipo === 'COMMUNER' || rawTipo === 'comunero'
+    rawTipo === 'COMMONER' || rawTipo === 'comunero'
       ? 'comunero'
-      : rawTipo === 'SETTLER' || rawTipo === 'poblador'
+      : rawTipo === 'INHABITANT' || rawTipo === 'poblador'
       ? 'poblador'
       : 'avecindado';
 
@@ -153,6 +150,7 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
   const fotoInicial = comuneroAEditar?.fotografia ?? comuneroAEditar?.photo ?? null;
   const [fotografia, setFotografia] = useState<string | null>(fotoInicial);
   const [fotoFile, setFotoFile] = useState<File | Blob | null>(null);
+  const [fotoEliminada, setFotoEliminada] = useState(false);
 
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -316,14 +314,13 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
         maternalLastName: formData.apellidoMaterno,
         birthDate: formData.fechaNacimiento,
         maritalStatus: mapaEstadoCivilAInglés[formData.estadoCivil],
-        phone: formData.telefono || undefined,
+        phone: formData.telefono,
         neighborhoodId: formData.neighborhoodId,
         communityMemberSince: formData.communityMemberSince,
         address: formData.address,
-        qrCode: comuneroAEditar?.qrCode || generarQrUnico(`${formData.nombre}-${formData.apellidoPaterno}-${formData.apellidoMaterno}-${Date.now()}`),
       };
 
-      onGuardar(payload, fotoFile);
+      onGuardar(payload, fotoFile, fotoEliminada);
     } catch (err) {
       if (err instanceof Yup.ValidationError) {
         const validationErrors: Record<string, string> = {};
@@ -389,7 +386,7 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
                     <Upload className="w-3.5 h-3.5 text-gray-400" /> Subir Archivo
                   </button>
                   {fotografia && (
-                    <button type="button" onClick={() => { setFotografia(null); setFotoFile(null); }} className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg">
+                    <button type="button" onClick={() => { setFotografia(null); setFotoFile(null); setFotoEliminada(esEdicion); }} className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg">
                       <RotateCcw className="w-3.5 h-3.5" />
                     </button>
                   )}

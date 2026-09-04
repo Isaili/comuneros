@@ -12,6 +12,6 @@ interface NeighborhoodsResponse {
 }
 
 export const getNeighborhoods = async (): Promise<Neighborhood[]> => {
-  const { data } = await apiClient.get<NeighborhoodsResponse>('/neighborhood');
+  const { data } = await apiClient.get<NeighborhoodsResponse>('/neighborhoods');
   return data.data;
 };

@@ -56,7 +56,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
   const direccion = comunero.direccion ?? comunero.address ?? '—';
   const vecindario = comunero.vecindario ?? comunero.neighborhood ?? comunero.colonia ?? '—';
   const estadoCivil = comunero.estadoCivil ?? comunero.maritalStatus ?? '—';
-  const tipo = comunero.tipo ?? comunero.personType ?? 'COMMUNER';
+  const tipo = comunero.tipo ?? comunero.personType ?? 'COMMONER';
 
   // Fechas y Folio
   const rawFechaRegistro = comunero.fechaRegistro ?? comunero.communityMemberSince ?? comunero.createdAt;
@@ -133,11 +133,11 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold text-gray-900">{nombreCompleto}</h2>
               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold ${
-                tipo === 'comunero' || tipo === 'COMMUNER' 
+                tipo === 'comunero' || tipo === 'COMMONER'
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
                   : 'bg-amber-50 text-amber-700 border border-amber-100'
               }`}>
-                {tipo === 'comunero' || tipo === 'COMMUNER' ? (
+                {tipo === 'comunero' || tipo === 'COMMONER' ? (
                   <><UserCheck className="w-3 h-3" /> Comunero</>
                 ) : (
                   <><UserPlus className="w-3 h-3" /> Avecindado</>

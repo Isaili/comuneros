@@ -40,7 +40,7 @@ const Avatar: React.FC<{ nombre: string; apellidoPaterno: string; foto?: string 
 };
 
 const TipoBadge: React.FC<{ tipo: string }> = ({ tipo }) => {
-  const esComunero = tipo === 'comunero' || tipo === 'COMMUNER';
+  const esComunero = tipo === 'comunero' || tipo === 'COMMONER';
 
   return esComunero ? (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
@@ -139,8 +139,8 @@ export const ComunerosList: React.FC<ListProps> = ({
                 const apellidoPaterno = c.apellidoPaterno ?? c.paternalLastName ?? '';
                 const apellidoMaterno = c.apellidoMaterno ?? c.maternalLastName ?? '';
                 const foto = c.fotografia ?? c.photo ?? null;
-                const tipo = c.tipo ?? c.personType ?? 'COMMUNER';
-                const vecindario = c.vecindario ?? c.neighborhood ?? '—';
+                const tipo = c.tipo ?? c.personType ?? 'COMMONER';
+                const vecindario = c.vecindario ?? c.neighborhoodName ?? c.neighborhood ?? '—';
                 const miembroDesde = getFechaFormateada(c);
 
                 return (
@@ -218,8 +218,8 @@ export const ComunerosList: React.FC<ListProps> = ({
             const apellidoPaterno = c.apellidoPaterno ?? c.paternalLastName ?? '';
             const apellidoMaterno = c.apellidoMaterno ?? c.maternalLastName ?? '';
             const foto = c.fotografia ?? c.photo ?? null;
-            const tipo = c.tipo ?? c.personType ?? 'COMMUNER';
-            const vecindario = c.vecindario ?? c.neighborhood ?? '—';
+            const tipo = c.tipo ?? c.personType ?? 'COMMONER';
+            const vecindario = c.vecindario ?? c.neighborhoodName ?? c.neighborhood ?? '—';
             const miembroDesde = getFechaFormateada(c);
 
             return (
