@@ -15,11 +15,6 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
   const historialPropietarios = parcela.historialPropietarios ?? [];
   const registrosHistorialPredial = parcela.historialPrediales ?? [];
 
-  const avataresPredefinidos = [
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100",
-    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=100",
-  ];
-
   const listaPropietarios = parcela.propietarios ?? [];
   const titularesDetalle = parcela.titularesDetalle;
 
@@ -120,7 +115,13 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
                       return (
                         <tr key={index} className="hover:bg-gray-50/50">
                           <td className="py-2 flex items-center gap-2 whitespace-nowrap">
-                            <img src={avataresPredefinidos[index % avataresPredefinidos.length]} className="w-6 h-6 rounded-full object-cover border border-gray-100 shadow-xs" alt={propietario} />
+                            {detalle?.foto ? (
+                              <img src={detalle.foto} className="w-6 h-6 rounded-full object-cover border border-gray-100 shadow-xs" alt={propietario} />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center text-[9px] font-black border border-gray-100">
+                                {propietario.slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
                             <div>
                               <p className="text-[11px] font-bold text-gray-900">{primerNombre}</p>
                               <p className="text-[9px] font-medium text-gray-400 -mt-0.5 truncate max-w-[120px]">{resto.join(' ')}</p>

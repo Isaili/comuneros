@@ -4,6 +4,7 @@
  * ej. NEXT_PUBLIC_API_URL=https://api.tuejido.mx
  */
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+const API_BASE_URL = BASE_URL.replace(/\/+$/, '');
 
 export class ApiError extends Error {
   status: number;
@@ -17,7 +18,7 @@ export class ApiError extends Error {
 }
 
 export async function http<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${API_BASE_URL}/${path.replace(/^\/+/, '')}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

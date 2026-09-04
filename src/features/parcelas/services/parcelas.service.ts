@@ -1,60 +1,44 @@
 import { http } from './http';
 import {
   ApiEnvelope,
-  CreatePlotPayload,
-  PlotDTO,
-  PlotListData,
-  PlotListParams,
-  UpdatePlotPayload,
+  CreateParcelPayload,
+  ParcelDTO,
+  ParcelDetailDTO,
+  ParcelHistoryData,
+  ParcelListParams,
 } from '../types/api.types';
 
 export { ApiError } from './http';
 
-function buildQuery(params: PlotListParams): string {
-  const qs = new URLSearchParams();
-  if (params.plotNumber) qs.set('plotNumber', params.plotNumber);
-  if (params.active !== undefined) qs.set('active', String(params.active));
-  qs.set('page', String(params.page ?? 1));
-  qs.set('limit', String(params.limit ?? 10));
-  return qs.toString();
-}
-
-// El swagger no deja 100% claro si POST/PATCH /plots devuelven el objeto
-// plano o envuelto en { success, message, data } (activate/deactivate SÍ
-// lo envuelven). Este helper soporta ambas formas para no romper si el
-// backend ajusta el formato.
-function unwrap(res: ApiEnvelope<PlotDTO> | PlotDTO): PlotDTO {
-  return (res as ApiEnvelope<PlotDTO>).data ?? (res as PlotDTO);
-}
+const query = (params: ParcelListParams = {}) => {
+  const search = new URLSearchParams();
+  search.set('page', String(params.page ?? 1));
+  search.set('limit', String(params.limit ?? 12));
+  if (params.parcelNumber) search.set('parcelNumber', params.parcelNumber);
+  return search.toString();
+};
 
 export const plotsService = {
-  list(params: PlotListParams = {}): Promise<ApiEnvelope<PlotListData>> {
-    return http(`/plots?${buildQuery(params)}`);
-  },
-
-  create(payload: CreatePlotPayload): Promise<PlotDTO> {
-    return http<ApiEnvelope<PlotDTO> | PlotDTO>(`/plots`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }).then(unwrap);
-  },
-
-  update(id: string, payload: UpdatePlotPayload): Promise<PlotDTO> {
-    return http<ApiEnvelope<PlotDTO> | PlotDTO>(`/plots/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    }).then(unwrap);
-  },
-
-  activate(id: string): Promise<PlotDTO> {
-    return http<ApiEnvelope<PlotDTO>>(`/plots/${id}/activate`, {
-      method: 'PATCH',
-    }).then(res => res.data);
-  },
-
-  deactivate(id: string): Promise<PlotDTO> {
-    return http<ApiEnvelope<PlotDTO>>(`/plots/${id}/deactivate`, {
-      method: 'PATCH',
-    }).then(res => res.data);
-  },
+  list: (params: ParcelListParams = {}) =>
+    http<ApiEnvelope<{ items: ParcelDTO[]; total: number; page: number; limit: number }>>(`/parcel?${query(params)}`),
+  create: (payload: CreateParcelPayload) =>
+    http<ApiEnvelope<ParcelDTO>>('/parcel', { method: 'POST', body: JSON.stringify(payload) }).then((res) => res.data),
+  detail: (id: string) =>
+    http<ApiEnvelope<ParcelDetailDTO>>(`/parcel/${id}`).then((res) => res.data),
+  history: (id: string, page = 1, limit = 12, ownerName?: string) =>
+    http<ApiEnvelope<ParcelHistoryData>>(`/parcel/${id}/history?${new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      ...(ownerName ? { ownerName } : {}),
+    }).toString()}`),
+  initialOwners: (id: string, owners: Array<{ personId: string; hectares: number; certificate: string; transferType: string }>) =>
+    http(`/parcel/${id}/initial-owner`, { method: 'POST', body: JSON.stringify({ owners }) }),
+  historyCreate: (id: string, historicalOwners: unknown[]) =>
+    http(`/parcel/${id}/history`, { method: 'POST', body: JSON.stringify({ historicalOwners }) }),
+  transfer: (id: string, payload: { oldPersonId: string; newPersonId: string; newCertificate: string; transferType: string }) =>
+    http(`/parcel/${id}/transfer`, { method: 'POST', body: JSON.stringify(payload) }),
+  usageRight: (id: string, personId: string) =>
+    http(`/parcel/${id}/usage-rights`, { method: 'POST', body: JSON.stringify({ personId }) }),
+  removeUsageRight: (id: string, personId: string) =>
+    http(`/parcel/${id}/usage-rights/${personId}`, { method: 'DELETE' }),
 };

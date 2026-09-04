@@ -51,7 +51,9 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
     updateParcela,
     toggleActivo,
     asignarTitular,
+    actualizarTitularLocal,
     ejecutarTraspaso,
+    getDetalle,
   } = useParcelas();
 
   const [selectedParcela, setSelectedParcela] = useState<Parcela | null>(null);
@@ -119,15 +121,30 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
     setParcelaAEditar(null);
   };
 
-  const handleTraspasarClick = (parcela: Parcela) => {
-    if (parcela.propietarios.length === 0) {
-      setParcelaAAsignarTitular(parcela);
+  const handleTraspasarClick = async (parcela: Parcela) => {
+    const parcelaCompleta = await getDetalle(parcela.id);
+    if (parcelaCompleta.propietarios.length === 0) {
+      setParcelaAAsignarTitular(parcelaCompleta);
     } else {
-      setParcelaATraspasar(parcela);
+      setParcelaATraspasar(parcelaCompleta);
     }
   };
 
-  const handleConfirmarAsignacion = (comuneroId: string, nombreCompleto: string) => {
+  const handleSelectParcela = async (parcela: Parcela) => {
+    try {
+      setSelectedParcela(await getDetalle(parcela.id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo cargar el detalle de la parcela.');
+    }
+  };
+
+  const handleConfirmarAsignacion = async (datos: {
+    comuneroId: string;
+    nombreCompleto: string;
+    hectares: number;
+    certificate: string;
+    transferType: string;
+  }) => {
     if (!parcelaAAsignarTitular) return;
 
     const asignacionesGuardadas = (() => {
@@ -140,25 +157,46 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
       }
     })();
 
-    asignacionesGuardadas[parcelaAAsignarTitular.id] = { comuneroId, nombreCompleto };
+    asignacionesGuardadas[parcelaAAsignarTitular.id] = { comuneroId: datos.comuneroId, nombreCompleto: datos.nombreCompleto };
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('parcelas_titulares_local', JSON.stringify(asignacionesGuardadas));
     }
 
-    asignarTitular(parcelaAAsignarTitular.id, comuneroId, nombreCompleto);
+    await asignarTitular(parcelaAAsignarTitular.id, datos.comuneroId, datos.nombreCompleto, datos.hectares, datos.certificate, datos.transferType);
+    actualizarTitularLocal(parcelaAAsignarTitular.id, datos);
+    const actualizada = await getDetalle(parcelaAAsignarTitular.id);
+    setSelectedParcela(actualizada);
     setParcelaAAsignarTitular(null);
   };
 
-  const handleEjecutarTraspaso = (datos: {
-    adquirentes: { nombre: string; certificado: string }[];
+  const handleEjecutarTraspaso = async (datos: {
+    adquirentes: { comuneroId: string; nombre: string; certificado: string }[];
     actoJuridico: string;
     motivo: string;
     fecha: string;
   }) => {
     if (!parcelaATraspasar) return;
-    ejecutarTraspaso(parcelaATraspasar.id, datos);
+    const oldPersonId = parcelaATraspasar.titularesDetalle?.[0]?.comuneroId;
+    const nuevoTitular = datos.adquirentes[0];
+    if (!oldPersonId || !nuevoTitular) {
+      alert('No se pudo identificar a los titulares para realizar el traspaso.');
+      return;
+    }
+    await ejecutarTraspaso(parcelaATraspasar.id, {
+      oldPersonId,
+      newPersonId: nuevoTitular.comuneroId,
+      certificate: nuevoTitular.certificado,
+      transferType: datos.actoJuridico === 'Cesión de Derechos'
+        ? 'SALE'
+        : datos.actoJuridico === 'Sucesión Hereditaria'
+        ? 'INHERITANCE'
+        : datos.actoJuridico === 'Donación Directa'
+        ? 'DONATION'
+        : 'SALE',
+    });
+    const parcelaActualizada = await getDetalle(parcelaATraspasar.id);
+    setSelectedParcela(parcelaActualizada);
     setParcelaATraspasar(null);
-    setSelectedParcela(null);
   };
 
   const handleToggleActivo = async (parcela: Parcela) => {
@@ -192,7 +230,7 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
           totalPages={totalPages}
           onPageChange={setPage}
           selectedId={selectedParcela?.id ?? ""}
-          onSelect={setSelectedParcela}
+          onSelect={handleSelectParcela}
           onTraspasar={handleTraspasarClick}
           onEditar={handleEditarClick}
           onToggleActivo={handleToggleActivo}
@@ -236,6 +274,7 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
 
       {parcelaAAsignarTitular && (
         <AsignarTitularModal
+          parcela={parcelaAAsignarTitular}
           comunerosRegistrados={comunerosLocal}
           onClose={() => setParcelaAAsignarTitular(null)}
           onAsignar={handleConfirmarAsignacion}

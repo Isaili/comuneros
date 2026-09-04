@@ -1,4 +1,4 @@
-import { CreatePlotPayload, PlotDTO, UpdatePlotPayload } from '../types/api.types';
+import { CreateParcelPayload, ParcelDTO, ParcelDetailDTO, ParcelOwnerDTO } from '../types/api.types';
 import { Parcela, PredialHistorico, PropietarioHistorico, TitularFila } from '../types/domain.types';
 
 interface ParcelaExtrasInput {
@@ -10,19 +10,19 @@ interface ParcelaExtrasInput {
   historialPrediales?: PredialHistorico[];
 }
 
-export function plotToParcela(plot: PlotDTO, extras: ParcelaExtrasInput = {}): Parcela {
-  const superficieHa = Number(plot.totalArea);
+export function parcelToParcela(parcel: ParcelDTO | ParcelDetailDTO, extras: ParcelaExtrasInput = {}): Parcela {
+  const superficieHa = Number(parcel.surfaceHectares);
   const superficieValida = Number.isFinite(superficieHa) ? superficieHa : 0;
 
   return {
-    id: plot.id,
-    folioInterno: plot.plotNumber,
-    numero: plot.plotNumber,
+    id: parcel.id,
+    folioInterno: parcel.parcelNumber,
+    numero: parcel.parcelNumber,
     superficie: `${superficieValida.toFixed(2)} ha`,
     superficieHa: superficieValida,
-    observaciones: plot.observations ?? '',
-    activo: plot.active,
-    parentPlotNombre: plot.parentPlot ?? null,
+    observaciones: parcel.observations ?? '',
+    activo: true,
+    parentPlotNombre: null,
 
     estadoPredial: extras.estadoPredial ?? 'Pagar',
     propietarios: extras.propietarios ?? [],
@@ -33,30 +33,48 @@ export function plotToParcela(plot: PlotDTO, extras: ParcelaExtrasInput = {}): P
   };
 }
 
+export const detailToParcela = (parcel: ParcelDetailDTO): Parcela => parcelToParcela(parcel, {
+  propietarios: parcel.activeOwners.map((owner) => owner.fullName ?? owner.personId),
+  titularesCount: parcel.activeOwnersCount,
+  titularesDetalle: parcel.activeOwners.map((owner) => ({
+    comuneroId: owner.personId,
+    nombreCompleto: owner.fullName ?? owner.personId,
+    foto: owner.photo,
+    certificado: owner.certificate ?? '—',
+    hectareasPosesion: owner.hectares ?? 0,
+    calidadAgraria: 'Comunero',
+    actoJuridico: owner.transferType ?? '—',
+    vigencia: 'Vigente',
+  })),
+});
+
+export const historyToPropietarios = (
+  items: ParcelOwnerDTO[],
+  activeOwners: ParcelOwnerDTO[] = [],
+): PropietarioHistorico[] =>
+  items.map((owner) => ({
+    nombre: owner.fullName ?? owner.ownerName ?? owner.name ?? owner.personId,
+    certificado: owner.certificate ?? '—',
+    fechaAdquisicion: owner.startDate ?? '—',
+    fechaCesion: owner.endDate ?? '—',
+    actoJuridico: owner.transferType ?? '—',
+    adquirente: activeOwners.find((activeOwner) => activeOwner.personId !== owner.personId)?.fullName
+      ?? activeOwners[0]?.fullName
+      ?? '—',
+    posesionHa: owner.hectares ?? 0,
+    esActual: false,
+  }));
+
 export function parcelaToCreatePayload(input: {
   numero: string;
   superficieHa: number;
   observaciones?: string;
   parentPlotId?: string;
   activo?: boolean;
-}): CreatePlotPayload {
+}): CreateParcelPayload {
   return {
-    plotNumber: input.numero,
-    totalArea: input.superficieHa,
+    parcelNumber: input.numero,
+    surfaceHectares: input.superficieHa,
     observations: input.observaciones ?? '',
-    parentPlotId: input.parentPlotId,
-    active: input.activo ?? true,
   };
-}
-
-export function parcelaToUpdatePayload(input: {
-  numero?: string;
-  superficieHa?: number;
-  observaciones?: string;
-}): UpdatePlotPayload {
-  const payload: UpdatePlotPayload = {};
-  if (input.numero !== undefined) payload.plotNumber = input.numero;
-  if (input.superficieHa !== undefined) payload.totalArea = input.superficieHa;
-  if (input.observaciones !== undefined) payload.observations = input.observaciones;
-  return payload;
 }

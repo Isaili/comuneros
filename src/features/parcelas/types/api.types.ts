@@ -1,44 +1,49 @@
-/**
- * Tipos que reflejan EXACTAMENTE la forma del backend (/plots).
- * No deben mezclarse con el modelo de dominio (ver domain.types.ts).
- */
-
-export interface PlotDTO {
+export interface ParcelDTO {
   id: string;
-  plotNumber: string;
-  totalArea: number;
-  observations: string;
-  active: boolean;
-  /** Nombre de la parcela padre, si este plot es una subdivisión. */
-  parentPlot?: string | null;
-}
-
-export interface CreatePlotPayload {
-  plotNumber: string;
-  totalArea: number;
+  parcelNumber: string;
+  surfaceHectares: number;
   observations?: string;
-  parentPlotId?: string;
-  active?: boolean;
+  activeOwnersCount: number;
+  activeUsageRightsCount: number;
 }
 
-export interface UpdatePlotPayload {
-  plotNumber?: string;
-  totalArea?: number;
-  observations?: string;
+export interface ParcelOwnerDTO {
+  personId: string;
+  fullName?: string;
+  ownerName?: string;
+  name?: string;
+  photo?: string;
+  transferType?: string;
+  hectares?: number;
+  certificate?: string;
+  previousOwnerId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
-export interface PlotListParams {
-  plotNumber?: string;
-  active?: boolean;
-  page?: number;
-  limit?: number;
+export interface ParcelDetailDTO extends ParcelDTO {
+  activeOwners: ParcelOwnerDTO[];
+  activeUsageRights: ParcelOwnerDTO[];
 }
 
-export interface PlotListData {
-  items: PlotDTO[];
+export interface ParcelHistoryData {
+  items: ParcelOwnerDTO[];
   total: number;
   page: number;
   limit: number;
+}
+
+export interface CreateParcelPayload {
+  parcelNumber: string;
+  surfaceHectares: number;
+  observations?: string;
+}
+
+export interface ParcelListParams {
+  page?: number;
+  limit?: number;
+  parcelNumber?: string;
+  active?: boolean;
 }
 
 export interface ApiEnvelope<T> {

@@ -33,7 +33,7 @@ export default function DashboardView() {
       try {
         const [comunerosResponse, parcelasResponse] = await Promise.all([
           comunerosApi.listar(1, 1),
-          plotsService.list({ page: 1, limit: 1, active: true }),
+          plotsService.list({ page: 1, limit: 1 }),
         ]);
 
         if (!isMounted) return;

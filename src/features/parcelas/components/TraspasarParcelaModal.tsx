@@ -17,7 +17,7 @@ interface TraspasarParcelaModalProps {
   comunerosRegistrados: Comunero[];
   onClose: () => void;
   onConfirmar: (datos: {
-    adquirentes: { nombre: string; certificado: string }[];
+    adquirentes: { comuneroId: string; nombre: string; certificado: string }[];
     actoJuridico: string;
     motivo: string;
     fecha: string;
@@ -69,7 +69,7 @@ export const TraspasarParcelaModal: React.FC<TraspasarParcelaModalProps> = ({
     }
     const [year, month, day] = fecha.split('-');
     onConfirmar({
-      adquirentes: adquirentes.map(a => ({ nombre: a.nombre, certificado: a.certificado })),
+      adquirentes: adquirentes.map(a => ({ comuneroId: a.comuneroId, nombre: a.nombre, certificado: a.certificado })),
       actoJuridico,
       motivo,
       fecha: `${day}/${month}/${year}`,

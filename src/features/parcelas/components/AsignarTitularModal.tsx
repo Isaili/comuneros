@@ -6,9 +6,16 @@ import { Comunero } from '../../comuneros/types/types';
 import { ComuneroPicker } from './shared/ComuneroPicker';
 
 interface AsignarTitularModalProps {
+  parcela: { superficieHa: number };
   comunerosRegistrados: Comunero[];
   onClose: () => void;
-  onAsignar: (comuneroId: string, nombreCompleto: string) => void;
+  onAsignar: (datos: {
+    comuneroId: string;
+    nombreCompleto: string;
+    hectares: number;
+    certificate: string;
+    transferType: string;
+  }) => void;
 }
 
 // NOTA: el tipo Comunero ha tenido dos formas distintas en el código
@@ -22,11 +29,15 @@ const nombreCompletoDe = (c: Comunero) => {
 };
 
 export const AsignarTitularModal: React.FC<AsignarTitularModalProps> = ({
+  parcela,
   comunerosRegistrados,
   onClose,
   onAsignar,
 }) => {
   const [seleccionadoId, setSeleccionadoId] = useState<string>('');
+  const [hectares, setHectares] = useState(String(parcela.superficieHa));
+  const [certificate, setCertificate] = useState('');
+  const [transferType, setTransferType] = useState('SALE');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +46,18 @@ export const AsignarTitularModal: React.FC<AsignarTitularModalProps> = ({
       alert('Por favor seleccione un titular.');
       return;
     }
-    onAsignar(comunero.id, nombreCompletoDe(comunero));
+    const hectaresNumber = Number(hectares);
+    if (!Number.isFinite(hectaresNumber) || hectaresNumber <= 0 || !certificate.trim()) {
+      alert('Indique las hectáreas y el certificado del titular.');
+      return;
+    }
+    onAsignar({
+      comuneroId: comunero.id,
+      nombreCompleto: nombreCompletoDe(comunero),
+      hectares: hectaresNumber,
+      certificate: certificate.trim(),
+      transferType,
+    });
   };
 
   return (
@@ -67,6 +89,26 @@ export const AsignarTitularModal: React.FC<AsignarTitularModalProps> = ({
               placeholder="Buscar por nombre o barrio..."
               required
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-gray-500 font-bold block">Hectáreas</label>
+              <input type="number" min="0.0001" step="0.0001" required value={hectares} onChange={(e) => setHectares(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-gray-500 font-bold block">Certificado</label>
+              <input type="text" required value={certificate} onChange={(e) => setCertificate(e.target.value)} placeholder="CERT-2026-000123" className="w-full px-3 py-2.5 border border-gray-200 rounded-xl" />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-gray-500 font-bold block">Tipo de adquisición</label>
+            <select value={transferType} onChange={(e) => setTransferType(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white">
+              <option value="SALE">Compraventa</option>
+              <option value="INHERITANCE">Herencia</option>
+              <option value="DONATION">Donación</option>
+            </select>
           </div>
 
           <div className="flex gap-2 pt-2">

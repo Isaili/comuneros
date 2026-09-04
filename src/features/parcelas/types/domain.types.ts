@@ -31,6 +31,7 @@ export interface PredialHistorico {
 export interface TitularFila {
   comuneroId: string;
   nombreCompleto: string;
+  foto?: string;
   certificado: string;
   hectareasPosesion: number;
   calidadAgraria: 'Comunero' | 'Avecindado' | 'Posesionario' | string;
