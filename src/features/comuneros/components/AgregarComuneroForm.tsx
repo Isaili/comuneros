@@ -92,7 +92,7 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
   const esEdicion = !!comuneroAEditar;
   const hoyStr = new Date().toISOString().split('T')[0];
 
-  // 🔍 Extracción robusta de campos para edición (soporta inglés/español)
+
   const initialNombre = comuneroAEditar?.nombre ?? comuneroAEditar?.firstName ?? '';
   const initialApellidoPaterno = comuneroAEditar?.apellidoPaterno ?? comuneroAEditar?.paternalLastName ?? '';
   const initialApellidoMaterno = comuneroAEditar?.apellidoMaterno ?? comuneroAEditar?.maternalLastName ?? '';

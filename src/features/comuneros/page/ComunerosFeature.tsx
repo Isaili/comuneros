@@ -100,7 +100,7 @@ export const ComunerosFeature: React.FC = () => {
       
       setIsAddModalOpen(false);
       setComuneroAEditar(null);
-      await cargarComuneros(page); // Refresca la lista
+      await cargarComuneros(page); 
     } catch (err: any) {
       if (err.response) {
         console.error('❌ Error devuelto por el servidor:', err.response.data);
