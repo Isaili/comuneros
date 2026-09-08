@@ -1,7 +1,46 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Calendar } from "lucide-react";
 
+const ASSEMBLY_ANCHOR = new Date(2026, 7, 30);
+
+function ultimoDomingo(year: number, month: number): Date {
+  const fecha = new Date(year, month + 1, 0);
+  fecha.setDate(fecha.getDate() - fecha.getDay());
+  return fecha;
+}
+
+export function calcularProximaAsamblea(hoy = new Date()): Date {
+  let year = ASSEMBLY_ANCHOR.getFullYear();
+  let month = ASSEMBLY_ANCHOR.getMonth();
+
+  while (ultimoDomingo(year, month) < hoy) {
+    month += 2;
+    if (month > 11) {
+      year += Math.floor(month / 12);
+      month %= 12;
+    }
+  }
+
+  return ultimoDomingo(year, month);
+}
+
+function formatearFecha(fecha: Date): string {
+  const texto = new Intl.DateTimeFormat("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(fecha);
+
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 export default function NextAssembly() {
+  const [proximaAsamblea, setProximaAsamblea] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setProximaAsamblea(calcularProximaAsamblea());
+  }, []);
+
   return (
     <div className="group bg-white hover:bg-gray-100/70 p-4 rounded-xl border border-gray-100 hover:border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.01)] transition-all duration-150 flex flex-col justify-between min-w-0 cursor-pointer">
       
@@ -18,7 +57,7 @@ export default function NextAssembly() {
       {/* Contenido Principal y Estatus */}
       <div className="mt-1">
         <h3 className="text-lg font-bold text-gray-800 tracking-tight break-words group-hover:text-gray-900">
-          Domingo 30 de agosto
+          {proximaAsamblea ? formatearFecha(proximaAsamblea) : "Calculando fecha..."}
         </h3>
         
         <div className="flex items-center justify-between gap-2 mt-2">
