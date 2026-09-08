@@ -81,7 +81,11 @@ const MOCK_COMUNEROS: Comunero[] = [
   }
 ];
 
-export const ComunerosFeature: React.FC = () => {
+interface ComunerosFeatureProps {
+  onIrABarrios: () => void;
+}
+
+export const ComunerosFeature: React.FC<ComunerosFeatureProps> = ({ onIrABarrios }) => {
   const [comuneros, setComuneros] = useState<Comunero[]>(MOCK_COMUNEROS);
   
   const [selectedComunero, setSelectedComunero] = useState<Comunero | null>(null);
@@ -195,7 +199,8 @@ export const ComunerosFeature: React.FC = () => {
       
       <ComunerosHeader 
         onAddClick={handleAddComunero} 
-        onSearchChange={handleSearch} 
+        onSearchChange={handleSearch}
+        onBarriosClick={onIrABarrios}
       />
 
       <div className="w-full">
