@@ -18,6 +18,7 @@ import { crearCanalAsistencia, publicarEvento, guardarSnapshot } from '../../bie
 const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`).getTime();
 
 const INTERVALO_REVISION_MS = 15_000;
+let reunionesInicialesPromise: ReturnType<typeof assembliesApi.listar> | null = null;
 
 const obtenerMensajeApi = (error: unknown, fallback: string) => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -82,7 +83,8 @@ export default function KioscoQRFeature() {
   }, []);
 
   useEffect(() => {
-    assembliesApi.listar({ page: 1, limit: 100 })
+    reunionesInicialesPromise ??= assembliesApi.listar({ page: 1, limit: 100 });
+    reunionesInicialesPromise
       .then((response) => setReuniones(response.data.data.items.map(assemblyToReunion)))
       .catch((error) => console.error('Error al cargar asambleas:', error));
   }, []);

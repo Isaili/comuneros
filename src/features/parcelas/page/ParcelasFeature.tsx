@@ -18,6 +18,7 @@ interface ParcelasFeatureProps {
 }
 
 const COMUNEROS_CACHE_KEY = 'parcelas_comuneros_registrados';
+const COMUNEROS_REGISTRADOS_VACIOS: Comunero[] = [];
 
 const leerComunerosCache = (): Comunero[] => {
   if (typeof window === 'undefined') return [];
@@ -32,7 +33,9 @@ const leerComunerosCache = (): Comunero[] => {
   }
 };
 
-export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegistrados = [] }) => {
+export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
+  comunerosRegistrados = COMUNEROS_REGISTRADOS_VACIOS,
+}) => {
   const [comunerosLocal, setComunerosLocal] = useState<Comunero[]>(() => {
     if (comunerosRegistrados.length > 0) return comunerosRegistrados;
     return leerComunerosCache();
@@ -54,6 +57,7 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
     actualizarTitularLocal,
     ejecutarTraspaso,
     getDetalle,
+    invalidarDetalle,
   } = useParcelas();
 
   const [selectedParcela, setSelectedParcela] = useState<Parcela | null>(null);
@@ -162,6 +166,7 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
       window.localStorage.setItem('parcelas_titulares_local', JSON.stringify(asignacionesGuardadas));
     }
 
+    invalidarDetalle(parcelaAAsignarTitular.id);
     await asignarTitular(parcelaAAsignarTitular.id, datos.comuneroId, datos.nombreCompleto, datos.hectares, datos.certificate, datos.transferType);
     actualizarTitularLocal(parcelaAAsignarTitular.id, datos);
     const actualizada = await getDetalle(parcelaAAsignarTitular.id);
@@ -182,6 +187,7 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({ comunerosRegis
       alert('No se pudo identificar a los titulares para realizar el traspaso.');
       return;
     }
+    invalidarDetalle(parcelaATraspasar.id);
     await ejecutarTraspaso(parcelaATraspasar.id, {
       oldPersonId,
       newPersonId: nuevoTitular.comuneroId,

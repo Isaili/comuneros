@@ -12,7 +12,7 @@ import { comunerosApi } from '../../comuneros/services/comunerosApi';
 import { plotsService } from '../../parcelas/services/parcelas.service';
 import { assembliesApi, attendanceToRegistro, obtenerItemsPaginados } from '../../kiosco-qr/services/assembliesApi';
 
-export default function DashboardView() {
+export default function DashboardView({ activo = true }: { activo?: boolean }) {
   const [fechaActual, setFechaActual] = useState<string>('');
   const [reunionSeleccionada, setReunionSeleccionada] = useState<ReunionHistorial | null>(null);
   const [totales, setTotales] = useState({ comuneros: 0, parcelas: 0 });
@@ -20,6 +20,7 @@ export default function DashboardView() {
   const [cargandoReuniones, setCargandoReuniones] = useState(true);
 
   useEffect(() => {
+    if (!activo) return;
     const opciones: Intl.DateTimeFormatOptions = {
       weekday: 'long',
       year: 'numeric',
@@ -56,17 +57,29 @@ export default function DashboardView() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activo]);
 
   useEffect(() => {
-    let activo = true;
+    if (!activo) return;
+    let montado = true;
     assembliesApi.listar({ page: 1, limit: 100 })
       .then(async (response) => {
         const reuniones = await Promise.all(response.data.data.items
           .filter((assembly) => assembly.status === 'COMPLETED')
           .map(async (assembly) => {
-          const asistencias = await assembliesApi.asistencias(assembly.id, { page: 1, limit: 100 });
-          const items = obtenerItemsPaginados(asistencias.data.data);
+          const asistencias = await assembliesApi.asistencias(assembly.id, {
+            status: 'PRESENT',
+            page: 1,
+            limit: 100,
+          });
+          const items = obtenerItemsPaginados(asistencias.data.data)
+            .filter((attendance) => (attendance.status ?? attendance.attendanceStatus) === 'PRESENT')
+            .filter((attendance, index, records) => {
+              const identity = attendance.personId ?? attendance.fullName ?? `index-${index}`;
+              return records.findIndex((candidate) =>
+                (candidate.personId ?? candidate.fullName) === identity
+              ) === index;
+            });
           return {
             id: assembly.id,
             nombre: assembly.title,
@@ -86,19 +99,19 @@ export default function DashboardView() {
             }),
           };
         }));
-        if (activo) setReunionesHistorial(reuniones);
+        if (montado) setReunionesHistorial(reuniones);
       })
       .catch((error) => {
         console.error('Error al cargar historial de asambleas:', error);
-        if (activo) setReunionesHistorial([]);
+        if (montado) setReunionesHistorial([]);
       })
       .finally(() => {
-        if (activo) setCargandoReuniones(false);
+        if (montado) setCargandoReuniones(false);
       });
     return () => {
-      activo = false;
+      montado = false;
     };
-  }, []);
+  }, [activo]);
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">

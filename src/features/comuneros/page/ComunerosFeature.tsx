@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Comunero, CrearComuneroPayload } from '../types/types';
 import { comunerosApi } from '../services/comunerosApi';
@@ -17,6 +17,19 @@ const deduplicarComuneros = (items: Comunero[]) => {
   return Array.from(mapa.values());
 };
 
+const DETALLES_CACHE_KEY = 'comuneros_detalles_cache';
+
+const leerDetallesCache = (): Record<string, Comunero> => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const valor = window.localStorage.getItem(DETALLES_CACHE_KEY);
+    const datos = valor ? JSON.parse(valor) : {};
+    return datos && typeof datos === 'object' ? datos : {};
+  } catch {
+    return {};
+  }
+};
+
 export const ComunerosFeature: React.FC = () => {
   const [comuneros, setComuneros] = useState<Comunero[]>([]);
 
@@ -30,6 +43,8 @@ export const ComunerosFeature: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [comuneroAEditar, setComuneroAEditar] = useState<Comunero | null>(null);
+  const [detallesCache, setDetallesCache] = useState<Record<string, Comunero>>(leerDetallesCache);
+  const ultimaCargaRef = useRef('');
 
   const cargarComuneros = useCallback(async (paginaActual: number) => {
     setIsLoading(true);
@@ -37,8 +52,7 @@ export const ComunerosFeature: React.FC = () => {
       const { comuneros: lista, totalPages: paginasTotales } = await comunerosApi.listar(
         paginaActual,
         limit,
-        { fullName: searchTerm || undefined },
-        { incluirDetalle: true }
+        { fullName: searchTerm || undefined }
       );
       const listaSinDuplicados = deduplicarComuneros(lista);
       setComuneros(listaSinDuplicados);
@@ -52,14 +66,29 @@ export const ComunerosFeature: React.FC = () => {
   }, [limit, searchTerm]);
 
   useEffect(() => {
+    const cargaKey = `${page}:${searchTerm}`;
+    if (ultimaCargaRef.current === cargaKey) return;
+    ultimaCargaRef.current = cargaKey;
     cargarComuneros(page);
   }, [page, cargarComuneros]);
 
   const handleSelectComunero = async (comunero: Comunero) => {
+    const detalleGuardado = detallesCache[comunero.id];
+    if (detalleGuardado) {
+      setSelectedComunero(detalleGuardado);
+      return;
+    }
+
     setSelectedComunero(comunero);
     setIsDetailLoading(true);
     try {
-      setSelectedComunero(await comunerosApi.obtenerPorId(comunero.id));
+      const detalle = await comunerosApi.obtenerPorId(comunero.id);
+      setDetallesCache((actual) => {
+        const actualizado = { ...actual, [comunero.id]: detalle };
+        window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
+        return actualizado;
+      });
+      setSelectedComunero(detalle);
     } catch (err) {
       console.error('Error al cargar el detalle del comunero:', err);
     } finally {
@@ -94,6 +123,12 @@ export const ComunerosFeature: React.FC = () => {
           comuneroAEditar.status,
           eliminarFoto
         );
+        setDetallesCache((actual) => {
+          const actualizado = { ...actual };
+          delete actualizado[comuneroAEditar.id];
+          window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
+          return actualizado;
+        });
       } else {
         await comunerosApi.crear(payload, archivoAEnviar);
       }
@@ -118,7 +153,12 @@ export const ComunerosFeature: React.FC = () => {
     if (!comuneroBuscado) return;
 
     try {
-      const comuneroCompleto = await comunerosApi.obtenerPorId(id);
+      const comuneroCompleto = detallesCache[id] ?? await comunerosApi.obtenerPorId(id);
+      if (!detallesCache[id]) {
+        const actualizado = { ...detallesCache, [id]: comuneroCompleto };
+        setDetallesCache(actualizado);
+        window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
+      }
       setComuneroAEditar(comuneroCompleto);
     } catch (err) {
       console.error('Error al cargar el expediente para editar:', err);

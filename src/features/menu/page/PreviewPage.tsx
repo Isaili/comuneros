@@ -16,10 +16,12 @@ import ChatWidget from '@/components/ChatWidget';
 
 export const PreviewPage: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>('dashboard');
+  const [vistaRestaurada, setVistaRestaurada] = useState(false);
 
   React.useEffect(() => {
     const savedView = window.localStorage.getItem('menu:current-view');
     if (savedView) setCurrentView(savedView);
+    setVistaRestaurada(true);
   }, []);
 
   const setView = (view: string) => {
@@ -60,7 +62,7 @@ export const PreviewPage: React.FC = () => {
         {/* VISTA: Dashboard */}
         {currentView === 'dashboard' && (
           <div className="animate-fade-in">
-            <DashboardView />
+            <DashboardView activo={vistaRestaurada} />
           </div>
         )}
 

@@ -19,13 +19,18 @@ interface AssemblyDTO {
 
 interface AttendanceDTO {
   personId?: string;
-  fullName: string;
+  fullName?: string;
   photo?: string;
   status: string;
+  attendanceStatus?: string;
   personType?: string;
   checkInAt?: string;
   checkOutAt?: string;
+  recordedAt?: string | null;
+  exitTime?: string | null;
 }
+
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'JUSTIFIED' | 'LEFT_EARLY';
 
 interface Paginated<T> {
   items: T[];
@@ -61,14 +66,14 @@ export const assemblyToReunion = (assembly: AssemblyDTO): Reunion => {
 };
 
 export const attendanceToRegistro = (attendance: AttendanceDTO, index: number): AsistenteRegistro => ({
-  id: `${attendance.personId ?? attendance.fullName}-${index}`,
+  id: `${attendance.personId ?? attendance.fullName ?? 'asistente'}-${index}`,
   comuneroId: attendance.personId ?? '',
-  nombre: attendance.fullName,
+  nombre: attendance.fullName ?? 'Asistente',
   folio: attendance.personId ?? '—',
   fotografia: attendance.photo ?? '',
-  horaEntrada: attendance.checkInAt ?? new Date().toISOString(),
-  horaSalida: attendance.checkOutAt,
-  status: attendance.status,
+  horaEntrada: attendance.checkInAt ?? attendance.recordedAt ?? '',
+  horaSalida: attendance.checkOutAt ?? attendance.exitTime ?? undefined,
+  status: attendance.status ?? attendance.attendanceStatus,
 });
 
 export const assembliesApi = {
@@ -83,7 +88,11 @@ export const assembliesApi = {
   bloquearRegistro: (id: string) => apiClient.patch(`/assemblies/${id}/lock-registration`),
   cerrar: (id: string) => apiClient.patch(`/assemblies/${id}/close`),
   cancelar: (id: string) => apiClient.patch(`/assemblies/${id}/cancel`),
-  asistencias: (id: string, params: Record<string, string | number | undefined> = {}) =>
+  asistencias: (id: string, params: {
+    status?: AttendanceStatus;
+    page?: number;
+    limit?: number;
+  } = {}) =>
     apiClient.get<ApiEnvelope<Paginated<AttendanceDTO>>>(`/assemblies/${id}/attendances`, { params }),
   entradaQr: (id: string, qrCode: string) =>
     apiClient.post<ApiEnvelope<AttendanceDTO>>(`/assemblies/${id}/attendances/qr`, { qrCode }),

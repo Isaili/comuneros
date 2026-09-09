@@ -76,7 +76,11 @@ export const AsistentesReunionModal: React.FC<AsistentesReunionModalProps> = ({ 
             ) : (
               asistentesFiltrados.map((a) => (
                 <div key={a.id} className="flex items-center gap-3 border border-gray-100 rounded-xl p-3">
-                  <img src={a.fotografia} alt={a.nombre} className="w-10 h-10 rounded-lg object-cover border border-gray-100 shrink-0" />
+                  {a.fotografia ? (
+                    <img src={a.fotografia} alt={a.nombre} className="w-10 h-10 rounded-lg object-cover border border-gray-100 shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 border border-gray-100 shrink-0" aria-hidden="true" />
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-gray-900 truncate">{a.nombre}</p>
                     <p className="text-[10px] text-gray-400 font-mono">{a.folio}</p>
