@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { X, CalendarPlus, MapPin, Clock, FileText, Hourglass } from 'lucide-react';
-import { Reunion } from '../../types/types';
+import { AssemblyType } from '../../types/types';
 
 interface CrearReunionModalProps {
   onClose: () => void;
-  onCrear: (reunion: Omit<Reunion, 'id' | 'estado'>) => void;
+  onCrear: (reunion: { title: string; scheduledDate: string; type: AssemblyType; agreements: string[] }) => void;
 }
 
 export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, onCrear }) => {
@@ -15,6 +15,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
   const [horaInicio, setHoraInicio] = useState('');
   const [lugar, setLugar] = useState('');
   const [toleranciaMinutos, setToleranciaMinutos] = useState(15);
+  const [tipo, setTipo] = useState<AssemblyType>('ORDINARY');
   const [errores, setErrores] = useState<Record<string, string>>({});
 
   const validar = () => {
@@ -31,7 +32,12 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validar()) return;
-    onCrear({ nombre: nombre.trim(), fecha, horaInicio, lugar: lugar.trim(), toleranciaMinutos });
+    onCrear({
+      title: nombre.trim(),
+      scheduledDate: new Date(`${fecha}T${horaInicio}:00`).toISOString(),
+      type: tipo,
+      agreements: [],
+    });
   };
 
   return (
@@ -50,6 +56,14 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="text-xs text-gray-400 font-bold uppercase tracking-wide">Tipo</label>
+            <select value={tipo} onChange={(e) => setTipo(e.target.value as AssemblyType)} className="mt-1.5 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm font-semibold text-gray-800 bg-white">
+              <option value="ORDINARY">Ordinaria</option>
+              <option value="EXTRAORDINARY">Extraordinaria</option>
+            </select>
+          </div>
+
           <div>
             <label className="text-xs text-gray-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
               <FileText className="w-3 h-3" /> Nombre de la asamblea

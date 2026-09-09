@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Calendar, Heart, MapPin, Phone, FileText, Edit2, Trash2, UserCheck, UserPlus, QrCode, Download, Copy } from 'lucide-react';
 import { Comunero } from '@/features/comuneros/types/types';
-import { resolverQrCode } from '../services/comunerosApi';
 
 interface DetailProps {
   comunero: Comunero | any;
@@ -69,11 +68,14 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
   const folio = comunero.folioComunero ?? comunero.folio ?? id.substring(0, 8).toUpperCase();
 
   // QR Code: usa un valor consistente para mostrarse y validarse después desde el kiosco
-  const qrValue = resolverQrCode(comunero.qrCode ?? comunero.qr_code, `${id}-${folio}-${nombreCompleto}`);
-  const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(qrValue)}&size=1200&margin=2&ecLevel=H&format=png`;
+  const qrValue = typeof comunero.qrCode === 'string' ? comunero.qrCode.trim() : '';
+  const qrUrl = qrValue
+    ? `https://quickchart.io/qr?text=${encodeURIComponent(qrValue)}&size=1200&margin=2&ecLevel=H&format=png`
+    : null;
 
   const handleDownloadQr = async () => {
     try {
+      if (!qrUrl) throw new Error('El backend no devolvió un código QR para este comunero');
       const response = await fetch(qrUrl);
       if (!response.ok) throw new Error('No se pudo generar la imagen del QR');
 
@@ -98,6 +100,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
 
   const handleCopyQrValue = async () => {
     try {
+      if (!qrValue) throw new Error('El backend no devolvió un código QR para este comunero');
       await navigator.clipboard.writeText(qrValue);
       alert('Código QR copiado al portapapeles.');
     } catch (error) {
@@ -219,7 +222,11 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
 
           <div className="flex-1 flex items-center justify-center">
             <div className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-inner">
-              <img src={qrUrl} alt={`Código QR - ${folio}`} className="w-28 h-28 object-contain" />
+              {qrUrl ? (
+                <img src={qrUrl} alt={`Código QR - ${folio}`} className="w-28 h-28 object-contain" />
+              ) : (
+                <span className="w-28 h-28 flex items-center justify-center text-xs text-gray-400">Sin QR</span>
+              )}
             </div>
           </div>
 
@@ -227,6 +234,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
             <button
               type="button"
               onClick={handleDownloadQr}
+             disabled={!qrValue}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#006837] text-white text-[11px] font-bold shadow-sm hover:bg-[#00552f] transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
@@ -235,6 +243,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
             <button
               type="button"
               onClick={handleCopyQrValue}
+             disabled={!qrValue}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-[11px] font-bold hover:bg-gray-50 transition-colors"
             >
               <Copy className="w-3.5 h-3.5" />

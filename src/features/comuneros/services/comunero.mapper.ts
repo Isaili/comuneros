@@ -1,5 +1,4 @@
 import { Comunero, PersonaBackendDTO, TipoPersona, EstadoCivil } from '../types/types';
-import { resolverQrCode } from './comunerosApi';
 
 const mapaTipo: Record<PersonaBackendDTO['personType'], TipoPersona> = {
   COMMONER: 'comunero',
@@ -32,6 +31,6 @@ export function mapearComuneroDesdeBackend(dto: PersonaBackendDTO): Comunero {
     fechaRegistro: dto.communityMemberSince,
     telefono: dto.phoneNumber ?? '',
     fechaNacimiento: dto.birthDate ?? '',
-    qrCode: resolverQrCode(dto.qrCode, dto.id),
+    qrCode: dto.qrCode,
   };
 }

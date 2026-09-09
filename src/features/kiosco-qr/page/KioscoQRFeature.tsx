@@ -12,10 +12,7 @@ import { ConfirmarCierreReunionModal } from '../components/modals/ConfirmarCierr
 import { CrearReunionModal } from '../components/modals/CrearReunionModal';
 import { AvisoProximoCierre } from '../components/Avisoproximocierre';
 import { Reunion, AsistenteRegistro } from '../types/types';
-import { reunionesMock } from '../mocks/reunionesMock';
-import { comunerosMock } from '../mocks/comunerosMock';
-import { Comunero } from '../../comuneros/types/types';
-import { comunerosApi, resolverQrCode } from '../../comuneros/services/comunerosApi';
+import { assembliesApi, assemblyToReunion, attendanceToRegistro } from '../services/assembliesApi';
 import { crearCanalAsistencia, publicarEvento, guardarSnapshot } from '../../bienvenida-comunero/model/asistenciaChannel';
 
 const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`).getTime();
@@ -23,7 +20,7 @@ const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`
 const INTERVALO_REVISION_MS = 15_000;
 
 export default function KioscoQRFeature() {
-  const [reuniones, setReuniones] = useState<Reunion[]>(reunionesMock);
+  const [reuniones, setReuniones] = useState<Reunion[]>([]);
   const [reunionActivaId, setReunionActivaId] = useState<string | null>(null);
   const [reunionSeleccionadaId, setReunionSeleccionadaId] = useState<string | null>(null);
   const [asistentes, setAsistentes] = useState<AsistenteRegistro[]>([]);
@@ -33,7 +30,6 @@ export default function KioscoQRFeature() {
   const [avisoProximoCierre, setAvisoProximoCierre] = useState<string | null>(null);
   const [notificacionCierre, setNotificacionCierre] = useState<string | null>(null);
   const [salidasHabilitadas, setSalidasHabilitadas] = useState(false);
-  const [comunerosRegistrados, setComunerosRegistrados] = useState<Comunero[]>([]);
   const [estadoEscaneo, setEstadoEscaneo] = useState<'idle' | 'valid' | 'warning' | 'invalid' | 'entrada' | 'salida'>('idle');
   const [ultimoCodigo, setUltimoCodigo] = useState('');
   const [mensajeEscaneo, setMensajeEscaneo] = useState('Esperando QR');
@@ -46,28 +42,22 @@ export default function KioscoQRFeature() {
   }, []);
 
   useEffect(() => {
-    let activo = true;
-
-    const cargarComuneros = async () => {
-      try {
-        const { comuneros } = await comunerosApi.listar(1, 500);
-        if (activo) setComunerosRegistrados(comuneros);
-      } catch (error) {
-        console.error('Error al cargar comuneros para el kiosco QR:', error);
-        if (activo) setComunerosRegistrados([]);
-      }
-    };
-
-    cargarComuneros();
-    return () => {
-      activo = false;
-    };
+    assembliesApi.listar({ page: 1, limit: 100 })
+      .then((response) => setReuniones(response.data.data.items.map(assemblyToReunion)))
+      .catch((error) => console.error('Error al cargar asambleas:', error));
   }, []);
 
   const reunionActiva = useMemo(
     () => reuniones.find((r) => r.id === reunionActivaId) ?? null,
     [reuniones, reunionActivaId]
   );
+
+  useEffect(() => {
+    if (!reunionActivaId) return;
+    assembliesApi.asistencias(reunionActivaId, { page: 1, limit: 100 })
+      .then((response) => setAsistentes(response.data.data.items.map(attendanceToRegistro)))
+      .catch((error) => console.error('Error al cargar asistencias:', error));
+  }, [reunionActivaId]);
 
   useEffect(() => {
     guardarSnapshot({ reunionActiva, asistentes });
@@ -93,8 +83,11 @@ export default function KioscoQRFeature() {
 
   const esLaMasCercana = reunionProxima?.id === reunionMasCercana?.id;
 
-  const abrirReunionEspecifica = (reunion: Reunion) => {
-    setReuniones((prev) => prev.map((r) => (r.id === reunion.id ? { ...r, estado: 'en_curso' } : r)));
+  const abrirReunionEspecifica = async (reunion: Reunion) => {
+    await assembliesApi.abrirRegistro(reunion.id);
+    const response = await assembliesApi.obtener(reunion.id);
+    const actualizada = assemblyToReunion(response.data.data);
+    setReuniones((prev) => prev.map((r) => (r.id === reunion.id ? actualizada : r)));
     setReunionActivaId(reunion.id);
     setReunionSeleccionadaId(null);
     setAsistentes([]);
@@ -104,13 +97,13 @@ export default function KioscoQRFeature() {
     publicarEvento(canalRef.current, {
       tipo: 'reunion_abierta',
       timestamp: new Date().toISOString(),
-      reunion: { ...reunion, estado: 'en_curso' },
+      reunion: actualizada,
     });
   };
 
   const abrirReunion = () => {
     if (!reunionProxima) return;
-    abrirReunionEspecifica(reunionProxima);
+    void abrirReunionEspecifica(reunionProxima).catch((error) => console.error('Error al abrir asamblea:', error));
   };
 
   useEffect(() => {
@@ -118,7 +111,7 @@ export default function KioscoQRFeature() {
       if (reunionActivaId) return;
       if (!reunionMasCercana) return;
       if (Date.now() >= fechaHoraTimestamp(reunionMasCercana)) {
-        abrirReunionEspecifica(reunionMasCercana);
+        void abrirReunionEspecifica(reunionMasCercana).catch((error) => console.error('Error al abrir asamblea:', error));
       }
     };
 
@@ -127,8 +120,9 @@ export default function KioscoQRFeature() {
     return () => clearInterval(interval);
   }, [reunionActivaId, reunionMasCercana?.id]);
 
-  const confirmarCierre = () => {
+  const confirmarCierre = async () => {
     if (!reunionActiva) return;
+    await assembliesApi.cerrar(reunionActiva.id);
 
     publicarEvento(canalRef.current, {
       tipo: 'reunion_cerrada',
@@ -136,155 +130,54 @@ export default function KioscoQRFeature() {
       reunion: reunionActiva,
     });
 
-    setReuniones((prev) => prev.map((r) => (r.id === reunionActiva.id ? { ...r, estado: 'finalizada' } : r)));
     setNotificacionCierre(reunionActiva.nombre);
     setModalCerrar(false);
-    setReunionActivaId(null);
-    setReunionSeleccionadaId(null);
-    setComuneroSeleccionado(null);
-    setSalidasHabilitadas(false);
+    setSalidasHabilitadas(true);
   };
 
   const seleccionarReunionDestacada = (reunionId: string) => {
     setReunionSeleccionadaId(reunionId);
   };
 
-  const crearReunion = (datos: Omit<Reunion, 'id' | 'estado'>) => {
-    const nuevaReunion: Reunion = {
-      ...datos,
-      id: `reu-${Date.now()}`,
-      estado: 'programada',
-    };
-    setReuniones((prev) => [...prev, nuevaReunion]);
+  const crearReunion = async (datos: { title: string; scheduledDate: string; type: 'ORDINARY' | 'EXTRAORDINARY'; agreements: string[] }) => {
+    const response = await assembliesApi.crear(datos);
+    setReuniones((prev) => [...prev, assemblyToReunion(response.data.data)]);
     setModalCrear(false);
   };
 
-  const habilitarSalidas = () => {
-    setSalidasHabilitadas(true);
+  const habilitarSalidas = async () => {
+    if (!reunionActiva) return;
+    await assembliesApi.bloquearRegistro(reunionActiva.id);
   };
 
-  const simularEscaneo = (codigoEscaneado?: string) => {
+  const simularEscaneo = async (codigoEscaneado?: string) => {
     if (!reunionActiva) return;
 
     const codigoIngresado = (codigoEscaneado ?? '').trim();
     setUltimoCodigo(codigoIngresado);
-
-    type ComuneroQrCandidate = Partial<Comunero> & {
-      id: string;
-      nombre?: string;
-      apellidoPaterno?: string;
-      fotografia?: string;
-      folioComunero?: string;
-      qrCode?: string;
-    };
-
-    const listaBase: ComuneroQrCandidate[] = (comunerosRegistrados.length > 0 ? comunerosRegistrados : (comunerosMock as unknown as ComuneroQrCandidate[]));
-    const codigoNormalizado = codigoIngresado.toUpperCase();
-
-    let comunero: ComuneroQrCandidate | null = null;
-
-    if (codigoNormalizado) {
-      comunero = listaBase.find((c) => {
-        const qrEsperado = resolverQrCode(c.qrCode ?? undefined, `${c.id ?? ''}-${c.folioComunero ?? ''}`);
-        return qrEsperado.toUpperCase() === codigoNormalizado;
-      }) ?? null;
-    }
-
-    if (!comunero && !codigoEscaneado) {
-      comunero = listaBase.find((c) => (c.qrCode ?? '').trim()) ?? null;
-    }
-
-    if (!comunero) {
-      setEstadoEscaneo('invalid');
-      setMensajeEscaneo(`QR no registrado: ${codigoIngresado || 'sin código'}`);
-      return;
-    }
-
-    const historial = asistentes.filter((a) => a.comuneroId === comunero.id);
-    const registroActivo = historial.find((a) => !a.horaSalida);
-    const ultimoRegistro = historial[historial.length - 1];
-    const nombreComunero = `${comunero.nombre ?? ''} ${comunero.apellidoPaterno ?? ''}`.trim();
-    setEstadoEscaneo('valid');
-
-    if (salidasHabilitadas) {
-      if (registroActivo) {
-        const actualizado: AsistenteRegistro = { ...registroActivo, horaSalida: new Date().toISOString() };
-        setAsistentes((prev) => prev.map((a) => (a.id === actualizado.id ? actualizado : a)));
-        setComuneroSeleccionado(actualizado);
-        setEstadoEscaneo('salida');
-        setMensajeEscaneo(`Salida válida: ${nombreComunero}`);
-
-        publicarEvento(canalRef.current, {
-          tipo: 'salida',
-          timestamp: actualizado.horaSalida!,
-          reunion: reunionActiva,
-          asistente: actualizado,
-        });
-        return;
-      }
-
-      if (ultimoRegistro && ultimoRegistro.horaSalida) {
-        setComuneroSeleccionado(ultimoRegistro);
-        setEstadoEscaneo('invalid');
-        setMensajeEscaneo(`Código ya registrado: ${nombreComunero} ya registró su entrada y salida.`);
-        return;
-      }
-
-      const nuevoRegistro: AsistenteRegistro = {
-        id: `${comunero.id}-${Date.now()}`,
-        comuneroId: comunero.id,
-        nombre: nombreComunero,
-        folio: comunero.folioComunero ?? comunero.id,
-        fotografia: comunero.fotografia ?? '',
-        horaEntrada: new Date().toISOString(),
-      };
-      setAsistentes((prev) => [...prev, nuevoRegistro]);
-      setComuneroSeleccionado(nuevoRegistro);
-      setEstadoEscaneo('entrada');
-      setMensajeEscaneo(`Entrada válida: ${nombreComunero}`);
-
+    try {
+      const response = salidasHabilitadas
+        ? await assembliesApi.salidaQr(reunionActiva.id, codigoIngresado)
+        : await assembliesApi.entradaQr(reunionActiva.id, codigoIngresado);
+      const registro = attendanceToRegistro(response.data.data, Date.now());
+      setAsistentes((prev) => salidasHabilitadas
+        ? prev.map((a) => a.comuneroId === registro.comuneroId ? { ...a, ...registro } : a)
+        : [...prev, registro]);
+      setComuneroSeleccionado(registro);
+      setEstadoEscaneo(salidasHabilitadas ? 'salida' : 'entrada');
+      setMensajeEscaneo(`${salidasHabilitadas ? 'Salida' : 'Entrada'} válida: ${registro.nombre}`);
       publicarEvento(canalRef.current, {
-        tipo: 'entrada',
-        timestamp: nuevoRegistro.horaEntrada,
+        tipo: salidasHabilitadas ? 'salida' : 'entrada',
+        timestamp: new Date().toISOString(),
         reunion: reunionActiva,
-        asistente: nuevoRegistro,
+        asistente: registro,
       });
       return;
-    }
-
-    if (registroActivo) {
-      setComuneroSeleccionado(registroActivo);
-      setEstadoEscaneo('warning');
-      setMensajeEscaneo(`Código ya ingresado: ${nombreComunero} ya está registrado.`);
-      return;
-    }
-
-    if (ultimoRegistro && ultimoRegistro.horaSalida) {
-      setComuneroSeleccionado(ultimoRegistro);
+    } catch (error) {
       setEstadoEscaneo('invalid');
-      setMensajeEscaneo(`Código ya registrado: ${nombreComunero} ya ingresó y salió.`);
+      setMensajeEscaneo(error instanceof Error ? error.message : 'No se pudo registrar el QR');
       return;
     }
-
-    const nuevoRegistro: AsistenteRegistro = {
-      id: `${comunero.id}-${Date.now()}`,
-      comuneroId: comunero.id,
-      nombre: nombreComunero,
-      folio: comunero.folioComunero ?? comunero.id,
-      fotografia: comunero.fotografia ?? '',
-      horaEntrada: new Date().toISOString(),
-    };
-    setAsistentes((prev) => [...prev, nuevoRegistro]);
-    setComuneroSeleccionado(nuevoRegistro);
-    setEstadoEscaneo('entrada');
-    setMensajeEscaneo(`Entrada válida: ${nombreComunero}`);
-
-    publicarEvento(canalRef.current, {
-      tipo: 'entrada',
-      timestamp: nuevoRegistro.horaEntrada,
-      reunion: reunionActiva,
-      asistente: nuevoRegistro,
-    });
   };
 
   return (

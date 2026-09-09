@@ -1,4 +1,6 @@
-export type EstadoReunion = 'programada' | 'en_curso' | 'finalizada';
+export type EstadoReunion = 'programada' | 'en_curso' | 'finalizada' | 'cancelada';
+export type AssemblyStatus = 'SCHEDULED' | 'REGISTRATION_OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELED';
+export type AssemblyType = 'ORDINARY' | 'EXTRAORDINARY';
 
 export interface Reunion {
   id: string;
@@ -8,6 +10,8 @@ export interface Reunion {
   lugar: string;
   estado: EstadoReunion;
   toleranciaMinutos: number; 
+  tipo?: AssemblyType;
+  totalAsistentes?: number;
 }
 
 export interface ComuneroKiosco {
@@ -25,4 +29,5 @@ export interface AsistenteRegistro {
   fotografia: string;
   horaEntrada: string;
   horaSalida?: string;
+  status?: string;
 }
