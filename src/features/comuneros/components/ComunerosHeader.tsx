@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Search, Plus, Calendar, Users, MapPin } from 'lucide-react';
 
 interface HeaderProps {
   onAddClick: () => void;
   onSearchChange: (text: string) => void;
-  onBarriosClick: () => void;
 }
 
-export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchChange, onBarriosClick }) => {
+export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchChange }) => {
   const [fechaActual, setFechaActual] = useState<string>('');
 
   useEffect(() => {
@@ -60,13 +60,13 @@ export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchCha
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-          <button
-            onClick={onBarriosClick}
+          <Link
+            href="/comuneros/barrios"
             className="bg-[#EA580C] hover:bg-[#C2410C] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 transform hover:-translate-y-0.5 w-full sm:w-auto"
           >
             <MapPin className="w-4 h-4" />
             Barrios
-          </button>
+          </Link>
 
           <button
             onClick={onAddClick}

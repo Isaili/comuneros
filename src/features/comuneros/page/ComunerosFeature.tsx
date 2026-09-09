@@ -85,7 +85,7 @@ interface ComunerosFeatureProps {
   onIrABarrios: () => void;
 }
 
-export const ComunerosFeature: React.FC<ComunerosFeatureProps> = ({ onIrABarrios }) => {
+export const ComunerosFeature: React.FC = () => {
   const [comuneros, setComuneros] = useState<Comunero[]>(MOCK_COMUNEROS);
   
   const [selectedComunero, setSelectedComunero] = useState<Comunero | null>(null);
@@ -197,10 +197,9 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = ({ onIrABarrios
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
       
-      <ComunerosHeader 
-        onAddClick={handleAddComunero} 
+      <ComunerosHeader
+        onAddClick={handleAddComunero}
         onSearchChange={handleSearch}
-        onBarriosClick={onIrABarrios}
       />
 
       <div className="w-full">

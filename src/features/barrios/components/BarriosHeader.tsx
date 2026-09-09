@@ -1,21 +1,19 @@
-"use client";
-import React from 'react';
+import Link from 'next/link';
 import { ArrowLeft, Plus, MapPin } from 'lucide-react';
 
 interface Props {
   onAddClick: () => void;
-  onVolver: () => void;
 }
 
-export const BarriosHeader: React.FC<Props> = ({ onAddClick, onVolver }) => {
+export const BarriosHeader: React.FC<Props> = ({ onAddClick }) => {
   return (
     <div className="space-y-4">
-      <button
-        onClick={onVolver}
-        className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors"
+      <Link
+        href="/comuneros"
+        className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors w-fit"
       >
         <ArrowLeft className="w-3.5 h-3.5" /> Volver a Comuneros
-      </button>
+      </Link>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

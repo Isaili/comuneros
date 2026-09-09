@@ -10,7 +10,7 @@ interface BarriosFeatureProps {
   onVolver: () => void;
 }
 
-export const BarriosFeature: React.FC<BarriosFeatureProps> = ({ onVolver }) => {
+export const BarriosFeature: React.FC = () => {
   const { barrios, isLoading, error, guardarBarrio, recargar } = useNeighborhoods();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [barrioAEditar, setBarrioAEditar] = useState<Neighborhood | null>(null);
@@ -21,7 +21,7 @@ export const BarriosFeature: React.FC<BarriosFeatureProps> = ({ onVolver }) => {
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
-      <BarriosHeader onAddClick={handleAdd} onVolver={onVolver} />
+      <BarriosHeader onAddClick={handleAdd} />
 
       {isLoading ? (
         <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 font-medium text-sm shadow-sm">
