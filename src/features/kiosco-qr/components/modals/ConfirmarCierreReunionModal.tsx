@@ -25,7 +25,7 @@ export const ConfirmarCierreReunionModal: React.FC<ConfirmarCierreReunionModalPr
             <span className="p-1.5 bg-red-600/10 text-red-600 rounded-lg">
               <DoorClosed className="w-4 h-4" />
             </span>
-            Cerrar reunión
+            Habilitar salidas
           </h3>
           <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100">
             <X className="w-4 h-4" />
@@ -42,7 +42,7 @@ export const ConfirmarCierreReunionModal: React.FC<ConfirmarCierreReunionModalPr
           <div className="flex items-start gap-2.5 bg-red-50 border border-red-100 p-3.5 rounded-xl">
             <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
             <p className="text-sm text-red-700 leading-relaxed font-medium">
-              Al cerrar la reunión, el escáner se desactivará y ya no se podrá registrar más asistencia. Se notificará el cierre.
+              Se habilitará el escaneo de salidas mediante QR. Las entradas ya están bloqueadas.
             </p>
           </div>
         </div>
@@ -56,7 +56,7 @@ export const ConfirmarCierreReunionModal: React.FC<ConfirmarCierreReunionModalPr
             onClick={onConfirmar}
             className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 shadow-sm"
           >
-            <DoorClosed className="w-3.5 h-3.5" /> Cerrar reunión
+            <DoorClosed className="w-3.5 h-3.5" /> Habilitar salidas
           </button>
         </div>
       </div>

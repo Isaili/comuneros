@@ -7,15 +7,17 @@ import IncomeChart from "./IncomeChart";
 import NextAssembly from "./NextAssembly";
 import { HistorialReunionesList } from "../../menu/components/HistorialReunionesList";
 import { AsistentesReunionModal } from "../../menu/components/modals/AsistentesReunionModal";
-import { reunionesHistorialMock } from "../../reportes/mocks/reunionesHistorialMock";
 import { ReunionHistorial } from "../../reportes/types/types";
 import { comunerosApi } from '../../comuneros/services/comunerosApi';
 import { plotsService } from '../../parcelas/services/parcelas.service';
+import { assembliesApi, attendanceToRegistro, obtenerItemsPaginados } from '../../kiosco-qr/services/assembliesApi';
 
 export default function DashboardView() {
   const [fechaActual, setFechaActual] = useState<string>('');
   const [reunionSeleccionada, setReunionSeleccionada] = useState<ReunionHistorial | null>(null);
   const [totales, setTotales] = useState({ comuneros: 0, parcelas: 0 });
+  const [reunionesHistorial, setReunionesHistorial] = useState<ReunionHistorial[]>([]);
+  const [cargandoReuniones, setCargandoReuniones] = useState(true);
 
   useEffect(() => {
     const opciones: Intl.DateTimeFormatOptions = {
@@ -53,6 +55,48 @@ export default function DashboardView() {
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let activo = true;
+    assembliesApi.listar({ page: 1, limit: 100 })
+      .then(async (response) => {
+        const reuniones = await Promise.all(response.data.data.items
+          .filter((assembly) => assembly.status === 'COMPLETED')
+          .map(async (assembly) => {
+          const asistencias = await assembliesApi.asistencias(assembly.id, { page: 1, limit: 100 });
+          const items = obtenerItemsPaginados(asistencias.data.data);
+          return {
+            id: assembly.id,
+            nombre: assembly.title,
+            fecha: assembly.scheduledDate,
+            horaInicio: new Date(assembly.scheduledDate).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            lugar: 'Asamblea comunitaria',
+            asistentes: items.map((attendance, index) => {
+              const registro = attendanceToRegistro(attendance, index);
+              return {
+                id: registro.id,
+                nombre: registro.nombre,
+                fotografia: registro.fotografia,
+                folio: registro.folio,
+                horaEntrada: registro.horaEntrada,
+                horaSalida: registro.horaSalida,
+              };
+            }),
+          };
+        }));
+        if (activo) setReunionesHistorial(reuniones);
+      })
+      .catch((error) => {
+        console.error('Error al cargar historial de asambleas:', error);
+        if (activo) setReunionesHistorial([]);
+      })
+      .finally(() => {
+        if (activo) setCargandoReuniones(false);
+      });
+    return () => {
+      activo = false;
     };
   }, []);
 
@@ -119,7 +163,7 @@ export default function DashboardView() {
         </div>
         <div className="flex flex-col gap-6 h-full min-w-0">
           <NextAssembly />
-          <HistorialReunionesList reuniones={reunionesHistorialMock} onSeleccionar={setReunionSeleccionada} />
+          <HistorialReunionesList reuniones={reunionesHistorial} onSeleccionar={setReunionSeleccionada} cargando={cargandoReuniones} />
         </div>
       </div>
 

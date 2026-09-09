@@ -46,6 +46,7 @@ export default function Sidebar({ currentView, setView }: SidebarProps) {
     // Limpia cualquier dato de sesión almacenado localmente
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("menu:current-view");
 
     // Redirige a la página de login real (fuera de la SPA por views)
     router.push("/login");

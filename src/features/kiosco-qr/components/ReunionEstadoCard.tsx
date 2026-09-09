@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Calendar, MapPin, Clock, Users, DoorOpen, DoorClosed, LogOut } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, DoorOpen, DoorClosed, LogOut, Ban } from 'lucide-react';
 import { Reunion } from '../types/types';
 
 interface ReunionEstadoCardProps {
@@ -9,10 +9,13 @@ interface ReunionEstadoCardProps {
   reunionActiva: Reunion | null;
   esLaMasCercana: boolean;
   totalAsistentes: number;
+  entradasCerradas: boolean;
   salidasHabilitadas: boolean;
   onAbrirClick: () => void;
-  onCerrarClick: () => void;
+  onCerrarEntradasClick: () => void;
   onHabilitarSalidasClick: () => void;
+  onCerrarReunionClick: () => void;
+  onCancelarClick: () => void;
 }
 
 const formatoFecha = (fecha: string) =>
@@ -23,10 +26,13 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
   reunionActiva,
   esLaMasCercana,
   totalAsistentes,
+  entradasCerradas,
   salidasHabilitadas,
   onAbrirClick,
-  onCerrarClick,
+  onCerrarEntradasClick,
   onHabilitarSalidasClick,
+  onCerrarReunionClick,
+  onCancelarClick,
 }) => {
   const reunion = reunionActiva ?? reunionProxima;
 
@@ -98,7 +104,15 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
 
       {reunionActiva ? (
         <div className="flex flex-col sm:flex-row gap-2.5">
-          {!salidasHabilitadas && (
+          {!entradasCerradas && (
+            <button
+              onClick={onCerrarEntradasClick}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
+            >
+              <DoorClosed className="w-4 h-4" /> Cerrar entradas
+            </button>
+          )}
+          {entradasCerradas && !salidasHabilitadas && (
             <button
               onClick={onHabilitarSalidasClick}
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
@@ -106,20 +120,38 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
               <LogOut className="w-4 h-4" /> Habilitar salidas
             </button>
           )}
-          <button
-            onClick={onCerrarClick}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
-          >
-            <DoorClosed className="w-4 h-4" /> Cerrar reunión
-          </button>
+          {salidasHabilitadas && (
+            <button
+              onClick={onCerrarReunionClick}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
+            >
+              <DoorClosed className="w-4 h-4" /> Cerrar reunión
+            </button>
+          )}
+          {!salidasHabilitadas && (
+            <button
+              onClick={onCancelarClick}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl px-6 py-2.5 text-sm font-bold transition-colors"
+            >
+              <Ban className="w-4 h-4" /> Cancelar reunión
+            </button>
+          )}
         </div>
       ) : (
-        <button
-          onClick={onAbrirClick}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1E4D3A] hover:bg-[#153629] text-white rounded-xl px-6 py-3 text-sm font-bold shadow-sm transition-colors"
-        >
-          <DoorOpen className="w-4 h-4" /> Abrir reunión
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          <button
+            onClick={onAbrirClick}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1E4D3A] hover:bg-[#153629] text-white rounded-xl px-6 py-3 text-sm font-bold shadow-sm transition-colors"
+          >
+            <DoorOpen className="w-4 h-4" /> Abrir reunión
+          </button>
+          <button
+            onClick={onCancelarClick}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl px-6 py-3 text-sm font-bold transition-colors"
+          >
+            <Ban className="w-4 h-4" /> Cancelar reunión
+          </button>
+        </div>
       )}
     </div>
   );

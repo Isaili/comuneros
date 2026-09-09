@@ -7,17 +7,20 @@ import { ReunionHistorial } from '../types/types';
 interface HistorialReunionesListProps {
   reuniones: ReunionHistorial[];
   onSeleccionar: (reunion: ReunionHistorial) => void;
+  cargando?: boolean;
 }
 
 const formatoFecha = (fecha: string) =>
   new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 
-export const HistorialReunionesList: React.FC<HistorialReunionesListProps> = ({ reuniones, onSeleccionar }) => {
+export const HistorialReunionesList: React.FC<HistorialReunionesListProps> = ({ reuniones, onSeleccionar, cargando = false }) => {
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
       <h3 className="font-bold text-gray-900 text-sm mb-4">Historial de reuniones</h3>
 
-      {reuniones.length === 0 ? (
+      {cargando ? (
+        <p className="text-xs text-gray-400 font-medium py-6 text-center">Cargando reuniones...</p>
+      ) : reuniones.length === 0 ? (
         <p className="text-xs text-gray-400 font-medium py-6 text-center">Aún no hay reuniones registradas.</p>
       ) : (
         <div className="space-y-2.5 max-h-[420px] overflow-y-auto scrollbar-thin pr-1">

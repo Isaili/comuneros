@@ -27,9 +27,19 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ultimoCodigoRef = useRef<string | null>(null);
+  const onSimularEscaneoRef = useRef(onSimularEscaneo);
   const [errorCamara, setErrorCamara] = useState<string | null>(null);
   const [camaraLista, setCamaraLista] = useState(false);
   const [codigoManual, setCodigoManual] = useState('');
+
+  useEffect(() => {
+    onSimularEscaneoRef.current = onSimularEscaneo;
+  }, [onSimularEscaneo]);
+
+  useEffect(() => {
+    ultimoCodigoRef.current = null;
+    setCodigoManual('');
+  }, [salidasHabilitadas]);
 
   const estadoMeta = {
     idle: { label: 'Esperando', color: 'bg-slate-100 text-slate-600 border-slate-200', icon: QrCode },
@@ -121,7 +131,7 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
           ultimoCodigoRef.current = codigo;
           lastScanAt = ahora;
           setCodigoManual(codigo);
-          onSimularEscaneo(codigo);
+          onSimularEscaneoRef.current(codigo);
         }
       }
 
@@ -130,11 +140,8 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
 
     rafId = requestAnimationFrame(escanear);
 
-    return () => {
-      cancelAnimationFrame(rafId);
-      ultimoCodigoRef.current = null;
-    };
-  }, [activo, camaraLista, onSimularEscaneo]);
+    return () => cancelAnimationFrame(rafId);
+  }, [activo, camaraLista]);
 
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 flex flex-col items-center">

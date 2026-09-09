@@ -1,6 +1,6 @@
 import { Reunion, AsistenteRegistro } from '../../kiosco-qr/types/types';
 
-export type TipoEventoAsistencia = 'reunion_abierta' | 'reunion_cerrada' | 'entrada' | 'salida';
+export type TipoEventoAsistencia = 'reunion_abierta' | 'salidas_habilitadas' | 'reunion_cerrada' | 'entrada' | 'salida';
 
 export interface EventoAsistencia {
   tipo: TipoEventoAsistencia;

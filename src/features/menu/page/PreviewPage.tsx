@@ -15,7 +15,17 @@ import ConfiguracionPage from '../../configure/page/page';
 import ChatWidget from '@/components/ChatWidget';
 
 export const PreviewPage: React.FC = () => {
-  const [currentView, setView] = useState<string>('dashboard');
+  const [currentView, setCurrentView] = useState<string>('dashboard');
+
+  React.useEffect(() => {
+    const savedView = window.localStorage.getItem('menu:current-view');
+    if (savedView) setCurrentView(savedView);
+  }, []);
+
+  const setView = (view: string) => {
+    setCurrentView(view);
+    window.localStorage.setItem('menu:current-view', view);
+  };
 
   // Listen to navigation requests from the ChatWidget
   React.useEffect(() => {

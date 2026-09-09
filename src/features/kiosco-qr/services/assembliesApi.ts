@@ -34,6 +34,9 @@ interface Paginated<T> {
   limit: number;
 }
 
+export const obtenerItemsPaginados = <T>(data: Paginated<T> | T[]): T[] =>
+  Array.isArray(data) ? data : data.items;
+
 const estadoDesdeApi: Record<AssemblyStatus, Reunion['estado']> = {
   SCHEDULED: 'programada',
   REGISTRATION_OPEN: 'en_curso',

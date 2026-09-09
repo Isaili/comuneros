@@ -16,6 +16,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
   const [lugar, setLugar] = useState('');
   const [toleranciaMinutos, setToleranciaMinutos] = useState(15);
   const [tipo, setTipo] = useState<AssemblyType>('ORDINARY');
+  const [acuerdos, setAcuerdos] = useState('');
   const [errores, setErrores] = useState<Record<string, string>>({});
 
   const validar = () => {
@@ -25,6 +26,9 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
     if (!horaInicio) nuevosErrores.horaInicio = 'Selecciona una hora.';
     if (!lugar.trim()) nuevosErrores.lugar = 'Ingresa el lugar.';
     if (!toleranciaMinutos || toleranciaMinutos <= 0) nuevosErrores.toleranciaMinutos = 'Tolerancia inválida.';
+    if (!acuerdos.split('\n').map((acuerdo) => acuerdo.trim()).filter(Boolean).length) {
+      nuevosErrores.acuerdos = 'Ingresa al menos un acuerdo.';
+    }
     setErrores(nuevosErrores);
     return Object.keys(nuevosErrores).length === 0;
   };
@@ -36,7 +40,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
       title: nombre.trim(),
       scheduledDate: new Date(`${fecha}T${horaInicio}:00`).toISOString(),
       type: tipo,
-      agreements: [],
+      agreements: acuerdos.split('\n').map((acuerdo) => acuerdo.trim()).filter(Boolean),
     });
   };
 
@@ -62,6 +66,22 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
               <option value="ORDINARY">Ordinaria</option>
               <option value="EXTRAORDINARY">Extraordinaria</option>
             </select>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
+              <FileText className="w-3 h-3" /> Acuerdos
+            </label>
+            <textarea
+              value={acuerdos}
+              onChange={(e) => setAcuerdos(e.target.value)}
+              placeholder="Un acuerdo por línea"
+              rows={3}
+              className={`mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-[#1E4D3A]/20 focus:border-[#1E4D3A]/40 ${
+                errores.acuerdos ? 'border-red-300' : 'border-gray-200'
+              }`}
+            />
+            {errores.acuerdos && <p className="text-[11px] text-red-600 font-semibold mt-1">{errores.acuerdos}</p>}
           </div>
 
           <div>

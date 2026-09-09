@@ -19,6 +19,18 @@ const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`
 
 const INTERVALO_REVISION_MS = 15_000;
 
+const obtenerMensajeApi = (error: unknown, fallback: string) => {
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const response = (error as {
+      response?: { data?: { message?: string | string[]; error?: string } };
+    }).response;
+    const message = response?.data?.message ?? response?.data?.error;
+    if (Array.isArray(message)) return message.join(', ');
+    if (message) return message;
+  }
+  return error instanceof Error ? error.message : fallback;
+};
+
 export default function KioscoQRFeature() {
   const [reuniones, setReuniones] = useState<Reunion[]>([]);
   const [reunionActivaId, setReunionActivaId] = useState<string | null>(null);
@@ -30,11 +42,39 @@ export default function KioscoQRFeature() {
   const [avisoProximoCierre, setAvisoProximoCierre] = useState<string | null>(null);
   const [notificacionCierre, setNotificacionCierre] = useState<string | null>(null);
   const [salidasHabilitadas, setSalidasHabilitadas] = useState(false);
+  const [entradasCerradas, setEntradasCerradas] = useState(false);
   const [estadoEscaneo, setEstadoEscaneo] = useState<'idle' | 'valid' | 'warning' | 'invalid' | 'entrada' | 'salida'>('idle');
   const [ultimoCodigo, setUltimoCodigo] = useState('');
   const [mensajeEscaneo, setMensajeEscaneo] = useState('Esperando QR');
 
   const canalRef = useRef<BroadcastChannel | null>(null);
+  const codigosEntradaRegistradosRef = useRef<Set<string>>(new Set());
+
+  const reproducirSonido = (tipo: 'entrada' | 'salida' | 'duplicado') => {
+    const AudioContextClass = window.AudioContext
+      ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const context = new AudioContextClass();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const configuracion = {
+      entrada: { frecuencia: 880, duracion: 0.16 },
+      salida: { frecuencia: 660, duracion: 0.2 },
+      duplicado: { frecuencia: 220, duracion: 0.28 },
+    }[tipo];
+
+    oscillator.type = tipo === 'duplicado' ? 'sawtooth' : 'sine';
+    oscillator.frequency.value = configuracion.frecuencia;
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + configuracion.duracion);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + configuracion.duracion);
+    oscillator.addEventListener('ended', () => void context.close());
+  };
 
   useEffect(() => {
     canalRef.current = crearCanalAsistencia();
@@ -93,6 +133,8 @@ export default function KioscoQRFeature() {
     setAsistentes([]);
     setComuneroSeleccionado(null);
     setSalidasHabilitadas(false);
+    setEntradasCerradas(false);
+    codigosEntradaRegistradosRef.current.clear();
 
     publicarEvento(canalRef.current, {
       tipo: 'reunion_abierta',
@@ -122,15 +164,12 @@ export default function KioscoQRFeature() {
 
   const confirmarCierre = async () => {
     if (!reunionActiva) return;
-    await assembliesApi.cerrar(reunionActiva.id);
-
     publicarEvento(canalRef.current, {
-      tipo: 'reunion_cerrada',
+      tipo: 'salidas_habilitadas',
       timestamp: new Date().toISOString(),
       reunion: reunionActiva,
     });
 
-    setNotificacionCierre(reunionActiva.nombre);
     setModalCerrar(false);
     setSalidasHabilitadas(true);
   };
@@ -140,14 +179,84 @@ export default function KioscoQRFeature() {
   };
 
   const crearReunion = async (datos: { title: string; scheduledDate: string; type: 'ORDINARY' | 'EXTRAORDINARY'; agreements: string[] }) => {
-    const response = await assembliesApi.crear(datos);
-    setReuniones((prev) => [...prev, assemblyToReunion(response.data.data)]);
-    setModalCrear(false);
+    try {
+      const response = await assembliesApi.crear(datos);
+      setReuniones((prev) => [...prev, assemblyToReunion(response.data.data)]);
+      setModalCrear(false);
+    } catch (error) {
+      const responseData = typeof error === 'object' && error !== null && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data
+        : undefined;
+      const message = responseData?.message ?? (error instanceof Error ? error.message : 'No se pudo crear la asamblea.');
+      console.error('Error al crear asamblea:', error);
+      window.alert(message);
+    }
   };
 
   const habilitarSalidas = async () => {
     if (!reunionActiva) return;
-    await assembliesApi.bloquearRegistro(reunionActiva.id);
+    try {
+      await assembliesApi.bloquearRegistro(reunionActiva.id);
+      const response = await assembliesApi.obtener(reunionActiva.id);
+      const actualizada = assemblyToReunion(response.data.data);
+      if (response.data.data.status !== 'IN_PROGRESS') {
+        window.alert(`El backend dejó la asamblea en estado ${response.data.data.status}. No se pueden habilitar las salidas.`);
+        return;
+      }
+      setReuniones((prev) => prev.map((item) => item.id === actualizada.id ? actualizada : item));
+      setEntradasCerradas(true);
+    } catch (error) {
+      const responseData = typeof error === 'object' && error !== null && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data
+        : undefined;
+      window.alert(responseData?.message ?? (error instanceof Error ? error.message : 'No se pudieron cerrar las entradas.'));
+    }
+  };
+
+  const cancelarReunion = async () => {
+    const reunion = reunionActiva ?? reunionProxima;
+    if (!reunion || !window.confirm(`¿Cancelar la reunión "${reunion.nombre}"?`)) return;
+    try {
+      await assembliesApi.cancelar(reunion.id);
+      setReuniones((prev) => prev.map((item) => item.id === reunion.id ? { ...item, estado: 'cancelada' } : item));
+      if (reunionActiva?.id === reunion.id) {
+        setReunionActivaId(null);
+        setAsistentes([]);
+        setComuneroSeleccionado(null);
+      }
+      setReunionSeleccionadaId(null);
+    } catch (error) {
+      const responseData = typeof error === 'object' && error !== null && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data
+        : undefined;
+      window.alert(responseData?.message ?? (error instanceof Error ? error.message : 'No se pudo cancelar la reunión.'));
+    }
+  };
+
+  const cerrarReunion = async () => {
+    if (!reunionActiva) return;
+    try {
+      await assembliesApi.cerrar(reunionActiva.id);
+    } catch (error) {
+      const responseData = typeof error === 'object' && error !== null && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data
+        : undefined;
+      window.alert(responseData?.message ?? (error instanceof Error ? error.message : 'No se pudo cerrar la reunión.'));
+      return;
+    }
+
+    publicarEvento(canalRef.current, {
+      tipo: 'reunion_cerrada',
+      timestamp: new Date().toISOString(),
+      reunion: reunionActiva,
+    });
+    setNotificacionCierre(reunionActiva.nombre);
+    setReuniones((prev) => prev.map((item) => item.id === reunionActiva.id ? { ...item, estado: 'finalizada' } : item));
+    setReunionActivaId(null);
+    setReunionSeleccionadaId(null);
+    setComuneroSeleccionado(null);
+    setSalidasHabilitadas(false);
+    setEntradasCerradas(false);
   };
 
   const simularEscaneo = async (codigoEscaneado?: string) => {
@@ -155,11 +264,24 @@ export default function KioscoQRFeature() {
 
     const codigoIngresado = (codigoEscaneado ?? '').trim();
     setUltimoCodigo(codigoIngresado);
+
+    if (!salidasHabilitadas && codigosEntradaRegistradosRef.current.has(codigoIngresado.toUpperCase())) {
+      reproducirSonido('duplicado');
+      setEstadoEscaneo('warning');
+      setMensajeEscaneo('Este código ya registró su entrada en esta reunión.');
+      return;
+    }
+    const codigoEntrada = codigoIngresado.toUpperCase();
+    if (!salidasHabilitadas) {
+      codigosEntradaRegistradosRef.current.add(codigoEntrada);
+    }
+
     try {
       const response = salidasHabilitadas
         ? await assembliesApi.salidaQr(reunionActiva.id, codigoIngresado)
         : await assembliesApi.entradaQr(reunionActiva.id, codigoIngresado);
       const registro = attendanceToRegistro(response.data.data, Date.now());
+      reproducirSonido(salidasHabilitadas ? 'salida' : 'entrada');
       setAsistentes((prev) => salidasHabilitadas
         ? prev.map((a) => a.comuneroId === registro.comuneroId ? { ...a, ...registro } : a)
         : [...prev, registro]);
@@ -174,8 +296,15 @@ export default function KioscoQRFeature() {
       });
       return;
     } catch (error) {
+      reproducirSonido('duplicado');
+      if (!salidasHabilitadas) {
+        codigosEntradaRegistradosRef.current.delete(codigoEntrada);
+      }
       setEstadoEscaneo('invalid');
-      setMensajeEscaneo(error instanceof Error ? error.message : 'No se pudo registrar el QR');
+      setMensajeEscaneo(obtenerMensajeApi(
+        error,
+        salidasHabilitadas ? 'No se pudo registrar la salida.' : 'No se pudo registrar la entrada.'
+      ));
       return;
     }
   };
@@ -191,10 +320,13 @@ export default function KioscoQRFeature() {
             reunionActiva={reunionActiva}
             esLaMasCercana={esLaMasCercana}
             totalAsistentes={asistentes.length}
+            entradasCerradas={entradasCerradas}
             salidasHabilitadas={salidasHabilitadas}
             onAbrirClick={abrirReunion}
-            onCerrarClick={() => setModalCerrar(true)}
-            onHabilitarSalidasClick={habilitarSalidas}
+            onCerrarEntradasClick={habilitarSalidas}
+            onHabilitarSalidasClick={() => setModalCerrar(true)}
+            onCerrarReunionClick={cerrarReunion}
+            onCancelarClick={cancelarReunion}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

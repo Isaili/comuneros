@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Reunion, AsistenteRegistro } from '../../kiosco-qr/types/types';
 import { EventoAsistencia } from '../model/types';
 import { CANAL_ASISTENCIA, leerSnapshot } from '../model/asistenciaChannel';
 
-const TIEMPO_VISIBLE_MS = 6000;
 const MAX_HISTORIAL = 8;
 
 export interface PantallaBienvenidaState {
@@ -22,7 +21,6 @@ export function usePantallaBienvenidaViewModel(): PantallaBienvenidaState {
   const [eventoDestacado, setEventoDestacado] = useState<EventoAsistencia | null>(null);
   const [historial, setHistorial] = useState<EventoAsistencia[]>([]);
   const [conectado, setConectado] = useState(false);
-  const ocultarTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const snapshot = leerSnapshot();
@@ -69,13 +67,10 @@ export function usePantallaBienvenidaViewModel(): PantallaBienvenidaState {
       setEventoDestacado(data);
       setHistorial((prev) => [data, ...prev].slice(0, MAX_HISTORIAL));
 
-      if (ocultarTimeout.current) clearTimeout(ocultarTimeout.current);
-      ocultarTimeout.current = setTimeout(() => setEventoDestacado(null), TIEMPO_VISIBLE_MS);
     };
 
     return () => {
       canal.close();
-      if (ocultarTimeout.current) clearTimeout(ocultarTimeout.current);
     };
   }, []);
 
