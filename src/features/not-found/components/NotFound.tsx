@@ -79,7 +79,6 @@ export default function NotFound() {
           <div className="text-[7rem] font-black leading-none tracking-[-0.1em] text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.18)] md:text-[15rem]">
             404
           </div>
-
           <h2 className="mt-3 text-[1.8rem] font-black leading-tight text-white md:text-[3.6rem]">
             ¡Ups! página no encontrada
           </h2>

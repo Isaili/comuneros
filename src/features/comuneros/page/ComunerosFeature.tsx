@@ -30,6 +30,10 @@ const leerDetallesCache = (): Record<string, Comunero> => {
   }
 };
 
+interface ComunerosFeatureProps {
+  onIrABarrios: () => void;
+}
+
 export const ComunerosFeature: React.FC = () => {
   const [comuneros, setComuneros] = useState<Comunero[]>([]);
 
