@@ -17,6 +17,7 @@ import {
   Monitor,
   LogOut
 } from "lucide-react";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 const menuItems = [
   { name: "Dashboard", view: "dashboard", icon: LayoutGrid },
@@ -33,8 +34,12 @@ const menuItems = [
 
 export default function Sidebar({ currentView, setView }: { currentView?: string; setView?: (view: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [cambiandoSeccion, setCambiandoSeccion] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  React.useEffect(() => {
+    setCambiandoSeccion(false);
+  }, [pathname]);
   const toggleSidebar = () => setIsOpen(!isOpen);
 
   const handleLogout = () => {
@@ -49,6 +54,7 @@ export default function Sidebar({ currentView, setView }: { currentView?: string
 
   return (
     <>
+      {cambiandoSeccion && <LoadingOverlay message="Cargando sección..." />}
       <button
         onClick={toggleSidebar}
         className="lg:hidden fixed top-4 left-4 z-50 p-2.5 rounded-xl bg-[#1E4D3A] text-white shadow-md hover:bg-[#153629] transition-colors"
@@ -116,8 +122,12 @@ export default function Sidebar({ currentView, setView }: { currentView?: string
                 <button
                   key={item.view}
                   onClick={() => {
-                    if (setView) setView(item.view);
-                    else router.push(ruta);
+                    if (setView) {
+                      setView(item.view);
+                    } else {
+                      setCambiandoSeccion(true);
+                      router.push(ruta);
+                    }
                     setIsOpen(false);
                   }}
                   className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-150 group ${

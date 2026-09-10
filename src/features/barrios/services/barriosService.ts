@@ -1,32 +1,36 @@
 import { Neighborhood, ApiResponse } from '../types/types';
+import { apiClient } from '@/core/api/apiClient';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://comiseria.onrender.com/api';
+const CACHE_KEY = 'neighborhoods_cache';
 
 export async function fetchNeighborhoods(): Promise<Neighborhood[]> {
-  const res = await fetch(`${API_URL}/neighborhoods`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('No se pudo obtener el listado de barrios.');
-  const json: ApiResponse<Neighborhood[]> = await res.json();
-  return json.data;
+  const { data } = await apiClient.get<ApiResponse<Neighborhood[]>>('/neighborhoods');
+  window.localStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
+  return data.data;
 }
 
 export async function createNeighborhood(name: string): Promise<Neighborhood> {
-  const res = await fetch(`${API_URL}/neighborhoods`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
-  });
-  if (!res.ok) throw new Error('No se pudo crear el barrio.');
-  const json: ApiResponse<Neighborhood> = await res.json();
-  return json.data;
+  const { data } = await apiClient.post<ApiResponse<Neighborhood>>('/neighborhoods', { name });
+  updateCache((barrios) => [data.data, ...barrios]);
+  return data.data;
 }
 
 export async function updateNeighborhood(id: string, name: string): Promise<Neighborhood> {
-  const res = await fetch(`${API_URL}/neighborhoods/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
-  });
-  if (!res.ok) throw new Error('No se pudo actualizar el barrio.');
-  const json: ApiResponse<Neighborhood> = await res.json();
-  return json.data;
+  const { data } = await apiClient.patch<ApiResponse<Neighborhood>>(`/neighborhoods/${id}`, { name });
+  updateCache((barrios) => barrios.map((barrio) => barrio.id === id ? data.data : barrio));
+  return data.data;
+}
+
+function updateCache(updater: (barrios: Neighborhood[]) => Neighborhood[]): void {
+  const cached = window.localStorage.getItem(CACHE_KEY);
+  if (!cached) return;
+
+  try {
+    const barrios = JSON.parse(cached);
+    if (Array.isArray(barrios)) {
+      window.localStorage.setItem(CACHE_KEY, JSON.stringify(updater(barrios)));
+    }
+  } catch {
+    window.localStorage.removeItem(CACHE_KEY);
+  }
 }

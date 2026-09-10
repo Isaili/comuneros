@@ -73,3 +73,22 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes form-submit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+button[type="submit"]:disabled::after {
+  content: "";
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-left: 0.45rem;
+  vertical-align: -0.15rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 9999px;
+  animation: form-submit-spin 0.7s linear infinite;
+}

@@ -13,10 +13,12 @@ import ReportesFeature from '../../reportes/page/ReportesFeature';
 import { PredialPagos } from '../../pagos/page/PredialPagos';
 import ConfiguracionPage from '../../configure/page/page';
 import ChatWidget from '@/components/ChatWidget';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 export const PreviewPage: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>('dashboard');
   const [vistaRestaurada, setVistaRestaurada] = useState(false);
+  const [cambiandoSeccion, setCambiandoSeccion] = useState(false);
 
   React.useEffect(() => {
     const savedView = window.localStorage.getItem('menu:current-view');
@@ -25,8 +27,11 @@ export const PreviewPage: React.FC = () => {
   }, []);
 
   const setView = (view: string) => {
+    if (view === currentView) return;
+    setCambiandoSeccion(true);
     setCurrentView(view);
     window.localStorage.setItem('menu:current-view', view);
+    window.setTimeout(() => setCambiandoSeccion(false), 350);
   };
 
   // Listen to navigation requests from the ChatWidget
@@ -55,6 +60,7 @@ export const PreviewPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-[#f8fafc] font-sans antialiased">
+      {cambiandoSeccion && <LoadingOverlay message="Cargando sección..." />}
       {/* Sidebar con control de estado */}
       <Sidebar currentView={currentView} setView={setView} />
 
