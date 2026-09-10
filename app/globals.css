@@ -78,6 +78,8 @@ body {
   to {
     transform: rotate(360deg);
   }
+
+
 }
 
 button[type="submit"]:disabled::after {
