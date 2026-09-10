@@ -9,8 +9,13 @@ interface AsistentesEnVivoGridProps {
   onSeleccionar: (asistente: AsistenteRegistro) => void;
 }
 
-const formatoHora = (iso: string) =>
-  new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+const formatoHora = (iso?: string) => {
+  if (!iso) return '—';
+  const fecha = new Date(iso);
+  return Number.isNaN(fecha.getTime())
+    ? '—'
+    : fecha.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+};
 
 export const AsistentesEnVivoGrid: React.FC<AsistentesEnVivoGridProps> = ({ asistentes, onSeleccionar }) => {
   return (
@@ -39,7 +44,11 @@ export const AsistentesEnVivoGrid: React.FC<AsistentesEnVivoGridProps> = ({ asis
                 onClick={() => onSeleccionar(a)}
                 className="flex items-center gap-2.5 border border-gray-100 hover:border-[#1E4D3A]/30 hover:bg-[#1E4D3A]/5 rounded-xl p-2.5 text-left transition-all"
               >
-                <img src={a.fotografia} alt={a.nombre} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
+                {a.fotografia ? (
+                  <img src={a.fotografia} alt={a.nombre} className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0" />
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-slate-100 border border-gray-100 shrink-0" aria-hidden="true" />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-gray-900 truncate">{a.nombre}</p>
                   <div className="flex items-center gap-2 mt-0.5 text-[10px] font-semibold text-gray-500">

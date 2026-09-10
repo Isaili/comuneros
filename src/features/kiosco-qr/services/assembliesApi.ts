@@ -65,13 +65,17 @@ export const assemblyToReunion = (assembly: AssemblyDTO): Reunion => {
   };
 };
 
-export const attendanceToRegistro = (attendance: AttendanceDTO, index: number): AsistenteRegistro => ({
-  id: `${attendance.personId ?? attendance.fullName ?? 'asistente'}-${index}`,
+export const attendanceToRegistro = (
+  attendance: AttendanceDTO,
+  index: number,
+  fallbackEntryTime?: string,
+): AsistenteRegistro => ({
+  id: attendance.personId ?? attendance.fullName ?? `asistente-${index}`,
   comuneroId: attendance.personId ?? '',
   nombre: attendance.fullName ?? 'Asistente',
   folio: attendance.personId ?? '—',
   fotografia: attendance.photo ?? '',
-  horaEntrada: attendance.checkInAt ?? attendance.recordedAt ?? '',
+  horaEntrada: attendance.checkInAt ?? attendance.recordedAt ?? fallbackEntryTime ?? '',
   horaSalida: attendance.checkOutAt ?? attendance.exitTime ?? undefined,
   status: attendance.status ?? attendance.attendanceStatus,
 });

@@ -12,13 +12,16 @@ import { ConfirmarCierreReunionModal } from '../components/modals/ConfirmarCierr
 import { CrearReunionModal } from '../components/modals/CrearReunionModal';
 import { AvisoProximoCierre } from '../components/Avisoproximocierre';
 import { Reunion, AsistenteRegistro } from '../types/types';
-import { assembliesApi, assemblyToReunion, attendanceToRegistro } from '../services/assembliesApi';
+import { assembliesApi, assemblyToReunion, attendanceToRegistro, obtenerItemsPaginados } from '../services/assembliesApi';
+import { comunerosApi } from '../../comuneros/services/comunerosApi';
 import { crearCanalAsistencia, publicarEvento, guardarSnapshot } from '../../bienvenida-comunero/model/asistenciaChannel';
 
 const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`).getTime();
 
 const INTERVALO_REVISION_MS = 15_000;
 let reunionesInicialesPromise: ReturnType<typeof assembliesApi.listar> | null = null;
+const ASISTENTES_CACHE_KEY = 'kiosco_reunion_asistentes_cache';
+const FOTOS_PERSONAS_CACHE_KEY = 'comuneros_fotos_cache';
 
 const obtenerMensajeApi = (error: unknown, fallback: string) => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -40,6 +43,10 @@ export default function KioscoQRFeature() {
   const [comuneroSeleccionado, setComuneroSeleccionado] = useState<AsistenteRegistro | null>(null);
   const [modalCerrar, setModalCerrar] = useState(false);
   const [modalCrear, setModalCrear] = useState(false);
+  const [reunionAEditar, setReunionAEditar] = useState<Reunion | null>(null);
+  const [reunionAsistentesId, setReunionAsistentesId] = useState<string | null>(null);
+  const [asistentesReunion, setAsistentesReunion] = useState<AsistenteRegistro[]>([]);
+  const [cargandoAsistentes, setCargandoAsistentes] = useState(false);
   const [avisoProximoCierre, setAvisoProximoCierre] = useState<string | null>(null);
   const [notificacionCierre, setNotificacionCierre] = useState<string | null>(null);
   const [salidasHabilitadas, setSalidasHabilitadas] = useState(false);
@@ -97,7 +104,7 @@ export default function KioscoQRFeature() {
   useEffect(() => {
     if (!reunionActivaId) return;
     assembliesApi.asistencias(reunionActivaId, { page: 1, limit: 100 })
-      .then((response) => setAsistentes(response.data.data.items.map(attendanceToRegistro)))
+      .then((response) => setAsistentes(response.data.data.items.map((attendance, index) => attendanceToRegistro(attendance, index))))
       .catch((error) => console.error('Error al cargar asistencias:', error));
   }, [reunionActivaId]);
 
@@ -110,6 +117,10 @@ export default function KioscoQRFeature() {
       reuniones
         .filter((r) => r.estado === 'programada')
         .sort((a, b) => fechaHoraTimestamp(a) - fechaHoraTimestamp(b)),
+    [reuniones]
+  );
+  const reunionesPasadas = useMemo(
+    () => reuniones.filter((r) => r.estado === 'finalizada').sort((a, b) => fechaHoraTimestamp(b) - fechaHoraTimestamp(a)),
     [reuniones]
   );
 
@@ -178,6 +189,44 @@ export default function KioscoQRFeature() {
 
   const seleccionarReunionDestacada = (reunionId: string) => {
     setReunionSeleccionadaId(reunionId);
+    setReunionAsistentesId(reunionId);
+    const cache = JSON.parse(window.localStorage.getItem(ASISTENTES_CACHE_KEY) ?? '{}') as Record<string, AsistenteRegistro[]>;
+    setCargandoAsistentes(true);
+    const enriquecerFotos = async (registros: AsistenteRegistro[]) => {
+      const fotosGuardadas = JSON.parse(window.localStorage.getItem(FOTOS_PERSONAS_CACHE_KEY) ?? '{}') as Record<string, string>;
+      const registrosConFoto = await Promise.all(registros.map(async (registro) => {
+          if (registro.fotografia || !registro.comuneroId) return registro;
+          if (fotosGuardadas[registro.comuneroId]) {
+            return { ...registro, fotografia: fotosGuardadas[registro.comuneroId] };
+          }
+          try {
+            const persona = await comunerosApi.obtenerPorId(registro.comuneroId);
+            if (persona.fotografia) fotosGuardadas[registro.comuneroId] = persona.fotografia;
+            return { ...registro, fotografia: persona.fotografia ?? '' };
+          } catch {
+            return registro;
+          }
+      }));
+      window.localStorage.setItem(FOTOS_PERSONAS_CACHE_KEY, JSON.stringify(fotosGuardadas));
+      return registrosConFoto;
+    };
+
+    const asistentesCargados = cache[reunionId]?.length
+      ? Promise.resolve(cache[reunionId])
+      : assembliesApi.asistencias(reunionId, { page: 1, limit: 100 }).then((response) =>
+        obtenerItemsPaginados(response.data.data)
+          .filter((attendance) => (attendance.status ?? attendance.attendanceStatus) === 'PRESENT')
+          .map((attendance, index) => attendanceToRegistro(attendance, index))
+      );
+
+    void asistentesCargados
+      .then(async (registros) => {
+        const registrosConFoto = await enriquecerFotos(registros);
+        setAsistentesReunion(registrosConFoto);
+        window.localStorage.setItem(ASISTENTES_CACHE_KEY, JSON.stringify({ ...cache, [reunionId]: registrosConFoto }));
+      })
+      .catch((error) => console.error('Error al cargar asistentes:', error))
+      .finally(() => setCargandoAsistentes(false));
   };
 
   const crearReunion = async (datos: { title: string; scheduledDate: string; type: 'ORDINARY' | 'EXTRAORDINARY'; agreements: string[] }) => {
@@ -192,6 +241,22 @@ export default function KioscoQRFeature() {
       const message = responseData?.message ?? (error instanceof Error ? error.message : 'No se pudo crear la asamblea.');
       console.error('Error al crear asamblea:', error);
       window.alert(message);
+    }
+  };
+
+  const editarReunion = async (datos: { title: string; scheduledDate: string; type: 'ORDINARY' | 'EXTRAORDINARY'; agreements: string[] }) => {
+    if (!reunionAEditar) return;
+    try {
+      const response = await assembliesApi.actualizar(reunionAEditar.id, {
+        title: datos.title,
+        scheduledDate: datos.scheduledDate,
+        agreements: datos.agreements,
+      });
+      const actualizada = assemblyToReunion(response.data.data);
+      setReuniones((prev) => prev.map((item) => item.id === actualizada.id ? actualizada : item));
+      setReunionAEditar(null);
+    } catch (error) {
+      window.alert(obtenerMensajeApi(error, 'No se pudo actualizar la asamblea.'));
     }
   };
 
@@ -282,11 +347,17 @@ export default function KioscoQRFeature() {
       const response = salidasHabilitadas
         ? await assembliesApi.salidaQr(reunionActiva.id, codigoIngresado)
         : await assembliesApi.entradaQr(reunionActiva.id, codigoIngresado);
-      const registro = attendanceToRegistro(response.data.data, Date.now());
+      const ahora = new Date().toISOString();
+      const registroBase = attendanceToRegistro(response.data.data, Date.now(), ahora);
+      const registro = salidasHabilitadas && !registroBase.horaSalida
+        ? { ...registroBase, horaSalida: ahora }
+        : registroBase;
       reproducirSonido(salidasHabilitadas ? 'salida' : 'entrada');
       setAsistentes((prev) => salidasHabilitadas
         ? prev.map((a) => a.comuneroId === registro.comuneroId ? { ...a, ...registro } : a)
-        : [...prev, registro]);
+        : prev.some((a) => a.comuneroId === registro.comuneroId)
+          ? prev.map((a) => a.comuneroId === registro.comuneroId ? { ...a, ...registro } : a)
+          : [...prev, registro]);
       setComuneroSeleccionado(registro);
       setEstadoEscaneo(salidasHabilitadas ? 'salida' : 'entrada');
       setMensajeEscaneo(`${salidasHabilitadas ? 'Salida' : 'Entrada'} válida: ${registro.nombre}`);
@@ -350,7 +421,42 @@ export default function KioscoQRFeature() {
             reunionMasCercanaId={reunionMasCercana?.id ?? null}
             onSeleccionar={seleccionarReunionDestacada}
             onNuevaReunion={() => setModalCrear(true)}
+            onEditar={(reunion) => reunion.estado === 'programada' && setReunionAEditar(reunion)}
           />
+          <ProximasReunionesList
+            reuniones={reunionesPasadas}
+            onSeleccionar={seleccionarReunionDestacada}
+            onNuevaReunion={() => setModalCrear(true)}
+            titulo="Reuniones pasadas"
+          />
+          {reunionAsistentesId && (
+            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
+              <h3 className="font-bold text-gray-900 text-sm mb-4">
+                Asistentes de {reuniones.find((reunion) => reunion.id === reunionAsistentesId)?.nombre ?? 'la reunión'}
+              </h3>
+              {cargandoAsistentes ? (
+                <p className="text-xs text-gray-400 text-center py-4">Cargando asistentes...</p>
+              ) : asistentesReunion.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-4">No hay asistentes registrados.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {asistentesReunion.map((asistente) => (
+                    <div key={asistente.id} className="rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        {asistente.fotografia ? (
+                          <img src={asistente.fotografia} alt={asistente.nombre} className="h-8 w-8 rounded-lg object-cover" />
+                        ) : (
+                          <div className="h-8 w-8 rounded-lg bg-slate-100" aria-hidden="true" />
+                        )}
+                        <p className="text-xs font-bold text-gray-900">{asistente.nombre}</p>
+                      </div>
+                      <p className="text-[10px] text-gray-400">{asistente.horaEntrada ? new Date(asistente.horaEntrada).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : 'Sin hora de entrada'}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
       </div>
@@ -366,6 +472,18 @@ export default function KioscoQRFeature() {
 
       {modalCrear && (
         <CrearReunionModal onClose={() => setModalCrear(false)} onCrear={crearReunion} />
+      )}
+      {reunionAEditar && (
+        <CrearReunionModal
+          modo="editar"
+          initialValues={{
+            title: reunionAEditar.nombre,
+            scheduledDate: reunionAEditar.fecha,
+            type: reunionAEditar.tipo ?? 'ORDINARY',
+          }}
+          onClose={() => setReunionAEditar(null)}
+          onCrear={editarReunion}
+        />
       )}
 
       {notificacionCierre && (

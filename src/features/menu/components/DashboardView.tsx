@@ -12,6 +12,22 @@ import { comunerosApi } from '../../comuneros/services/comunerosApi';
 import { plotsService } from '../../parcelas/services/parcelas.service';
 import { assembliesApi, attendanceToRegistro, obtenerItemsPaginados } from '../../kiosco-qr/services/assembliesApi';
 
+const DASHBOARD_CACHE_KEY = 'dashboard_resumen_cache';
+let cargaDashboardEnCurso: Promise<{
+  totales: { comuneros: number; parcelas: number };
+  reuniones: ReunionHistorial[];
+}> | null = null;
+
+const leerCacheDashboard = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const cache = window.localStorage.getItem(DASHBOARD_CACHE_KEY);
+    return cache ? JSON.parse(cache) : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function DashboardView({ activo = true }: { activo?: boolean }) {
   const [fechaActual, setFechaActual] = useState<string>('');
   const [reunionSeleccionada, setReunionSeleccionada] = useState<ReunionHistorial | null>(null);
@@ -29,44 +45,25 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
     };
     const fecha = new Date().toLocaleDateString('es-MX', opciones);
     setFechaActual(fecha.charAt(0).toUpperCase() + fecha.slice(1));
-
-    let isMounted = true;
-
-    const cargarTotales = async () => {
-      try {
-        const [comunerosResponse, parcelasResponse] = await Promise.all([
-          comunerosApi.listar(1, 1),
-          plotsService.list({ page: 1, limit: 1 }),
-        ]);
-
-        if (!isMounted) return;
-
-        setTotales({
-          comuneros: comunerosResponse.total || 0,
-          parcelas: parcelasResponse.data.total || 0,
-        });
-      } catch {
-        if (isMounted) {
-          setTotales({ comuneros: 0, parcelas: 0 });
-        }
-      }
-    };
-
-    cargarTotales();
-
-    return () => {
-      isMounted = false;
-    };
   }, [activo]);
 
   useEffect(() => {
     if (!activo) return;
+    const cache = leerCacheDashboard();
+    if (cache?.reuniones) {
+      setReunionesHistorial(cache.reuniones);
+      setCargandoReuniones(false);
+      return;
+    }
     let montado = true;
-    assembliesApi.listar({ page: 1, limit: 100 })
-      .then(async (response) => {
-        const reuniones = await Promise.all(response.data.data.items
-          .filter((assembly) => assembly.status === 'COMPLETED')
-          .map(async (assembly) => {
+    cargaDashboardEnCurso ??= Promise.all([
+      comunerosApi.listar(1, 1),
+      plotsService.list({ page: 1, limit: 1 }),
+      assembliesApi.listar({ page: 1, limit: 100 }),
+    ]).then(async ([comunerosResponse, parcelasResponse, assembliesResponse]) => {
+      const reuniones = await Promise.all(assembliesResponse.data.data.items
+        .filter((assembly) => assembly.status === 'COMPLETED')
+        .map(async (assembly) => {
           const asistencias = await assembliesApi.asistencias(assembly.id, {
             status: 'PRESENT',
             page: 1,
@@ -99,10 +96,27 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
             }),
           };
         }));
-        if (montado) setReunionesHistorial(reuniones);
+      const resultado = {
+        totales: {
+          comuneros: comunerosResponse.total || 0,
+          parcelas: parcelasResponse.data.total || 0,
+        },
+        reuniones,
+      };
+      window.localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(resultado));
+      return resultado;
+    }).finally(() => {
+      cargaDashboardEnCurso = null;
+    });
+
+    cargaDashboardEnCurso
+      .then((resultado) => {
+        if (!montado) return;
+        setTotales(resultado.totales);
+        setReunionesHistorial(resultado.reuniones);
       })
       .catch((error) => {
-        console.error('Error al cargar historial de asambleas:', error);
+        console.error('Error al cargar resumen del dashboard:', error);
         if (montado) setReunionesHistorial([]);
       })
       .finally(() => {

@@ -7,16 +7,19 @@ import { AssemblyType } from '../../types/types';
 interface CrearReunionModalProps {
   onClose: () => void;
   onCrear: (reunion: { title: string; scheduledDate: string; type: AssemblyType; agreements: string[] }) => void;
+  initialValues?: { title: string; scheduledDate: string; type: AssemblyType; agreements?: string[] };
+  modo?: 'crear' | 'editar';
 }
 
-export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, onCrear }) => {
-  const [nombre, setNombre] = useState('');
-  const [fecha, setFecha] = useState('');
-  const [horaInicio, setHoraInicio] = useState('');
+export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, onCrear, initialValues, modo = 'crear' }) => {
+  const initialDate = initialValues?.scheduledDate ? new Date(initialValues.scheduledDate) : null;
+  const [nombre, setNombre] = useState(initialValues?.title ?? '');
+  const [fecha, setFecha] = useState(initialDate ? initialDate.toISOString().slice(0, 10) : '');
+  const [horaInicio, setHoraInicio] = useState(initialDate ? initialDate.toTimeString().slice(0, 5) : '');
   const [lugar, setLugar] = useState('');
   const [toleranciaMinutos, setToleranciaMinutos] = useState(15);
-  const [tipo, setTipo] = useState<AssemblyType>('ORDINARY');
-  const [acuerdos, setAcuerdos] = useState('');
+  const [tipo, setTipo] = useState<AssemblyType>(initialValues?.type ?? 'ORDINARY');
+  const [acuerdos, setAcuerdos] = useState(initialValues?.agreements?.join('\n') ?? '');
   const [errores, setErrores] = useState<Record<string, string>>({});
 
   const validar = () => {
@@ -52,7 +55,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
             <span className="p-1.5 bg-[#1E4D3A]/10 text-[#1E4D3A] rounded-lg">
               <CalendarPlus className="w-4 h-4" />
             </span>
-            Nueva asamblea
+            {modo === 'editar' ? 'Editar asamblea' : 'Nueva asamblea'}
           </h3>
           <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100">
             <X className="w-4 h-4" />
