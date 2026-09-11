@@ -94,7 +94,7 @@ export default function NotFound() {
             className="mt-8 inline-flex items-center gap-3 rounded-full bg-[#a6f35a] px-8 py-4 text-lg font-black text-[#07140f] shadow-[0_0_25px_rgba(166,243,90,0.45)] transition hover:scale-[1.02]"
           >
             <ArrowLeft className="h-6 w-6" />
-            Volver a navegación
+            Volver a navegación.
           </button>
         </section>
 
