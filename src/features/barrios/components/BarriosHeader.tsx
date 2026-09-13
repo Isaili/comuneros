@@ -12,7 +12,7 @@ export const BarriosHeader: React.FC<Props> = ({ onAddClick }) => {
         href="/comuneros"
         className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors w-fit"
       >
-        <ArrowLeft className="w-3.5 h-3.5" /> Volver a Comuneros
+        <ArrowLeft className="w-3.5 h-3.5" /> Volver a Comuneros.
       </Link>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
