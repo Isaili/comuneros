@@ -28,8 +28,16 @@ export const AgregarBarrioForm: React.FC<Props> = ({ onClose, onGuardar, barrioA
     try {
       await onGuardar(name.trim(), barrioAEditar?.id);
       onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error al guardar.');
+    } catch (err: any) {
+      const serverData = err.response?.data;
+
+      if (serverData?.code === 'NEIGHBORHOOD_ALREADY_EXISTS') {
+        setError('Este barrio ya se encuentra registrado.');
+      } else if (serverData?.message) {
+        setError(serverData.message);
+      } else {
+        setError(err instanceof Error ? err.message : 'Ocurrió un error al guardar.');
+      }
     } finally {
       setIsSubmitting(false);
     }
