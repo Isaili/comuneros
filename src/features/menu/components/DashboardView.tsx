@@ -49,12 +49,20 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
 
   useEffect(() => {
     if (!activo) return;
+
+    // El caché puede traer totales y/o reuniones: restauramos TODO lo que
+    // tengamos antes de decidir si hace falta refrescar desde la API.
     const cache = leerCacheDashboard();
+    if (cache?.totales) {
+      setTotales(cache.totales);
+    }
     if (cache?.reuniones) {
       setReunionesHistorial(cache.reuniones);
       setCargandoReuniones(false);
-      return;
+      // Si ya teníamos totales Y reuniones en caché, no hace falta refrescar.
+      if (cache?.totales) return;
     }
+
     let montado = true;
     cargaDashboardEnCurso ??= Promise.all([
       comunerosApi.listar(1, 1),
