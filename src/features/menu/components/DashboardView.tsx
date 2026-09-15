@@ -42,7 +42,6 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
   useEffect(() => {
     if (!activo) return;
 
-    // Restauramos lo que haya en caché antes de decidir si hace falta refrescar.
     const cache = leerCacheDashboard();
     if (cache?.totales) {
       setTotales(cache.totales);
@@ -80,9 +79,20 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
   }, [activo]);
 
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative overflow-hidden">
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    
+      <div className="absolute top-0 left-0 w-full h-[100px] sm:h-[110px] overflow-hidden pointer-events-none z-0 rounded-b-xl">
+        <img 
+          src="/header.webp" 
+          alt="Header background" 
+          className="w-full h-full object-cover object-right"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/85 to-transparent"></div>
+      </div>
+
+
+      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight font-serif flex items-center gap-2">
             ¡Bienvenido, <span className="text-[#006837]">Mario</span>!
@@ -92,7 +102,7 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm text-xs font-semibold text-gray-700 self-start sm:self-auto">
+        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl px-4 py-2 shadow-sm text-xs font-semibold text-gray-700 self-start sm:self-auto">
           <Calendar className="w-4 h-4 text-gray-400" />
           <span>FECHA ACTUAL:</span>
           <span className="text-gray-900 font-bold">
@@ -101,7 +111,8 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 sm:rounded-2xl min-w-0">
+    
+      <div className="relative z-10 mt-10 sm:mt-15 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 sm:rounded-2xl min-w-0">
         <StatCard
           title="Comuneros registrados"
           value={String(totales.comuneros)}
@@ -136,7 +147,8 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+     
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 flex flex-col gap-6 min-w-0">
           <IncomeChart />
         </div>
