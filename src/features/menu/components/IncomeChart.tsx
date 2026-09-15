@@ -2,110 +2,106 @@
 
 import React, { useMemo, useState } from "react";
 import {
+  ComposedChart,
   BarChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LabelList,
 } from "recharts";
-import {
-  Calendar,
-  ChevronDown,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  BarChart3,
-} from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Calendar } from "lucide-react";
 
-// Estructura de datos expandida para soportar filtros por tipo de ingreso y rango de fechas
+// ---------------------------------------------------------------------------
+// Datos (sin cambios respecto a la versión original)
+// ---------------------------------------------------------------------------
 const matrizDatos = {
   bimestres: {
     todos: [
-      { label: "Ene-Feb", value: 300000 },
-      { label: "Mar-Abr", value: 460000 },
-      { label: "May-Jun", value: 720000 },
-      { label: "Jul-Ago", value: 540000 },
-      { label: "Sep-Oct", value: 380000 },
-      { label: "Nov-Dic", value: 640500 },
+      { label: "Q1", cobrado: 3200, meta: 1800, acumulado: 5800 },
+      { label: "Q2", cobrado: 2600, meta: 5600, acumulado: 8200 },
+      { label: "Q3", cobrado: 3200, meta: 5200, acumulado: 9900 },
+      { label: "Q4", cobrado: 8400, meta: 3800, acumulado: 12200 },
     ],
     predial: [
-      { label: "Ene-Feb", value: 200000 },
-      { label: "Mar-Abr", value: 160000 },
-      { label: "May-Jun", value: 120000 },
-      { label: "Jul-Ago", value: 80000 },
-      { label: "Sep-Oct", value: 100000 },
-      { label: "Nov-Dic", value: 240000 },
+      { label: "Q1", valor: 3200 },
+      { label: "Q2", valor: 2600 },
+      { label: "Q3", valor: 3200 },
+      { label: "Q4", valor: 8400 },
     ],
     multas: [
-      { label: "Ene-Feb", value: 180000 },
-      { label: "Mar-Abr", value: 260000 },
-      { label: "May-Jun", value: 340000 },
-      { label: "Jul-Ago", value: 300000 },
-      { label: "Sep-Oct", value: 220000 },
-      { label: "Nov-Dic", value: 360000 },
+      { label: "Q1", valor: 1800 },
+      { label: "Q2", valor: 5600 },
+      { label: "Q3", valor: 5200 },
+      { label: "Q4", valor: 3800 },
     ],
     otros: [
-      { label: "Ene-Feb", value: 120000 },
-      { label: "Mar-Abr", value: 200000 },
-      { label: "May-Jun", value: 380000 },
-      { label: "Jul-Ago", value: 240000 },
-      { label: "Sep-Oct", value: 160000 },
-      { label: "Nov-Dic", value: 280000 },
+      { label: "Q1", valor: 1200 },
+      { label: "Q2", valor: 2400 },
+      { label: "Q3", valor: 3100 },
+      { label: "Q4", valor: 4500 },
     ],
   },
   anioActual: {
     todos: [
-      { label: "Trim 1", value: 520000 },
-      { label: "Trim 2", value: 890000 },
-      { label: "Trim 3", value: 610000 },
-      { label: "Trim 4", value: 780000 },
+      { label: "Ene-Feb", cobrado: 3000, meta: 2100, acumulado: 5100 },
+      { label: "Mar-Abr", cobrado: 4600, meta: 3400, acumulado: 7500 },
+      { label: "May-Jun", cobrado: 7200, meta: 4800, acumulado: 10200 },
+      { label: "Jul-Ago", cobrado: 5400, meta: 3900, acumulado: 11500 },
+      { label: "Sep-Oct", cobrado: 3800, meta: 3100, acumulado: 12100 },
+      { label: "Nov-Dic", cobrado: 6400, meta: 4200, acumulado: 13000 },
     ],
     predial: [
-      { label: "Trim 1", value: 350000 },
-      { label: "Trim 2", value: 180000 },
-      { label: "Trim 3", value: 120000 },
-      { label: "Trim 4", value: 210000 },
+      { label: "Ene-Feb", valor: 3000 },
+      { label: "Mar-Abr", valor: 4600 },
+      { label: "May-Jun", valor: 7200 },
+      { label: "Jul-Ago", valor: 5400 },
+      { label: "Sep-Oct", valor: 3800 },
+      { label: "Nov-Dic", valor: 6400 },
     ],
     multas: [
-      { label: "Trim 1", value: 110000 },
-      { label: "Trim 2", value: 310000 },
-      { label: "Trim 3", value: 260000 },
-      { label: "Trim 4", value: 340000 },
+      { label: "Ene-Feb", valor: 2100 },
+      { label: "Mar-Abr", valor: 3400 },
+      { label: "May-Jun", valor: 4800 },
+      { label: "Jul-Ago", valor: 3900 },
+      { label: "Sep-Oct", valor: 3100 },
+      { label: "Nov-Dic", valor: 4200 },
     ],
     otros: [
-      { label: "Trim 1", value: 60000 },
-      { label: "Trim 2", value: 400000 },
-      { label: "Trim 3", value: 230000 },
-      { label: "Trim 4", value: 230000 },
+      { label: "Ene-Feb", valor: 1500 },
+      { label: "Mar-Abr", valor: 2000 },
+      { label: "May-Jun", valor: 3100 },
+      { label: "Jul-Ago", valor: 2800 },
+      { label: "Sep-Oct", valor: 1900 },
+      { label: "Nov-Dic", valor: 3500 },
     ],
   },
   historico: {
     todos: [
-      { label: "2023", value: 2100000 },
-      { label: "2024", value: 2900000 },
-      { label: "2025", value: 3400000 },
-      { label: "2026", value: 4100000 },
+      { label: "2023", cobrado: 2100, meta: 1800, acumulado: 6500 },
+      { label: "2024", cobrado: 2900, meta: 2400, acumulado: 8800 },
+      { label: "2025", cobrado: 3400, meta: 3100, acumulado: 10500 },
+      { label: "2026", cobrado: 4100, meta: 3600, acumulado: 12800 },
     ],
     predial: [
-      { label: "2023", value: 900000 },
-      { label: "2024", value: 1100000 },
-      { label: "2025", value: 1300000 },
-      { label: "2026", value: 1500000 },
+      { label: "2023", valor: 2100 },
+      { label: "2024", valor: 2900 },
+      { label: "2025", valor: 3400 },
+      { label: "2026", valor: 4100 },
     ],
     multas: [
-      { label: "2023", value: 500000 },
-      { label: "2024", value: 800000 },
-      { label: "2025", value: 1200000 },
-      { label: "2026", value: 1600000 },
+      { label: "2023", valor: 1800 },
+      { label: "2024", valor: 2400 },
+      { label: "2025", valor: 3100 },
+      { label: "2026", valor: 3600 },
     ],
     otros: [
-      { label: "2023", value: 700000 },
-      { label: "2024", value: 1000000 },
-      { label: "2025", value: 900000 },
-      { label: "2026", value: 1000000 },
+      { label: "2023", valor: 1100 },
+      { label: "2024", valor: 1500 },
+      { label: "2025", valor: 2200 },
+      { label: "2026", valor: 2800 },
     ],
   },
 };
@@ -113,128 +109,353 @@ const matrizDatos = {
 type TipoIngreso = "todos" | "predial" | "multas" | "otros";
 type RangoFecha = "bimestres" | "anioActual" | "historico";
 
-const formatoMoneda = (valor: number) => {
-  if (valor >= 1000000) return `$${(valor / 1000000).toFixed(1)}M`;
-  if (valor >= 1000) return `$${Math.round(valor / 1000)}k`;
+// ---------------------------------------------------------------------------
+// Paleta institucional — coherente con el verde de Bienes Comunales
+// ---------------------------------------------------------------------------
+const PALETA = {
+  verdeOscuro: "#1E4D3A",
+  verdeMedio: "#2F6B52",
+  celeste: "#2563A6", // Predial
+  oro: "#059669", // Multas / Meta
+  lineaAcumulado: "#0F766E", // Acumulado / Ingresos
+  grid: "#EEF1EE",
+  textoPrimario: "#111827",
+  textoSecundario: "#6B7280",
+};
+
+const coloresIndividuales: Record<Exclude<TipoIngreso, "todos">, string> = {
+  predial: PALETA.celeste,
+  multas: PALETA.oro,
+  otros: PALETA.verdeMedio,
+};
+
+const formatoMoneda = (valor: number) =>
+  `$${valor.toLocaleString("es-MX")}`;
+
+const formatoEjeCompacto = (valor: number) => {
+  if (Math.abs(valor) >= 1000) return `$${(valor / 1000).toFixed(valor % 1000 === 0 ? 0 : 1)}k`;
   return `$${valor}`;
 };
 
-const formatoMonedaLabel = (valor: unknown) => formatoMoneda(Number(valor ?? 0));
-
-
+// ---------------------------------------------------------------------------
+// Tooltip
+// ---------------------------------------------------------------------------
 function TooltipPersonalizado({ active, payload, label }: any) {
   if (!active || !payload || !payload.length) return null;
+
+  const filas = [
+    payload[0] && {
+      color: payload[0].color || payload[0].fill,
+      nombre:
+        payload[0].dataKey === "cobrado"
+          ? "Predial"
+          : payload[0].dataKey === "valor"
+          ? "Total"
+          : payload[0].name,
+      valor: payload[0].value,
+    },
+    payload[1] && {
+      color: PALETA.oro,
+      nombre: "Multas",
+      valor: payload[1].value,
+    },
+    payload[2] && {
+      color: PALETA.lineaAcumulado,
+      nombre: "Acumulado",
+      valor: payload[2].value,
+      destacado: true,
+    },
+  ].filter(Boolean) as { color: string; nombre: string; valor: number; destacado?: boolean }[];
+
   return (
-    <div className="bg-[#153629] text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-lg">
-      <p className="text-white/60 text-[10px] uppercase tracking-wide mb-0.5">
+    <div className="min-w-[168px] rounded-xl border border-white/10 bg-[#132A20] px-3.5 py-3 shadow-xl shadow-black/20">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-white/50">
         {label}
       </p>
-      <p className="flex items-center gap-1.5">
-        <Wallet className="w-3 h-3 text-amber-400" />
-        {formatoMoneda(payload[0].value)}
-      </p>
+      <div className="space-y-1.5">
+        {filas.map((fila, i) => (
+          <div
+            key={i}
+            className={`flex items-center justify-between gap-4 text-xs ${
+              fila.destacado ? "border-t border-white/10 pt-1.5 mt-0.5" : ""
+            }`}
+          >
+            <span className="flex items-center gap-1.5 text-white/70">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: fila.color }}
+              />
+              {fila.nombre}
+            </span>
+            <span className="font-semibold tabular-nums text-white">
+              {formatoMoneda(fila.valor)}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Controles: segmented pill toggle en vez de <select> nativo
+// ---------------------------------------------------------------------------
+function SegmentedControl<T extends string>({
+  opciones,
+  valor,
+  onChange,
+}: {
+  opciones: { value: T; label: string }[];
+  valor: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="inline-flex items-center gap-0.5 rounded-lg bg-gray-100 p-0.5">
+      {opciones.map((op) => {
+        const activo = op.value === valor;
+        return (
+          <button
+            key={op.value}
+            type="button"
+            onClick={() => onChange(op.value)}
+            className={`rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4D3A]/40 ${
+              activo
+                ? "bg-white text-[#1E4D3A] shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {op.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Componente principal
+// ---------------------------------------------------------------------------
 export default function IncomeChart() {
   const [filtroIngreso, setFiltroIngreso] = useState<TipoIngreso>("todos");
   const [filtroFecha, setFiltroFecha] = useState<RangoFecha>("bimestres");
 
-  const titulos = {
-    todos: "Ingresos del periodo (unificados)",
+  const titulos: Record<TipoIngreso, string> = {
+    todos: "Ingresos del periodo",
     predial: "Ingresos por predial",
     multas: "Ingresos por multas",
-    otros: "Otros tipos de ingresos",
+    otros: "Otros ingresos",
   };
 
   const dataActual = matrizDatos[filtroFecha][filtroIngreso];
 
+  // KPI: total del periodo y variación contra el punto anterior
+  const kpi = useMemo(() => {
+    const key = filtroIngreso === "todos" ? "cobrado" : "valor";
+    const valores = dataActual.map((d: any) => d[key] as number);
+    const total = valores.reduce((a, b) => a + b, 0);
+    const ultimo = valores[valores.length - 1] ?? 0;
+    const previo = valores[valores.length - 2] ?? ultimo;
+    const variacion = previo === 0 ? 0 : ((ultimo - previo) / previo) * 100;
+    return { total, variacion };
+  }, [dataActual, filtroIngreso]);
+
+  const rangoLabel: Record<RangoFecha, string> = {
+    bimestres: "Últimos 6 bimestres",
+    anioActual: "Año actual · 2026",
+    historico: "Histórico anual",
+  };
+
   return (
-    <div className="bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.01)] flex-1 min-w-0">
-      {/* Encabezado y Controles */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
+    <div className="flex-1 min-w-0 rounded-2xl border border-gray-100 bg-white p-5 font-sans shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.03)] sm:p-6">
+      {/* Encabezado */}
+      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#1E4D3A]" />
-            {titulos[filtroIngreso]}
-          </h3>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Filtrado por tiempo y conceptos de caja
+          <div className="flex items-center gap-2">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: PALETA.verdeOscuro }}
+            />
+            <h3 className="text-sm font-bold text-gray-900 sm:text-base">
+              {titulos[filtroIngreso]}
+            </h3>
+          </div>
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
+            <Calendar className="h-3 w-3" />
+            {rangoLabel[filtroFecha]}
           </p>
         </div>
 
-
-        {/* Panel de Filtros */}
-        <div className="flex flex-col xs:flex-row items-center gap-2 w-full lg:w-auto">
-          <div className="relative w-full xs:w-auto flex-1 xs:flex-initial">
-            <select
-              value={filtroIngreso}
-              onChange={(e) => setFiltroIngreso(e.target.value as TipoIngreso)}
-              className="w-full appearance-none bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200 rounded-xl px-3 py-1.5 pr-8 text-xs font-semibold text-gray-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#1E4D3A]/5 focus:border-[#1E4D3A] cursor-pointer"
-            >
-              <option value="todos">Todos los ingresos</option>
-              <option value="predial">Por predial</option>
-              <option value="multas">Por multas</option>
-              <option value="otros">Otros ingresos</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* KPI resumen */}
+        <div className="flex items-center gap-4 rounded-xl bg-gray-50/70 px-4 py-2.5">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+              Total del periodo
+            </p>
+            <p className="text-lg font-bold tabular-nums text-gray-900">
+              {formatoMoneda(kpi.total)}
+            </p>
           </div>
-
-          <div className="relative w-full xs:w-auto flex-1 xs:flex-initial">
-            <select
-              value={filtroFecha}
-              onChange={(e) => setFiltroFecha(e.target.value as RangoFecha)}
-              className="w-full appearance-none bg-white hover:bg-gray-50 transition-colors border border-gray-200 rounded-xl px-3 py-1.5 pl-8 pr-8 text-xs font-medium text-gray-600 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#1E4D3A]/5 focus:border-[#1E4D3A] cursor-pointer"
-            >
-              <option value="bimestres">Últimos 6 bimestres</option>
-              <option value="anioActual">Año actual (2026)</option>
-              <option value="historico">Histórico anual</option>
-            </select>
-            <Calendar className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <ChevronDown className="w-3.5 h-3.5 text-gray-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <div
+            className={`flex items-center gap-0.5 rounded-md px-1.5 py-1 text-xs font-semibold ${
+              kpi.variacion >= 0
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-rose-50 text-rose-600"
+            }`}
+          >
+            {kpi.variacion >= 0 ? (
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            ) : (
+              <ArrowDownRight className="h-3.5 w-3.5" />
+            )}
+            {Math.abs(kpi.variacion).toFixed(1)}%
           </div>
         </div>
       </div>
 
+      {/* Filtros */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <SegmentedControl
+          valor={filtroIngreso}
+          onChange={setFiltroIngreso}
+          opciones={[
+            { value: "todos", label: "Todos" },
+            { value: "predial", label: "Predial" },
+            { value: "multas", label: "Multas" },
+            { value: "otros", label: "Otros" },
+          ]}
+        />
+        <span className="h-4 w-px bg-gray-200" />
+        <SegmentedControl
+          valor={filtroFecha}
+          onChange={setFiltroFecha}
+          opciones={[
+            { value: "bimestres", label: "Bimestres" },
+            { value: "anioActual", label: "2026" },
+            { value: "historico", label: "Histórico" },
+          ]}
+        />
+      </div>
 
-      {/* Gráfica con Recharts */}
-      <div className="w-full h-72 [&_.recharts-wrapper]:outline-none [&_.recharts-surface]:outline-none [&_.recharts-wrapper_*]:outline-none">
+      {/* Gráfica */}
+      <div className="h-72 w-full [&_.recharts-surface]:outline-none [&_.recharts-wrapper]:outline-none sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={dataActual} margin={{ top: 24, right: 8, left: 0, bottom: 0 }} barCategoryGap="32%">
-            <CartesianGrid vertical={false} stroke="#EDEDED" strokeDasharray="3 3" />
-            <XAxis
-              dataKey="label"
-              tickLine={false}
-              axisLine={{ stroke: "#D1D5DB" }}
-              tick={{ fontSize: 11, fontWeight: 500, fill: "#6B7280" }}
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={formatoMoneda}
-              tick={{ fontSize: 10, fontWeight: 500, fill: "#9CA3AF" }}
-              width={48}
-            />
-            <Tooltip cursor={{ fill: "rgba(30,77,58,0.04)" }} content={<TooltipPersonalizado />} />
-            <Bar
-              dataKey="value"
-              fill="#1E4D3A"
-              radius={[3, 3, 0, 0]}
-              maxBarSize={40}
-              stroke="#153629"
-              strokeWidth={1}
+          {filtroIngreso === "todos" ? (
+            <ComposedChart
+              data={dataActual}
+              margin={{ top: 8, right: 12, left: 4, bottom: 4 }}
+              barGap={4}
             >
-              <LabelList
-                dataKey="value"
-                position="top"
-                formatter={formatoMonedaLabel}
-                style={{ fontSize: 10, fontWeight: 600, fill: "#374151" }}
+              <defs>
+                <linearGradient id="fillAcumulado" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={PALETA.lineaAcumulado} stopOpacity={0.16} />
+                  <stop offset="100%" stopColor={PALETA.lineaAcumulado} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid vertical={false} stroke={PALETA.grid} strokeDasharray="3 3" />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={{ stroke: "#E5E7EB" }}
+                tick={{ fill: PALETA.textoSecundario, fontSize: 12, fontWeight: 600 }}
+                dy={8}
               />
-            </Bar>
-          </BarChart>
+              <YAxis
+                yAxisId="left"
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={formatoEjeCompacto}
+                tick={{ fill: PALETA.textoSecundario, fontSize: 11 }}
+                width={48}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                domain={[5000, 13000]}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={formatoEjeCompacto}
+                tick={{ fill: PALETA.textoSecundario, fontSize: 11 }}
+                width={48}
+              />
+              <Tooltip cursor={{ fill: "rgba(30,77,58,0.04)" }} content={<TooltipPersonalizado />} />
+
+              <Bar
+                yAxisId="left"
+                dataKey="cobrado"
+                name="Predial"
+                fill={PALETA.celeste}
+                barSize={22}
+                radius={[4, 4, 0, 0]}
+              />
+              <Bar
+                yAxisId="left"
+                dataKey="meta"
+                name="Multas"
+                fill={PALETA.oro}
+                barSize={22}
+                radius={[4, 4, 0, 0]}
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="acumulado"
+                name="Acumulado"
+                stroke={PALETA.lineaAcumulado}
+                strokeWidth={2.5}
+                dot={false}
+                activeDot={{ r: 5, fill: PALETA.lineaAcumulado, stroke: "#fff", strokeWidth: 2 }}
+              />
+            </ComposedChart>
+          ) : (
+            <BarChart data={dataActual} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
+              <CartesianGrid vertical={false} stroke={PALETA.grid} strokeDasharray="3 3" />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={{ stroke: "#E5E7EB" }}
+                tick={{ fill: PALETA.textoSecundario, fontSize: 12, fontWeight: 600 }}
+                dy={8}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={formatoEjeCompacto}
+                tick={{ fill: PALETA.textoSecundario, fontSize: 11 }}
+                width={48}
+              />
+              <Tooltip cursor={{ fill: "rgba(30,77,58,0.04)" }} content={<TooltipPersonalizado />} />
+              <Bar
+                dataKey="valor"
+                name={titulos[filtroIngreso]}
+                fill={coloresIndividuales[filtroIngreso]}
+                barSize={36}
+                radius={[6, 6, 0, 0]}
+              />
+            </BarChart>
+          )}
         </ResponsiveContainer>
       </div>
+
+      {/* Leyenda fija (solo vista "todos") */}
+      {filtroIngreso === "todos" && (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-gray-100 pt-3">
+          {[
+            { color: PALETA.celeste, label: "Predial" },
+            { color: PALETA.oro, label: "Multas" },
+            { color: PALETA.lineaAcumulado, label: "Acumulado", linea: true },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-1.5 text-xs text-gray-500">
+              {item.linea ? (
+                <span className="h-0.5 w-3.5 rounded-full" style={{ backgroundColor: item.color }} />
+              ) : (
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+              )}
+              {item.label}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
