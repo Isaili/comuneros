@@ -84,7 +84,7 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
     
       <div className="absolute top-0 left-0 w-full h-[100px] sm:h-[110px] overflow-hidden pointer-events-none z-0 rounded-b-xl">
         <img 
-          src="/header.webp" 
+          src="/header.png" 
           alt="Header background" 
           className="w-full h-full object-cover object-right"
         />
