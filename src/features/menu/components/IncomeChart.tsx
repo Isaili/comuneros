@@ -14,6 +14,9 @@ import {
 } from "recharts";
 import { ArrowDownRight, ArrowUpRight, Calendar } from "lucide-react";
 
+// ---------------------------------------------------------------------------
+// Datos (sin cambios respecto a la versión original)
+// ---------------------------------------------------------------------------
 const matrizDatos = {
   bimestres: {
     todos: [
@@ -106,12 +109,18 @@ const matrizDatos = {
 type TipoIngreso = "todos" | "predial" | "multas" | "otros";
 type RangoFecha = "bimestres" | "anioActual" | "historico";
 
+type FilaTodos = { label: string; cobrado: number; meta: number; acumulado: number };
+type FilaIndividual = { label: string; valor: number };
+
+// ---------------------------------------------------------------------------
+// Paleta institucional — coherente con el verde de Bienes Comunales
+// ---------------------------------------------------------------------------
 const PALETA = {
   verdeOscuro: "#1E4D3A",
   verdeMedio: "#2F6B52",
-  celeste: "#2563A6",
-  oro: "#059669",
-  lineaAcumulado: "#0F766E",
+  celeste: "#2563A6", // Predial
+  oro: "#059669", // Multas / Meta
+  lineaAcumulado: "#0F766E", // Acumulado / Ingresos
   grid: "#EEF1EE",
   textoPrimario: "#111827",
   textoSecundario: "#6B7280",
@@ -131,6 +140,9 @@ const formatoEjeCompacto = (valor: number) => {
   return `$${valor}`;
 };
 
+// ---------------------------------------------------------------------------
+// Tooltip
+// ---------------------------------------------------------------------------
 function TooltipPersonalizado({ active, payload, label }: any) {
   if (!active || !payload || !payload.length) return null;
 
@@ -188,6 +200,9 @@ function TooltipPersonalizado({ active, payload, label }: any) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Controles: segmented pill toggle en vez de <select> nativo
+// ---------------------------------------------------------------------------
 function SegmentedControl<T extends string>({
   opciones,
   valor,
@@ -220,6 +235,9 @@ function SegmentedControl<T extends string>({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Componente principal
+// ---------------------------------------------------------------------------
 export default function IncomeChart() {
   const [filtroIngreso, setFiltroIngreso] = useState<TipoIngreso>("todos");
   const [filtroFecha, setFiltroFecha] = useState<RangoFecha>("bimestres");
@@ -231,11 +249,20 @@ export default function IncomeChart() {
     otros: "Otros ingresos",
   };
 
-  const dataActual = matrizDatos[filtroFecha][filtroIngreso];
+  const dataActual = matrizDatos[filtroFecha][filtroIngreso] as
+    | FilaTodos[]
+    | FilaIndividual[];
 
+  // Vistas ya tipadas para cada rama del render (evita pasar la unión a recharts)
+  const dataTodos = dataActual as FilaTodos[];
+  const dataIndividual = dataActual as FilaIndividual[];
+
+  // KPI: total del periodo y variación contra el punto anterior
   const kpi = useMemo(() => {
     const key = filtroIngreso === "todos" ? "cobrado" : "valor";
-    const valores = dataActual.map((d: any) => d[key] as number);
+    const valores = (dataActual as Record<string, number | string>[]).map(
+      (d) => d[key] as number
+    );
     const total = valores.reduce((a, b) => a + b, 0);
     const ultimo = valores[valores.length - 1] ?? 0;
     const previo = valores[valores.length - 2] ?? ultimo;
@@ -251,6 +278,7 @@ export default function IncomeChart() {
 
   return (
     <div className="flex-1 min-w-0 rounded-2xl border border-gray-100 bg-white p-5 font-sans shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.03)] sm:p-6">
+      {/* Encabezado */}
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -268,6 +296,7 @@ export default function IncomeChart() {
           </p>
         </div>
 
+        {/* KPI resumen */}
         <div className="flex items-center gap-4 rounded-xl bg-gray-50/70 px-4 py-2.5">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
@@ -294,6 +323,7 @@ export default function IncomeChart() {
         </div>
       </div>
 
+      {/* Filtros */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <SegmentedControl
           valor={filtroIngreso}
@@ -317,11 +347,12 @@ export default function IncomeChart() {
         />
       </div>
 
+      {/* Gráfica */}
       <div className="h-72 w-full [&_.recharts-surface]:outline-none [&_.recharts-wrapper]:outline-none sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
           {filtroIngreso === "todos" ? (
             <ComposedChart
-              data={dataActual}
+              data={dataTodos}
               margin={{ top: 8, right: 12, left: 4, bottom: 4 }}
               barGap={4}
             >
@@ -388,7 +419,7 @@ export default function IncomeChart() {
               />
             </ComposedChart>
           ) : (
-            <BarChart data={dataActual} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
+            <BarChart data={dataIndividual} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
               <CartesianGrid vertical={false} stroke={PALETA.grid} strokeDasharray="3 3" />
               <XAxis
                 dataKey="label"
@@ -417,6 +448,7 @@ export default function IncomeChart() {
         </ResponsiveContainer>
       </div>
 
+      {/* Leyenda fija (solo vista "todos") */}
       {filtroIngreso === "todos" && (
         <div className="mt-4 flex flex-wrap items-center justify-center gap-4 border-t border-gray-100 pt-3">
           {[
