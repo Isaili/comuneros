@@ -46,7 +46,7 @@ const PALETA = {
   verdeOscuro: '#1E4D3A',
   celeste: '#2563A6', // Predial
   multa: '#059669', // Multas
-  lineaAcumulado: '#0F766E', // Acumulado
+  lineaAcumulado: '#f6a477', // Acumulado
   grid: '#EEF1EE',
   textoSecundario: '#6B7280',
 };

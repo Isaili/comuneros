@@ -14,9 +14,7 @@ import {
 } from "recharts";
 import { ArrowDownRight, ArrowUpRight, Calendar } from "lucide-react";
 
-// ---------------------------------------------------------------------------
-// Datos (sin cambios respecto a la versión original)
-// ---------------------------------------------------------------------------
+
 const matrizDatos = {
   bimestres: {
     todos: [
@@ -112,9 +110,7 @@ type RangoFecha = "bimestres" | "anioActual" | "historico";
 type FilaTodos = { label: string; cobrado: number; meta: number; acumulado: number };
 type FilaIndividual = { label: string; valor: number };
 
-// ---------------------------------------------------------------------------
-// Paleta institucional — coherente con el verde de Bienes Comunales
-// ---------------------------------------------------------------------------
+
 const PALETA = {
   verdeOscuro: "#1E4D3A",
   verdeMedio: "#2F6B52",
@@ -140,9 +136,7 @@ const formatoEjeCompacto = (valor: number) => {
   return `$${valor}`;
 };
 
-// ---------------------------------------------------------------------------
-// Tooltip
-// ---------------------------------------------------------------------------
+
 function TooltipPersonalizado({ active, payload, label }: any) {
   if (!active || !payload || !payload.length) return null;
 
@@ -200,9 +194,7 @@ function TooltipPersonalizado({ active, payload, label }: any) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Controles: segmented pill toggle en vez de <select> nativo
-// ---------------------------------------------------------------------------
+
 function SegmentedControl<T extends string>({
   opciones,
   valor,
@@ -235,9 +227,7 @@ function SegmentedControl<T extends string>({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Componente principal
-// ---------------------------------------------------------------------------
+
 export default function IncomeChart() {
   const [filtroIngreso, setFiltroIngreso] = useState<TipoIngreso>("todos");
   const [filtroFecha, setFiltroFecha] = useState<RangoFecha>("bimestres");
