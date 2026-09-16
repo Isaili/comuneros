@@ -36,8 +36,9 @@ export const comunerosApi = {
     filters?: { fullName?: string; personType?: PersonaBackendDTO['personType']; status?: PersonaBackendDTO['status'] },
     options?: { incluirDetalle?: boolean }
   ): Promise<{ comuneros: Comunero[]; total: number; totalPages: number }> => {
+    // Parámetro _t: Date.now() para romper la caché HTTP
     const { data } = await apiClient.get<ApiEnvelope<PaginatedListDTO<PersonaBackendDTO>>>('/persons', {
-      params: { page, limit, status: filters?.status ?? 'ACTIVE', ...filters },
+      params: { page, limit, status: filters?.status ?? 'ACTIVE', ...filters, _t: Date.now() },
     });
 
     const { items, total, limit: limitRespuesta } = data.data;
@@ -57,7 +58,10 @@ export const comunerosApi = {
   },
 
   obtenerPorId: async (id: string): Promise<Comunero> => {
-    const { data } = await apiClient.get<ApiEnvelope<PersonaBackendDTO>>(`/persons/${id}`);
+    // Realiza el GET individual directo a la API con parámetro anti-caché
+    const { data } = await apiClient.get<ApiEnvelope<PersonaBackendDTO>>(`/persons/${id}`, {
+      params: { _t: Date.now() },
+    });
     return mapearComuneroDesdeBackend(data.data);
   },
 
@@ -69,10 +73,13 @@ export const comunerosApi = {
     eliminarFoto = false
   ): Promise<Comunero> => {
     const { personType: _personType, status: nuevoStatus, phone: _phone, ...datosPersonales } = payload;
+    
+    // 1. Aplica cambios de datos personales
     if (Object.keys(datosPersonales).length > 0) {
       await apiClient.patch<ApiEnvelope<PersonaBackendDTO>>(`/persons/${id}`, datosPersonales);
     }
 
+    // 2. Aplica cambios de estado
     if (nuevoStatus && nuevoStatus !== statusActual) {
       if (nuevoStatus === 'DECEASED') {
         await apiClient.patch(`/persons/${id}/deceased`);
@@ -82,6 +89,7 @@ export const comunerosApi = {
       }
     }
 
+    // 3. Aplica actualización o eliminación de foto
     if (fotoFile) {
       const formData = new FormData();
       formData.append('photo', fotoFile);
@@ -92,7 +100,8 @@ export const comunerosApi = {
       await comunerosApi.eliminarFoto(id);
     }
 
-    return comunerosApi.obtenerPorId(id);
+    // 4. Hace un GET fresco de la entidad recién actualizada y lo retorna
+    return await comunerosApi.obtenerPorId(id);
   },
 
   actualizarEstado: (id: string, status: 'ACTIVATE' | 'INACTIVE') =>

@@ -31,10 +31,10 @@ const leerDetallesCache = (): Record<string, Comunero> => {
 };
 
 interface ComunerosFeatureProps {
-  onIrABarrios: () => void;
+  onIrABarrios?: () => void;
 }
 
-export const ComunerosFeature: React.FC = () => {
+export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
   const [comuneros, setComuneros] = useState<Comunero[]>([]);
 
   const [page, setPage] = useState(1);
@@ -116,30 +116,42 @@ export const ComunerosFeature: React.FC = () => {
     eliminarFoto = false
   ) => {
     try {
-      // Si recibes un File/Blob lo envía directamente; si es un string o null no fuerza el archivo
       const archivoAEnviar = fotoFile instanceof Blob ? fotoFile : null;
 
       if (comuneroAEditar) {
-        await comunerosApi.actualizar(
+        // 1. Ejecuta actualización y obtiene la entidad fresca mediante un GET interno
+        const comuneroActualizado = await comunerosApi.actualizar(
           comuneroAEditar.id,
           payload,
           archivoAEnviar,
           comuneroAEditar.status,
           eliminarFoto
         );
+
+        // 2. Sobrescribe la caché local/localStorage con el resultado del GET
         setDetallesCache((actual) => {
-          const actualizado = { ...actual };
-          delete actualizado[comuneroAEditar.id];
+          const actualizado = { ...actual, [comuneroAEditar.id]: comuneroActualizado };
           window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
           return actualizado;
         });
+
+        // 3. Si el comunero editado es el que se está viendo, actualiza la vista
+        if (selectedComunero?.id === comuneroAEditar.id) {
+          setSelectedComunero(comuneroActualizado);
+        }
       } else {
         await comunerosApi.crear(payload, archivoAEnviar);
       }
-      
+
+      // 4. Invalida la referencia para forzar un nuevo GET de la lista
+      ultimaCargaRef.current = '';
+
+      // 5. Cierra el modal y limpia el estado de edición
       setIsAddModalOpen(false);
       setComuneroAEditar(null);
-      await cargarComuneros(page); 
+
+      // 6. Recarga la lista paginada general
+      await cargarComuneros(page);
     } catch (err: any) {
       if (err.response) {
         console.error('❌ Error devuelto por el servidor:', err.response.data);
@@ -157,12 +169,15 @@ export const ComunerosFeature: React.FC = () => {
     if (!comuneroBuscado) return;
 
     try {
-      const comuneroCompleto = detallesCache[id] ?? await comunerosApi.obtenerPorId(id);
-      if (!detallesCache[id]) {
-        const actualizado = { ...detallesCache, [id]: comuneroCompleto };
-        setDetallesCache(actualizado);
+      // GET fresco previo a la edición
+      const comuneroCompleto = await comunerosApi.obtenerPorId(id);
+      
+      setDetallesCache((actual) => {
+        const actualizado = { ...actual, [id]: comuneroCompleto };
         window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
-      }
+        return actualizado;
+      });
+
       setComuneroAEditar(comuneroCompleto);
     } catch (err) {
       console.error('Error al cargar el expediente para editar:', err);
@@ -177,6 +192,16 @@ export const ComunerosFeature: React.FC = () => {
     if (!confirm('¿Estás seguro de que deseas dar de baja este registro?')) return;
     try {
       await comunerosApi.actualizarEstado(id, 'INACTIVE');
+      
+      // Elimina la versión antigua del cache
+      setDetallesCache((actual) => {
+        const actualizado = { ...actual };
+        delete actualizado[id];
+        window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
+        return actualizado;
+      });
+
+      ultimaCargaRef.current = '';
       await cargarComuneros(page);
       if (selectedComunero?.id === id) setSelectedComunero(null);
     } catch (err) {
@@ -256,14 +281,16 @@ export const ComunerosFeature: React.FC = () => {
             <div className="p-6">
               {isDetailLoading ? (
                 <div className="py-12 text-center text-gray-500">Cargando expediente...</div>
-              ) : <ComuneroDetail
-                comunero={selectedComunero}
-                onEdit={(id) => {
-                  setSelectedComunero(null);
-                  handleEdit(id);
-                }}
-                onDelete={handleDelete}
-              />}
+              ) : (
+                <ComuneroDetail
+                  comunero={selectedComunero}
+                  onEdit={(id) => {
+                    setSelectedComunero(null);
+                    handleEdit(id);
+                  }}
+                  onDelete={handleDelete}
+                />
+              )}
             </div>
           </div>
         </div>
