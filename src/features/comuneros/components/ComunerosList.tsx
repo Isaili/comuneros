@@ -13,29 +13,32 @@ interface ListProps {
   onPageChange: (page: number) => void;
 }
 
-const Avatar: React.FC<{ nombre: string; apellidoPaterno: string; foto?: string }> = ({
+const Avatar: React.FC<{ nombre: string; apellidoPaterno: string; foto?: string; tipo: string }> = ({
   nombre,
   apellidoPaterno,
   foto,
+  tipo,
 }) => {
   const [error, setError] = useState(false);
   const iniciales = `${nombre?.[0] ?? ''}${apellidoPaterno?.[0] ?? ''}`.toUpperCase();
-
-  if (!foto || error) {
-    return (
-      <div className="w-10 h-10 rounded-xl bg-[#006837]/10 text-[#006837] flex items-center justify-center font-bold text-xs shrink-0">
-        {iniciales || '?'}
-      </div>
-    );
-  }
+  const esComunero = tipo === 'comunero' || tipo === 'COMMONER';
+  const colorTipo = esComunero ? 'from-emerald-400 to-[#006837]' : 'from-amber-300 to-amber-500';
 
   return (
-    <img
-      src={foto}
-      alt={`${nombre} ${apellidoPaterno}`}
-      onError={() => setError(true)}
-      className="w-10 h-10 rounded-xl object-cover border border-gray-100 shadow-sm shrink-0"
-    />
+    <div className={`shrink-0 rounded-xl bg-gradient-to-br ${colorTipo} p-[2px]`}>
+      {!foto || error ? (
+        <div className="w-10 h-10 rounded-[10px] bg-white text-[#006837] flex items-center justify-center font-bold text-xs">
+          {iniciales || '?'}
+        </div>
+      ) : (
+        <img
+          src={foto}
+          alt={`${nombre} ${apellidoPaterno}`}
+          onError={() => setError(true)}
+          className="w-10 h-10 rounded-[10px] object-cover"
+        />
+      )}
+    </div>
   );
 };
 
@@ -161,7 +164,7 @@ export const ComunerosList: React.FC<ListProps> = ({
                     }`}
                   >
                     <td className="py-3 px-2 flex items-center gap-3">
-                      <Avatar nombre={nombre} apellidoPaterno={apellidoPaterno} foto={foto} />
+                      <Avatar nombre={nombre} apellidoPaterno={apellidoPaterno} foto={foto} tipo={tipo} />
                       <div className="min-w-0">
                         <p
                           className={`font-bold leading-tight truncate ${
@@ -239,7 +242,7 @@ export const ComunerosList: React.FC<ListProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Avatar nombre={nombre} apellidoPaterno={apellidoPaterno} foto={foto} />
+                  <Avatar nombre={nombre} apellidoPaterno={apellidoPaterno} foto={foto} tipo={tipo} />
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-sm text-gray-900 truncate">
                       {nombre} {apellidoPaterno} {apellidoMaterno}
