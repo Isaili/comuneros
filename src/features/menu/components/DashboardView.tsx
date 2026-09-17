@@ -122,7 +122,7 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
 
       <div className="relative z-10 mt-10 sm:mt-15 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 sm:rounded-2xl min-w-0">
         <StatCard
-          title="Comuneros registrados"
+          title="Miembros registrados"
           value={String(totales.comuneros)}
           subtext="Total actual del padrón"
           icon={Users}

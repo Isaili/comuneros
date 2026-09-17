@@ -219,7 +219,7 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-6 flex flex-col justify-between min-h-[600px]">
             <div>
               <h3 className="font-bold text-gray-900 text-base mb-4">
-                Lista de comuneros <span className="text-gray-900 font-bold">(0)</span>
+                Lista de Miembros <span className="text-gray-900 font-bold">(0)</span>
               </h3>
 
               <div className="overflow-x-auto">
@@ -228,7 +228,7 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
                     <tr className="text-gray-400 font-bold text-xs uppercase tracking-wider border-b border-gray-100">
                       <th className="py-3 px-2">Nombre</th>
                       <th className="py-3 px-2">Tipo</th>
-                      <th className="py-3 px-2">Comunero Desde</th>
+                      <th className="py-3 px-2">Miembro Desde</th>
                       <th className="py-3 px-2">Vecindario</th>
                       <th className="py-3 px-2 text-right">Acciones</th>
                     </tr>
@@ -270,7 +270,7 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
           <div className="absolute inset-0" onClick={() => setSelectedComunero(null)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10 animate-slide-up">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-20">
-              <h3 className="text-lg font-bold text-gray-800">Expediente del Comunero</h3>
+              <h3 className="text-lg font-bold text-gray-800">Expediente del Miembro</h3>
               <button
                 onClick={() => setSelectedComunero(null)}
                 className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-semibold transition-colors"

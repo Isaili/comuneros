@@ -109,7 +109,7 @@ export const ComunerosList: React.FC<ListProps> = ({
         <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center mb-4">
           <Users className="w-6 h-6 text-gray-300" aria-hidden="true" />
         </div>
-        <p className="text-gray-500 font-semibold text-sm">Sin comuneros registrados</p>
+        <p className="text-gray-500 font-semibold text-sm">Sin Miembros registrados</p>
         <p className="text-gray-400 text-xs mt-1">Los registros que agregues aparecerán aquí.</p>
       </div>
     );
@@ -120,7 +120,7 @@ export const ComunerosList: React.FC<ListProps> = ({
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-gray-900 text-base">
-            Lista de comuneros ({comuneros.length})
+            Lista de Miembros ({comuneros.length})
           </h3>
         </div>
 
@@ -131,8 +131,8 @@ export const ComunerosList: React.FC<ListProps> = ({
               <tr className="text-gray-400 font-bold text-xs uppercase tracking-wider border-b border-gray-100">
                 <th className="py-3 px-2">Nombre</th>
                 <th className="py-3 px-2">Tipo</th>
-                <th className="py-3 px-2">Comunero Desde</th>
-                <th className="py-3 px-2">Vecindario</th>
+                <th className="py-3 px-2">Miembro Desde</th>
+                <th className="py-3 px-2">Vecindario o Comunidad</th>
                 <th className="py-3 px-2 text-right">Acciones</th>
               </tr>
             </thead>
