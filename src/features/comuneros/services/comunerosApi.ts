@@ -7,6 +7,7 @@ import {
   PersonaBackendDTO,
 } from '../types/types';
 import { mapearComuneroDesdeBackend } from './comunero.mapper';
+import { invalidarCacheDashboard } from '@/features/menu/services/dashboardCache'; // ajusta la ruta real
 
 const construirFormData = (payload: Partial<CrearComuneroPayload>, fotoFile?: File | Blob | null): FormData => {
   const formData = new FormData();
@@ -27,6 +28,7 @@ export const comunerosApi = {
     const { data } = await apiClient.post<ApiEnvelope<PersonaBackendDTO>>('/persons', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    invalidarCacheDashboard();
     return mapearComuneroDesdeBackend(data.data);
   },
 
@@ -73,7 +75,7 @@ export const comunerosApi = {
     eliminarFoto = false
   ): Promise<Comunero> => {
     const { personType: _personType, status: nuevoStatus, phone: _phone, ...datosPersonales } = payload;
-    
+
     // 1. Aplica cambios de datos personales
     if (Object.keys(datosPersonales).length > 0) {
       await apiClient.patch<ApiEnvelope<PersonaBackendDTO>>(`/persons/${id}`, datosPersonales);
@@ -100,14 +102,24 @@ export const comunerosApi = {
       await comunerosApi.eliminarFoto(id);
     }
 
-    // 4. Hace un GET fresco de la entidad recién actualizada y lo retorna
+    // 4. Invalida el caché del dashboard (cubre datos, status y foto en un solo lugar)
+    invalidarCacheDashboard();
+
+    // 5. Hace un GET fresco de la entidad recién actualizada y lo retorna
     return await comunerosApi.obtenerPorId(id);
   },
 
-  actualizarEstado: (id: string, status: 'ACTIVATE' | 'INACTIVE') =>
-    apiClient.patch(`/persons/${id}/status`, { status }),
+  actualizarEstado: async (id: string, status: 'ACTIVATE' | 'INACTIVE') => {
+    const resultado = await apiClient.patch(`/persons/${id}/status`, { status });
+    invalidarCacheDashboard();
+    return resultado;
+  },
 
-  marcarFallecido: (id: string) => apiClient.patch(`/persons/${id}/deceased`),
+  marcarFallecido: async (id: string) => {
+    const resultado = await apiClient.patch(`/persons/${id}/deceased`);
+    invalidarCacheDashboard();
+    return resultado;
+  },
 
   eliminarFoto: (id: string) => apiClient.delete(`/persons/${id}/photo`),
 };

@@ -7,20 +7,35 @@ import IncomeChart from "./IncomeChart";
 import NextAssembly from "./NextAssembly";
 import { comunerosApi } from '../../comuneros/services/comunerosApi';
 import { plotsService } from '../../parcelas/services/parcelas.service';
+import {
+  leerCacheDashboard,
+  guardarCacheDashboard,
+  invalidarCacheDashboard,
+  DASHBOARD_INVALIDATE_EVENT,
+} from '@/features/menu/services/dashboardCache'; // ajusta la ruta real
 
-const DASHBOARD_CACHE_KEY = 'dashboard_resumen_cache';
 let cargaDashboardEnCurso: Promise<{
   totales: { comuneros: number; parcelas: number };
 }> | null = null;
 
-const leerCacheDashboard = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const cache = window.localStorage.getItem(DASHBOARD_CACHE_KEY);
-    return cache ? JSON.parse(cache) : null;
-  } catch {
-    return null;
-  }
+const cargarTotalesDesdeApi = () => {
+  cargaDashboardEnCurso ??= Promise.all([
+    comunerosApi.listar(1, 1),
+    plotsService.list({ page: 1, limit: 1 }),
+  ]).then(([comunerosResponse, parcelasResponse]) => {
+    const resultado = {
+      totales: {
+        comuneros: comunerosResponse.total || 0,
+        parcelas: parcelasResponse.data.total || 0,
+      },
+    };
+    guardarCacheDashboard(resultado);
+    return resultado;
+  }).finally(() => {
+    cargaDashboardEnCurso = null;
+  });
+
+  return cargaDashboardEnCurso;
 };
 
 export default function DashboardView({ activo = true }: { activo?: boolean }) {
@@ -42,55 +57,49 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
   useEffect(() => {
     if (!activo) return;
 
-    const cache = leerCacheDashboard();
-    if (cache?.totales) {
-      setTotales(cache.totales);
-      return;
-    }
-
     let montado = true;
-    cargaDashboardEnCurso ??= Promise.all([
-      comunerosApi.listar(1, 1),
-      plotsService.list({ page: 1, limit: 1 }),
-    ]).then(([comunerosResponse, parcelasResponse]) => {
-      const resultado = {
-        totales: {
-          comuneros: comunerosResponse.total || 0,
-          parcelas: parcelasResponse.data.total || 0,
-        },
-      };
-      window.localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(resultado));
-      return resultado;
-    }).finally(() => {
-      cargaDashboardEnCurso = null;
-    });
 
-    cargaDashboardEnCurso
-      .then((resultado) => {
-        if (!montado) return;
-        setTotales(resultado.totales);
-      })
-      .catch((error) => {
-        console.error('Error al cargar resumen del dashboard:', error);
-      });
+    const cargarTotales = (forzar = false) => {
+      if (!forzar) {
+        const cache = leerCacheDashboard();
+        if (cache?.totales) {
+          setTotales(cache.totales);
+          return;
+        }
+      }
+
+      cargarTotalesDesdeApi()
+        .then((resultado) => {
+          if (!montado) return;
+          setTotales(resultado.totales);
+        })
+        .catch((error) => {
+          console.error('Error al cargar resumen del dashboard:', error);
+        });
+    };
+
+    cargarTotales();
+
+    const onInvalidate = () => cargarTotales(true);
+    window.addEventListener(DASHBOARD_INVALIDATE_EVENT, onInvalidate);
+
     return () => {
       montado = false;
+      window.removeEventListener(DASHBOARD_INVALIDATE_EVENT, onInvalidate);
     };
   }, [activo]);
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative overflow-hidden">
 
-    
       <div className="absolute top-0 left-0 w-full h-[100px] sm:h-[110px] overflow-hidden pointer-events-none z-0 rounded-b-xl">
-        <img 
-          src="/header.png" 
-          alt="Header background" 
+        <img
+          src="/header.png"
+          alt="Header background"
           className="w-full h-full object-cover object-right"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/85 to-transparent"></div>
       </div>
-
 
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div>
@@ -111,7 +120,6 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
         </div>
       </div>
 
-    
       <div className="relative z-10 mt-10 sm:mt-15 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 sm:rounded-2xl min-w-0">
         <StatCard
           title="Comuneros registrados"
@@ -147,7 +155,6 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
         />
       </div>
 
-     
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 flex flex-col gap-6 min-w-0">
           <IncomeChart />
