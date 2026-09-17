@@ -12,7 +12,7 @@ import {
   guardarCacheDashboard,
   invalidarCacheDashboard,
   DASHBOARD_INVALIDATE_EVENT,
-} from '@/features/menu/services/dashboardCache'; // ajusta la ruta real
+} from '@/features/menu/services/dashboardCache'; 
 
 let cargaDashboardEnCurso: Promise<{
   totales: { comuneros: number; parcelas: number };

@@ -7,6 +7,7 @@ import {
   ParcelHistoryData,
   ParcelListParams,
 } from '../types/api.types';
+import { invalidarCacheDashboard } from '@/features/menu/services/dashboardCache'; 
 
 export { ApiError } from './http';
 
@@ -21,24 +22,41 @@ const query = (params: ParcelListParams = {}) => {
 export const plotsService = {
   list: (params: ParcelListParams = {}) =>
     http<ApiEnvelope<{ items: ParcelDTO[]; total: number; page: number; limit: number }>>(`/parcel?${query(params)}`),
+
   create: (payload: CreateParcelPayload) =>
-    http<ApiEnvelope<ParcelDTO>>('/parcel', { method: 'POST', body: JSON.stringify(payload) }).then((res) => res.data),
+    http<ApiEnvelope<ParcelDTO>>('/parcel', { method: 'POST', body: JSON.stringify(payload) }).then((res) => {
+      invalidarCacheDashboard(); // nueva parcela => cambia el total
+      return res.data;
+    }),
+
+  delete: (id: string) =>
+    http(`/parcel/${id}`, { method: 'DELETE' }).then((res) => {
+      invalidarCacheDashboard(); // parcela eliminada => cambia el total
+      return res;
+    }),
+
   detail: (id: string) =>
     http<ApiEnvelope<ParcelDetailDTO>>(`/parcel/${id}`).then((res) => res.data),
+
   history: (id: string, page = 1, limit = 12, ownerName?: string) =>
     http<ApiEnvelope<ParcelHistoryData>>(`/parcel/${id}/history?${new URLSearchParams({
       page: String(page),
       limit: String(limit),
       ...(ownerName ? { ownerName } : {}),
     }).toString()}`),
+
   initialOwners: (id: string, owners: Array<{ personId: string; hectares: number; certificate: string; transferType: string }>) =>
     http(`/parcel/${id}/initial-owner`, { method: 'POST', body: JSON.stringify({ owners }) }),
+
   historyCreate: (id: string, historicalOwners: unknown[]) =>
     http(`/parcel/${id}/history`, { method: 'POST', body: JSON.stringify({ historicalOwners }) }),
+
   transfer: (id: string, payload: { oldPersonId: string; newPersonId: string; newCertificate: string; transferType: string }) =>
     http(`/parcel/${id}/transfer`, { method: 'POST', body: JSON.stringify(payload) }),
+
   usageRight: (id: string, personId: string) =>
     http(`/parcel/${id}/usage-rights`, { method: 'POST', body: JSON.stringify({ personId }) }),
+
   removeUsageRight: (id: string, personId: string) =>
     http(`/parcel/${id}/usage-rights/${personId}`, { method: 'DELETE' }),
 };

@@ -16,7 +16,7 @@ export function guardarCacheDashboard(resultado: { totales: { comuneros: number;
   try {
     window.localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(resultado));
   } catch {
-    // localStorage puede fallar (modo privado, cuota llena, etc.) — no es crítico
+   
   }
 }
 
