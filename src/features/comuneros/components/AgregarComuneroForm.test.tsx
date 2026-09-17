@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { AgregarComuneroForm } from './AgregarComuneroForm'; 
 
 const getNeighborhoodsMock = vi.fn();
 
@@ -14,12 +15,7 @@ describe('AgregarComuneroForm', () => {
 
     const onGuardar = vi.fn(async () => new Promise((resolve) => setTimeout(resolve, 50)));
 
-    render(
-      <form>
-        <button type="button">dummy</button>
-      </form>
-    );
-
+   
     const { unmount } = render(
       <AgregarComuneroForm
         onClose={() => {}}

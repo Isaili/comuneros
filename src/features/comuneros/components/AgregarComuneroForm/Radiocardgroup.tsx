@@ -17,10 +17,7 @@ interface RadioCardGroupProps {
 
 const DEFAULT_ACTIVE = 'border-emerald-600 bg-emerald-50/25 text-emerald-800';
 
-/**
- * Grupo de tarjetas de opción única (radio) con estilo tipo "chip".
- * Reemplaza los bloques de radios duplicados de tipoComunero / estadoPersona.
- */
+
 export const RadioCardGroup: React.FC<RadioCardGroupProps> = ({
   name,
   value,
