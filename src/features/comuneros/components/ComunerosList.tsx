@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Edit2, Trash2, ChevronLeft, ChevronRight, UserCheck, UserPlus, Users } from 'lucide-react';
+import { Edit2, Trash2, ChevronLeft, ChevronRight, UserCheck, UserPlus, Home, Users } from 'lucide-react';
 import { Comunero } from '@/features/comuneros/types/types';
+import { getPersonTypeConfig, PersonTypeKey } from '@/features/comuneros/utils/Persontype';
 
 interface ListProps {
   comuneros: Comunero[];
@@ -13,6 +14,12 @@ interface ListProps {
   onPageChange: (page: number) => void;
 }
 
+const TIPO_ICONS: Record<PersonTypeKey, React.ElementType> = {
+  comunero: UserCheck,
+  avecindado: UserPlus,
+  poblador: Home,
+};
+
 const Avatar: React.FC<{ nombre: string; apellidoPaterno: string; foto?: string; tipo: string }> = ({
   nombre,
   apellidoPaterno,
@@ -21,11 +28,10 @@ const Avatar: React.FC<{ nombre: string; apellidoPaterno: string; foto?: string;
 }) => {
   const [error, setError] = useState(false);
   const iniciales = `${nombre?.[0] ?? ''}${apellidoPaterno?.[0] ?? ''}`.toUpperCase();
-  const esComunero = tipo === 'comunero' || tipo === 'COMMONER';
-  const colorTipo = esComunero ? 'from-emerald-400 to-[#006837]' : 'from-amber-300 to-amber-500';
+  const { avatarGradient } = getPersonTypeConfig(tipo);
 
   return (
-    <div className={`shrink-0 rounded-xl bg-gradient-to-br ${colorTipo} p-[2px]`}>
+    <div className={`shrink-0 rounded-xl bg-gradient-to-br ${avatarGradient} p-[2px]`}>
       {!foto || error ? (
         <div className="w-10 h-10 rounded-[10px] bg-white text-[#006837] flex items-center justify-center font-bold text-xs">
           {iniciales || '?'}
@@ -43,17 +49,15 @@ const Avatar: React.FC<{ nombre: string; apellidoPaterno: string; foto?: string;
 };
 
 const TipoBadge: React.FC<{ tipo: string }> = ({ tipo }) => {
-  const esComunero = tipo === 'comunero' || tipo === 'COMMONER';
+  const config = getPersonTypeConfig(tipo);
+  const Icon = TIPO_ICONS[config.key];
 
-  return esComunero ? (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-      <UserCheck className="w-3 h-3" aria-hidden="true" />
-      Comunero
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100">
-      <UserPlus className="w-3 h-3" aria-hidden="true" />
-      Avecindado
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold border ${config.badgeBg} ${config.badgeText} ${config.badgeBorder}`}
+    >
+      <Icon className="w-3 h-3" aria-hidden="true" />
+      {config.label}
     </span>
   );
 };
@@ -109,7 +113,7 @@ export const ComunerosList: React.FC<ListProps> = ({
         <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center mb-4">
           <Users className="w-6 h-6 text-gray-300" aria-hidden="true" />
         </div>
-        <p className="text-gray-500 font-semibold text-sm">Sin Miembros registrados</p>
+        <p className="text-gray-500 font-semibold text-sm">Sin miembros registrados</p>
         <p className="text-gray-400 text-xs mt-1">Los registros que agregues aparecerán aquí.</p>
       </div>
     );

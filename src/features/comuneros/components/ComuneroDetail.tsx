@@ -1,14 +1,37 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Calendar, Heart, MapPin, Phone, FileText, Edit2, Trash2, UserCheck, UserPlus, QrCode, Download, Copy } from 'lucide-react';
+import { Calendar, Heart, MapPin, Phone, FileText, Edit2, Trash2, UserCheck, UserPlus, Home, QrCode, Download, Copy } from 'lucide-react';
 import { Comunero } from '@/features/comuneros/types/types';
+import { getPersonTypeConfig, PersonTypeKey } from '../utils/Persontype';
 
 interface DetailProps {
   comunero: Comunero | any;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
+
+// Mapa de íconos según la llave devuelta por getPersonTypeConfig
+const TIPO_ICONS: Record<PersonTypeKey, React.ElementType> = {
+  comunero: UserCheck,
+  avecindado: UserPlus,
+  poblador: Home,
+};
+
+// Componente auxiliar para renderizar la insignia alineada a las configuraciones reales
+const TipoBadge: React.FC<{ tipo: string }> = ({ tipo }) => {
+  const config = getPersonTypeConfig(tipo);
+  const Icon = TIPO_ICONS[config.key];
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold border ${config.badgeBg} ${config.badgeText} ${config.badgeBorder}`}
+    >
+      <Icon className="w-3 h-3" aria-hidden="true" />
+      {config.label}
+    </span>
+  );
+};
 
 // Función auxiliar para formatear fechas de YYYY-MM-DD a DD/MM/YYYY de forma segura
 function formatFecha(fechaRaw?: string | null): string {
@@ -67,7 +90,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
 
   const folio = comunero.folioComunero ?? comunero.folio ?? id.substring(0, 8).toUpperCase();
 
-  // QR Code: usa un valor consistente para mostrarse y validarse después desde el kiosco
+  // QR Code
   const qrValue = typeof comunero.qrCode === 'string' ? comunero.qrCode.trim() : '';
   const qrUrl = qrValue
     ? `https://quickchart.io/qr?text=${encodeURIComponent(qrValue)}&size=1200&margin=2&ecLevel=H&format=png`
@@ -109,7 +132,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
     }
   };
 
-  // Manejo de terrenos (evita errores si terrenos viene undefined)
+  // Manejo de terrenos
   const terrenos = Array.isArray(comunero.terrenos) ? comunero.terrenos : [];
   const parcelas = terrenos.filter((t: any) => t.tipo === 'Parcela' || t.type === 'PARCEL');
   const lotes = terrenos.filter((t: any) => t.tipo === 'Lote' || t.type === 'LOT');
@@ -135,17 +158,8 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold text-gray-900">{nombreCompleto}</h2>
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold ${
-                tipo === 'comunero' || tipo === 'COMMONER'
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                  : 'bg-amber-50 text-amber-700 border border-amber-100'
-              }`}>
-                {tipo === 'comunero' || tipo === 'COMMONER' ? (
-                  <><UserCheck className="w-3 h-3" /> Comunero</>
-                ) : (
-                  <><UserPlus className="w-3 h-3" /> Avecindado</>
-                )}
-              </span>
+              {/* Se reemplazó el condicional hardcoded por TipoBadge */}
+              <TipoBadge tipo={tipo} />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs font-medium text-gray-500 pt-1">
@@ -192,7 +206,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
       </div>
 
       {/* Grid de Fotografía y QR */}
-<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
         <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center text-center">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Fotografía</p>
 
@@ -234,7 +248,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
             <button
               type="button"
               onClick={handleDownloadQr}
-             disabled={!qrValue}
+              disabled={!qrValue}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#006837] text-white text-[11px] font-bold shadow-sm hover:bg-[#00552f] transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
@@ -243,7 +257,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
             <button
               type="button"
               onClick={handleCopyQrValue}
-             disabled={!qrValue}
+              disabled={!qrValue}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-[11px] font-bold hover:bg-gray-50 transition-colors"
             >
               <Copy className="w-3.5 h-3.5" />
