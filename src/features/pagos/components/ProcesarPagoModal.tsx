@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { X, CheckCircle, User, Download, ShieldCheck, Landmark } from 'lucide-react';
+import { X, CheckCircle, User, Download, ShieldCheck, Landmark, Banknote } from 'lucide-react';
 
 interface ProcesarPagoModalProps {
   type: 'parcela' | 'lote';
@@ -33,10 +33,11 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
   const handlePagar = () => setPagoCompletado(true);
   const handleFinalizar = () => onConfirmarPago(item.id);
 
-  // Recibo fijo a 20cm (largo) x 15cm (ancho) en el PDF final
+  // Tamaño de DISEÑO del recibo oculto (no lo cambies, el JSX usa estas medidas)
   const PDF_WIDTH_MM = 200;
   const PDF_HEIGHT_MM = 150;
 
+  // Tamaño FINAL de la hoja del PDF (mantén siempre la proporción 4:3)
   const OUTPUT_WIDTH_MM = 170;
   const OUTPUT_HEIGHT_MM = OUTPUT_WIDTH_MM * (PDF_HEIGHT_MM / PDF_WIDTH_MM);
 
@@ -85,7 +86,7 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
             });
           }
         },
-        // Formato exacto en mm: 200 x 150 (20 x 15 cm), landscape
+        // Hoja final más pequeña, misma proporción 4:3, landscape
         jsPDF: { unit: 'mm', format: [OUTPUT_WIDTH_MM, OUTPUT_HEIGHT_MM], orientation: 'landscape' },
         pagebreak: { mode: 'avoid-all' }
       };
@@ -98,14 +99,20 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-xs p-0 sm:p-4">
-      <div className="bg-white border border-gray-100 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-3xl overflow-y-auto max-h-[92vh] sm:max-h-[unset] flex flex-col transition-all">
+      <div
+        className={`bg-white border border-gray-100 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full ${
+          pagoCompletado ? 'max-w-3xl' : 'max-w-md'
+        } overflow-y-auto max-h-[92vh] sm:max-h-[unset] flex flex-col transition-all animate-scale-up`}
+      >
 
         {/* Cabecera del Modal */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-50 bg-gray-50/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#006837]/10 flex items-center justify-center shrink-0">
-              <Landmark className="w-4 h-4 text-[#006837]" />
-            </div>
+            {pagoCompletado && (
+              <div className="w-8 h-8 rounded-xl bg-[#006837]/10 flex items-center justify-center shrink-0">
+                <Landmark className="w-4 h-4 text-[#006837]" />
+              </div>
+            )}
             <div>
               <h3 className="text-xs sm:text-sm font-black text-gray-900">
                 {pagoCompletado ? 'Comprobante Oficial de Pago' : 'Confirmación de Liquidación'}
@@ -121,7 +128,7 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
         </div>
 
         {/* Contenido Dinámico */}
-        <div className="p-4 sm:p-6 space-y-4">
+        <div className={`p-4 ${pagoCompletado ? 'sm:p-6' : 'sm:p-5'} space-y-4`}>
           {!pagoCompletado ? (
             <>
               <div className="bg-gray-50/50 border border-gray-100 rounded-2xl p-3 sm:p-3.5 space-y-2">
@@ -157,16 +164,34 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
                 </div>
               </div>
 
-              <div className="bg-[#006837]/5 border border-[#006837]/10 rounded-2xl p-3.5 sm:p-4 flex justify-between items-center">
-                <span className="text-xs font-bold text-gray-700">Total Neto a Recaudar:</span>
-                <span className="text-lg sm:text-xl font-black text-[#006837] font-mono">${costoFinal.toFixed(2)}</span>
+              <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl p-3 sm:p-3.5 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                  <Banknote className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-emerald-900">Una sola exhibición</p>
+                  <p className="text-[9px] sm:text-[10px] text-emerald-700 font-semibold mt-0.5">
+                    La liquidación debe ser cubierta en efectivo al momento.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-[#1E4D3A]/5 border border-[#1E4D3A]/10 rounded-2xl p-3.5 sm:p-4 flex justify-between items-center">
+                <span className="text-xs font-bold text-gray-700">Total a Liquidar:</span>
+                <span className="text-lg sm:text-xl font-black text-[#1E4D3A] font-mono">${costoFinal.toFixed(2)}</span>
               </div>
 
               <div className="flex flex-col-reverse sm:flex-row items-center gap-2 pt-1 sm:pt-2">
-                <button onClick={onClose} className="w-full sm:w-1/2 py-2.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50">
+                <button
+                  onClick={onClose}
+                  className="w-full sm:w-1/2 py-2.5 sm:py-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+                >
                   Cancelar
                 </button>
-                <button onClick={handlePagar} className="w-full sm:w-1/2 py-2.5 bg-[#006837] hover:bg-[#00522b] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
+                <button
+                  onClick={handlePagar}
+                  className="w-full sm:w-1/2 py-2.5 sm:py-3 bg-[#1E4D3A] hover:bg-[#153629] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                >
                   <CheckCircle className="w-4 h-4" />
                   Hacer Pago
                 </button>
