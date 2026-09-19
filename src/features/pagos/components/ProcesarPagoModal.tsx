@@ -37,6 +37,9 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
   const PDF_WIDTH_MM = 200;
   const PDF_HEIGHT_MM = 150;
 
+  const OUTPUT_WIDTH_MM = 170;
+  const OUTPUT_HEIGHT_MM = OUTPUT_WIDTH_MM * (PDF_HEIGHT_MM / PDF_WIDTH_MM);
+
   const handleDescargarPDF = async () => {
     if (!pdfRef.current || generandoPDF) return;
     setGenerandoPDF(true);
@@ -54,7 +57,7 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
         filename: `Recibo_Predial_${type}_${item.numero}.pdf`,
         image: { type: 'jpeg', quality: 1.0 },
         html2canvas: {
-          scale: 3,
+          scale: 4,
           useCORS: true,
           allowTaint: true,
           imageTimeout: 0,
@@ -83,7 +86,7 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
           }
         },
         // Formato exacto en mm: 200 x 150 (20 x 15 cm), landscape
-        jsPDF: { unit: 'mm', format: [PDF_WIDTH_MM, PDF_HEIGHT_MM], orientation: 'landscape' },
+        jsPDF: { unit: 'mm', format: [OUTPUT_WIDTH_MM, OUTPUT_HEIGHT_MM], orientation: 'landscape' },
         pagebreak: { mode: 'avoid-all' }
       };
 
