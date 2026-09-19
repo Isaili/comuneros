@@ -1,9 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { X, CircleDollarSign, Printer } from 'lucide-react';
 import { Multa } from './types/types';
 import { AsistenciaHistorial } from './components/AsistenciaHistorial';
+import { ReciboMultaPDF } from './components/ReciboMultaPDF';
+import { descargarReciboPDF } from './utils/recibo.utils';
 import { historialMock } from './mocks/historialMock';
 
 interface DetailProps {
@@ -18,6 +20,19 @@ const formatoMoneda = (valor: number) =>
 export const MultaDetail: React.FC<DetailProps> = ({ multa, onClose, onPagarClick }) => {
   const esPagada = multa.estado === 'pagada';
   const historial = historialMock.find((h) => h.comuneroId === multa.comuneroId);
+
+  const pdfRef = useRef<HTMLDivElement>(null);
+  const [generandoPDF, setGenerandoPDF] = useState(false);
+
+  const handleReimprimir = async () => {
+    if (!pdfRef.current || generandoPDF) return;
+    setGenerandoPDF(true);
+    try {
+      await descargarReciboPDF(pdfRef.current, `Recibo_Multa_${multa.folio}.pdf`);
+    } finally {
+      setGenerandoPDF(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 overflow-y-auto">
@@ -110,8 +125,14 @@ export const MultaDetail: React.FC<DetailProps> = ({ multa, onClose, onPagarClic
             Cerrar
           </button>
           {esPagada ? (
-            <button className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-100 rounded-lg text-sm font-bold text-gray-700 transition-colors flex items-center gap-1.5 shadow-xs">
-              <Printer className="w-3.5 h-3.5 text-gray-500" /> Reimprimir recibo
+            <button
+              type="button"
+              onClick={handleReimprimir}
+              disabled={generandoPDF}
+              className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed rounded-lg text-sm font-bold text-gray-700 transition-colors flex items-center gap-1.5 shadow-xs"
+            >
+              <Printer className="w-3.5 h-3.5 text-gray-500" />
+              {generandoPDF ? 'Generando PDF…' : 'Reimprimir recibo'}
             </button>
           ) : (
             <button
@@ -123,6 +144,8 @@ export const MultaDetail: React.FC<DetailProps> = ({ multa, onClose, onPagarClic
           )}
         </div>
       </div>
+
+      {esPagada && <ReciboMultaPDF ref={pdfRef} multa={multa} />}
     </div>
   );
 };
