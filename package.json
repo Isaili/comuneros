@@ -16,6 +16,7 @@
     "cookie-parser": "^1.4.7",
     "csrf-csrf": "^4.0.3",
     "dotenv": "^17.4.2",
+    "html2pdf.js": "^0.14.0",
     "jsonwebtoken": "^9.0.3",
     "jsqr": "^1.4.0",
     "lucide-react": "^1.23.0",
@@ -52,5 +53,11 @@
     "typescript": "^5",
     "vite": "latest",
     "vitest": "latest"
+  },
+  "allowScripts": {
+    "core-js@3.50.0": true,
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.2": true,
+    "fsevents@2.3.3": true
   }
 }

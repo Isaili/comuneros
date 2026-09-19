@@ -177,7 +177,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
                 <Calendar className="w-4 h-4 text-gray-400 shrink-0" /> Reg: {fechaRegistroFormatted}
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-gray-400 shrink-0" /> Vecindario/Colonia: {vecindario}
+                <MapPin className="w-4 h-4 text-gray-400 shrink-0" /> Barrio/Colonia: {vecindario}
               </div>
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-gray-400 shrink-0" /> Folio: {folio}

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { X, CheckCircle, Receipt, User, Printer } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, CheckCircle, User, Download } from 'lucide-react';
 
 interface ProcesarPagoModalProps {
   type: 'parcela' | 'lote';
@@ -17,38 +17,59 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
   onConfirmarPago
 }) => {
   const [pagoCompletado, setPagoCompletado] = useState(item.estadoPredial === 'Pagado');
-  const fechaHoy = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const reciboRef = useRef<HTMLDivElement>(null);
 
-  // 1. Obtener la superficie numérica si es parcela (Ej: "2.50 ha" -> 2.50)
+  const fechaHoy = new Date().toLocaleDateString('es-MX', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  });
+
   const hectareas = type === 'parcela' ? parseFloat(item.superficie) || 1 : 1;
-
-  // 2. Determinar tarifas base
-  // Parcelas: $5 por ha | Lotes: $20 tarifa fija
   const tarifaBase = type === 'parcela' ? hectareas * 5 : 20;
-
-  // 3. Aplicar regla del recargo por mes (Julio > Marzo), por ende se duplica
   const costoFinal = tarifaBase * 2; 
 
-  const handlePagar = () => {
-    setPagoCompletado(true);
-  };
+  const handlePagar = () => setPagoCompletado(true);
+  const handleFinalizar = () => onConfirmarPago(item.id);
 
-  const handleFinalizar = () => {
-    onConfirmarPago(item.id);
-  };
+  const handleDescargarPDF = async () => {
+    if (!reciboRef.current) return;
 
-  const handleImprimir = () => {
-    window.print();
+    const html2pdf = (await import('html2pdf.js')).default as any;
+
+    const opciones: any = {
+      margin: 5,
+      filename: `Recibo_Predial_${type}_${item.numero}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 3, 
+        useCORS: true,
+        logging: false,
+        onclone: (clonedDoc: Document) => {
+          Array.from(clonedDoc.querySelectorAll('style, link[rel="stylesheet"]')).forEach((el) => {
+            if (el.textContent && (el.textContent.includes('lab(') || el.textContent.includes('oklab(') || el.textContent.includes('oklch('))) {
+              el.textContent = el.textContent
+                .replace(/lab\([^)]+\)/g, '#000000')
+                .replace(/oklab\([^)]+\)/g, '#000000')
+                .replace(/oklch\([^)]+\)/g, '#000000')
+                .replace(/lch\([^)]+\)/g, '#000000');
+            }
+          });
+        }
+      }, 
+      jsPDF: { unit: 'mm', format: 'a5', orientation: 'landscape' }
+    };
+
+    html2pdf().set(opciones).from(reciboRef.current).save();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-xs p-0 sm:p-4 print:bg-white print:p-0">
-      
-      {/* Contenedor principal del Modal */}
-      <div className="bg-white border border-gray-100 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[90vh] sm:max-h-[unset] flex flex-col animate-scale-up print:shadow-none print:border-none print:w-full print:max-w-full">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-xs p-0 sm:p-4">
+      {/* Se amplió el contenedor del Modal a max-w-3xl (+30% aprox) */}
+      <div className="bg-white border border-gray-100 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-3xl overflow-y-auto max-h-[92vh] sm:max-h-[unset] flex flex-col transition-all">
         
-        {/* Cabecera (Se oculta al imprimir) */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-50 bg-gray-50/50 print:hidden">
+        {/* Cabecera del Modal */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-50 bg-gray-50/50">
           <div>
             <h3 className="text-xs sm:text-sm font-black text-gray-900">
               {pagoCompletado ? 'Comprobante Oficial de Pago' : 'Confirmación de Liquidación'}
@@ -63,12 +84,9 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
         </div>
 
         {/* Contenido Dinámico */}
-        <div className="p-4 sm:p-5 space-y-4 print:p-0">
-          
+        <div className="p-4 sm:p-6 space-y-4">
           {!pagoCompletado ? (
-            /* ================= VISTA DE COBRO ANTES DEL PAGO ================= */
             <>
-              {/* Información del Contribuyente */}
               <div className="bg-gray-50/50 border border-gray-100 rounded-2xl p-3 sm:p-3.5 space-y-2">
                 <div className="flex items-start gap-2 text-xs font-semibold text-gray-500">
                   <User className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
@@ -85,7 +103,6 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
                 )}
               </div>
 
-              {/* Desglose Matemático */}
               <div className="space-y-2">
                 <h4 className="font-bold text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide">Desglose de derechos</h4>
                 <div className="bg-white border border-gray-100 rounded-2xl p-3 space-y-2.5 text-xs font-semibold text-gray-600">
@@ -103,90 +120,137 @@ export const ProcesarPagoModal: React.FC<ProcesarPagoModalProps> = ({
                 </div>
               </div>
 
-              {/* Banner de Modalidad Única */}
-              <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl p-3 sm:p-3.5 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 font-bold text-xs sm:text-sm">$</div>
-                <div>
-                  <p className="text-xs font-bold text-emerald-900">Una sola exhibición</p>
-                  <p className="text-[9px] sm:text-[10px] text-emerald-700 font-semibold mt-0.5">La liquidación debe ser cubierta en efectivo al momento.</p>
-                </div>
-              </div>
-
-              {/* Gran Total */}
               <div className="bg-[#006837]/5 border border-[#006837]/10 rounded-2xl p-3.5 sm:p-4 flex justify-between items-center">
                 <span className="text-xs font-bold text-gray-700">Total Neto a Recaudar:</span>
                 <span className="text-lg sm:text-xl font-black text-[#006837] font-mono">${costoFinal.toFixed(2)}</span>
               </div>
 
-              {/* Acciones de Cobro */}
               <div className="flex flex-col-reverse sm:flex-row items-center gap-2 pt-1 sm:pt-2">
-                <button
-                  onClick={onClose}
-                  className="w-full sm:w-1/2 py-2.5 sm:py-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors"
-                >
+                <button onClick={onClose} className="w-full sm:w-1/2 py-2.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50">
                   Cancelar
                 </button>
-                <button
-                  onClick={handlePagar}
-                  className="w-full sm:w-1/2 py-2.5 sm:py-3 bg-[#006837] hover:bg-[#00522b] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-                >
+                <button onClick={handlePagar} className="w-full sm:w-1/2 py-2.5 bg-[#006837] hover:bg-[#00522b] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
                   <CheckCircle className="w-4 h-4" />
                   Hacer Pago
                 </button>
               </div>
             </>
           ) : (
-            /* ================= VISTA COMPLEMENTARIA: RECIBO IMPRIMIBLE ================= */
             <>
-              {/* Recibo Formato Ticket */}
-              <div className="border border-dashed border-gray-200 rounded-2xl p-4 sm:p-5 bg-slate-50/50 space-y-4 text-center font-semibold text-xs text-gray-500 relative print:border-none print:bg-white print:p-0">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 bg-emerald-100 text-emerald-800 text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full print:hidden">
-                  Transacción Exitosa
-                </div>
+              {/* ÁREA DEL RECIBO (Se expandió el padding y espaciado para darle más largo) */}
+              <div 
+                ref={reciboRef} 
+                style={{ backgroundColor: '#ffffff', borderColor: '#a7f3d0' }}
+                className="relative border-2 rounded-2xl p-7 space-y-5 font-semibold text-xs overflow-hidden shadow-sm"
+              >
+                {/* Imagen de Fondo más visible */}
+                <img 
+                  src="/fondo.png" 
+                  alt="Fondo Iglesia Copainalá" 
+                  className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none z-0" 
+                />
 
-                <div className="pt-2 flex flex-col items-center">
-                  <Receipt className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-600 mb-2" />
-                  <h4 className="text-xs sm:text-sm font-black text-gray-900">TESORERÍA COMUNAL</h4>
-                  <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase mt-0.5">Recibo de pago predial</p>
-                </div>
+                {/* Contenido en capa superior */}
+                <div className="relative z-10 space-y-5">
+                  
+                  {/* Cabecera */}
+                  <div style={{ borderColor: '#6ee7b7' }} className="flex justify-between items-center border-b-2 pb-3">
+                    {/* Izquierda: Logo Copainalá */}
+                    <img 
+                      src="/recibo2.png" 
+                      alt="Logo Copainalá" 
+                      className="w-20 h-20 object-contain object-left" 
+                    />
+                    
+                    {/* Centro: Título */}
+                    <div className="text-center px-2">
+                      <h4 style={{ color: '#064e3b' }} className="text-sm font-black uppercase tracking-tight">Casa de Bienes Comunales</h4>
+                      <p style={{ color: '#047857' }} className="text-xs font-bold uppercase mt-0.5">Copainalá, Chiapas</p>
+                      <p style={{ color: '#6b7280' }} className="text-[9px] uppercase mt-0.5 tracking-wider font-semibold">Tesorería y Administración Comunal</p>
+                      <span style={{ backgroundColor: 'rgba(236, 253, 245, 0.9)', color: '#064e3b', borderColor: '#a7f3d0' }} className="inline-block mt-1.5 border text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full">
+                        Recibo Oficial de Pago
+                      </span>
+                    </div>
 
-                <div className="border-t border-b border-dashed border-gray-200 py-3 sm:py-3.5 space-y-2 text-left font-semibold">
-                  <div className="flex justify-between gap-4"><span className="text-gray-400">Contribuyente:</span><span className="text-gray-900 font-bold text-right truncate max-w-[180px] sm:max-w-[220px]">{item.propietarios.join(', ')}</span></div>
-                  <div className="flex justify-between gap-4"><span className="text-gray-400">Concepto:</span><span className="text-gray-900 text-right">Predial {type === 'parcela' ? 'Parcela' : 'Lote'} #{item.numero}</span></div>
-                  {type === 'parcela' && <div className="flex justify-between"><span className="text-gray-400">Superficie:</span><span className="text-gray-900">{item.superficie}</span></div>}
-                  <div className="flex justify-between"><span className="text-gray-400">Fecha de Pago:</span><span className="text-gray-900">{fechaHoy}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-400">Forma de Pago:</span><span className="text-gray-900">Efectivo</span></div>
-                </div>
+                    {/* Derecha: recibo1 */}
+                    <img 
+                      src="/recibo1.png" 
+                      alt="Escudo Recibo" 
+                      className="w-32 h-20 object-contain object-right" 
+                    />
+                  </div>
 
-                <div className="flex justify-between items-center bg-white border border-gray-100 rounded-xl p-3">
-                  <span className="font-bold text-gray-700 text-xs">Monto Cobrado</span>
-                  <span className="text-sm sm:text-base font-black text-emerald-700 font-mono">${costoFinal.toFixed(2)}</span>
-                </div>
+                  {/* Folio y Fecha */}
+                  <div style={{ backgroundColor: 'rgba(240, 253, 244, 0.85)', borderColor: '#d1fae5' }} className="flex justify-between items-center text-xs p-3 rounded-xl border backdrop-blur-[1px]">
+                    <div>
+                      <span style={{ color: '#6b7280' }} className="font-bold">Folio: </span>
+                      <span style={{ color: '#064e3b' }} className="font-black font-mono">REC-{type.toUpperCase()}-{item.numero}-2026</span>
+                    </div>
+                    <div>
+                      <span style={{ color: '#6b7280' }} className="font-bold">Fecha: </span>
+                      <span style={{ color: '#111827' }} className="font-bold">{fechaHoy}</span>
+                    </div>
+                  </div>
 
-                <p className="text-[8px] sm:text-[9px] text-gray-400 leading-normal pt-1">
-                  Este documento sirve como comprobante oficial de no adeudo para el ejercicio fiscal actual de 2026.
-                </p>
+                  {/* Datos del Recibo */}
+                  <div style={{ borderColor: '#d1d5db' }} className="space-y-2.5 border-b border-dashed pb-3 text-left text-xs">
+                    <div style={{ borderColor: 'rgba(243, 244, 246, 0.8)' }} className="flex justify-between gap-2 border-b pb-1.5">
+                      <span style={{ color: '#4b5563' }} className="font-semibold">Contribuyente:</span>
+                      <span style={{ color: '#111827' }} className="font-bold text-right">{item.propietarios.join(', ')}</span>
+                    </div>
+                    <div style={{ borderColor: 'rgba(243, 244, 246, 0.8)' }} className="flex justify-between gap-2 border-b pb-1.5">
+                      <span style={{ color: '#4b5563' }} className="font-semibold">Concepto:</span>
+                      <span style={{ color: '#111827' }} className="font-bold text-right">Pago Predial {type === 'parcela' ? 'Parcela' : 'Lote'} #{item.numero}</span>
+                    </div>
+                    {type === 'parcela' && (
+                      <div style={{ borderColor: 'rgba(243, 244, 246, 0.8)' }} className="flex justify-between gap-2 border-b pb-1.5">
+                        <span style={{ color: '#4b5563' }} className="font-semibold">Superficie Terreno:</span>
+                        <span style={{ color: '#111827' }} className="font-bold">{item.superficie}</span>
+                      </div>
+                    )}
+                    <div style={{ borderColor: 'rgba(243, 244, 246, 0.8)' }} className="flex justify-between gap-2 border-b pb-1.5">
+                      <span style={{ color: '#4b5563' }} className="font-semibold">Forma de Pago:</span>
+                      <span style={{ color: '#111827' }} className="font-bold">Efectivo (Una sola exhibición)</span>
+                    </div>
+                  </div>
+
+                  {/* Importe Resaltado */}
+                  <div style={{ backgroundColor: 'rgba(249, 250, 251, 0.85)', borderColor: '#e5e7eb' }} className="flex justify-between items-center border rounded-xl p-3.5 backdrop-blur-[1px]">
+                    <span style={{ color: '#374151' }} className="font-bold text-xs uppercase">Monto Total Liquidado:</span>
+                    <span style={{ color: '#065f46' }} className="text-xl font-black font-mono">${costoFinal.toFixed(2)} MXN</span>
+                  </div>
+
+                  {/* Sellos / Firmas */}
+                  <div className="text-center space-y-4 pt-2">
+                    <p style={{ color: '#374151' }} className="text-[9px] leading-normal italic font-semibold">
+                      Este recibo es comprobante legal de no adeudo del impuesto predial comunal correspondiente al ejercido fiscal actual.
+                    </p>
+                    
+                    <div className="pt-4 flex justify-around items-end">
+                      <div style={{ borderColor: '#4b5563' }} className="border-t w-36 text-center pt-1.5">
+                        <p style={{ color: '#1f2937' }} className="text-[8px] font-bold uppercase">Tesorero Comunal</p>
+                      </div>
+                      <div style={{ borderColor: '#4b5563' }} className="border-t w-36 text-center pt-1.5">
+                        <p style={{ color: '#1f2937' }} className="text-[8px] font-bold uppercase">Firma / Sello Recibido</p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
 
-              {/* Botonera Recibo (Oculta por completo al imprimir) */}
-              <div className="flex flex-col sm:flex-row items-center gap-2 pt-1 sm:pt-2 print:hidden">
-                <button
-                  onClick={handleImprimir}
-                  className="w-full sm:w-1/2 py-2.5 sm:py-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <Printer className="w-4 h-4 text-gray-500" />
-                  Imprimir Recibo
+              {/* Botones */}
+              <div className="flex flex-col sm:flex-row items-center gap-2 pt-2">
+                <button onClick={handleDescargarPDF} className="w-full sm:w-1/2 py-3 border border-emerald-600 text-emerald-700 hover:bg-emerald-50 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors">
+                  <Download className="w-4 h-4 text-emerald-600" />
+                  Descargar Recibo (PDF)
                 </button>
-                <button
-                  onClick={handleFinalizar}
-                  className="w-full sm:w-1/2 py-2.5 sm:py-3 bg-[#006837] hover:bg-[#00522b] text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
-                >
+                <button onClick={handleFinalizar} className="w-full sm:w-1/2 py-3 bg-[#006837] hover:bg-[#00522b] text-white rounded-xl text-xs font-bold transition-colors">
                   Listo / Finalizar
                 </button>
               </div>
             </>
           )}
-
         </div>
       </div>
     </div>

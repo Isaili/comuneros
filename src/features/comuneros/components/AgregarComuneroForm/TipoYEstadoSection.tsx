@@ -20,8 +20,8 @@ export const TipoYEstadoSection: React.FC<Props> = ({ formData, errors, onChange
         onChange={onChange}
         options={[
           { value: 'comunero', label: 'Comunero', desc: 'Derechos de tierra' },
-          { value: 'avecindado', label: 'Avecindado', desc: 'Residente sin título' },
-          { value: 'poblador', label: 'Poblador', desc: 'Residente con título' },
+          { value: 'avecindado', label: 'Avecindado', desc: 'Residente con título' },
+          { value: 'poblador', label: 'Poblador', desc: 'Residente sin título' },
         ]}
         activeClassNameByValue={{ comunero: 'border-[#006837] bg-[#006837]/5 text-[#006837]' }}
       />
