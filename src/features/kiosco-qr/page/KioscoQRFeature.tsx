@@ -10,6 +10,7 @@ import { ComuneroPanel } from '../components/ComuneroPanel';
 import { NotificacionCierre } from '../components/NotificacionCierre';
 import { ConfirmarCierreReunionModal } from '../components/modals/ConfirmarCierreReunionModal';
 import { CrearReunionModal } from '../components/modals/CrearReunionModal';
+import { AsistenciaPasadaModal } from '../components/modals/AsistenciaPasadaModal';
 import { AvisoProximoCierre } from '../components/Avisoproximocierre';
 import { Reunion, AsistenteRegistro } from '../types/types';
 import { assembliesApi, assemblyToReunion, attendanceToRegistro, obtenerItemsPaginados } from '../services/assembliesApi';
@@ -47,6 +48,7 @@ export default function KioscoQRFeature() {
   const [reunionAsistentesId, setReunionAsistentesId] = useState<string | null>(null);
   const [asistentesReunion, setAsistentesReunion] = useState<AsistenteRegistro[]>([]);
   const [cargandoAsistentes, setCargandoAsistentes] = useState(false);
+  const [reunionAsistenciaPasada, setReunionAsistenciaPasada] = useState<Reunion | null>(null);
   const [avisoProximoCierre, setAvisoProximoCierre] = useState<string | null>(null);
   const [notificacionCierre, setNotificacionCierre] = useState<string | null>(null);
   const [salidasHabilitadas, setSalidasHabilitadas] = useState(false);
@@ -453,9 +455,13 @@ export default function KioscoQRFeature() {
           />
           <ProximasReunionesList
             reuniones={reunionesPasadas}
-            onSeleccionar={seleccionarReunionDestacada}
+            onSeleccionar={(reunionId) => {
+              const reunion = reuniones.find((r) => r.id === reunionId);
+              if (reunion) setReunionAsistenciaPasada(reunion);
+            }}
             onNuevaReunion={() => setModalCrear(true)}
             titulo="Reuniones pasadas"
+            etiquetaBoton="Ver asistencia"
           />
           {reunionAsistentesId && (
             <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
@@ -495,6 +501,14 @@ export default function KioscoQRFeature() {
           totalAsistentes={asistentes.length}
           onClose={() => setModalCerrar(false)}
           onConfirmar={confirmarCierre}
+        />
+      )}
+
+      {reunionAsistenciaPasada && (
+        <AsistenciaPasadaModal
+          reunionId={reunionAsistenciaPasada.id}
+          reunionNombre={reunionAsistenciaPasada.nombre}
+          onClose={() => setReunionAsistenciaPasada(null)}
         />
       )}
 

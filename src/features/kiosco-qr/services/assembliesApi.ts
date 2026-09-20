@@ -17,7 +17,7 @@ interface AssemblyDTO {
   totalAttendees?: number;
 }
 
-interface AttendanceDTO {
+export interface AttendanceDTO {
   personId?: string;
   fullName?: string;
   photo?: string;
@@ -28,6 +28,7 @@ interface AttendanceDTO {
   checkOutAt?: string;
   recordedAt?: string | null;
   exitTime?: string | null;
+  observations?: string | null;
 }
 
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'JUSTIFIED' | 'LEFT_EARLY';

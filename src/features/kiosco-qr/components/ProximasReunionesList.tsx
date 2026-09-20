@@ -12,6 +12,7 @@ interface ProximasReunionesListProps {
   onNuevaReunion: () => void;
   onEditar?: (reunion: Reunion) => void;
   titulo?: string;
+  etiquetaBoton?: string;
 }
 
 const formatoFecha = (fecha: string) =>
@@ -25,6 +26,7 @@ export const ProximasReunionesList: React.FC<ProximasReunionesListProps> = ({
   onNuevaReunion,
   onEditar,
   titulo = 'Próximas asambleas',
+  etiquetaBoton = 'Ver asistentes',
 }) => {
   const [pagina, setPagina] = React.useState(1);
   const totalPaginas = Math.max(1, Math.ceil(reuniones.length / 5));
@@ -72,7 +74,7 @@ export const ProximasReunionesList: React.FC<ProximasReunionesListProps> = ({
                     onClick={() => onSeleccionar(r.id)}
                     className="inline-flex items-center gap-1 rounded-lg border border-[#1E4D3A]/15 bg-[#1E4D3A]/5 px-2 py-1.5 text-[10px] font-bold text-[#1E4D3A] hover:bg-[#1E4D3A]/10"
                   >
-                    <Users className="w-3 h-3" /> Ver asistentes
+                    <Users className="w-3 h-3" /> {etiquetaBoton}
                   </button>
                   {onEditar && (
                     <button type="button" onClick={() => onEditar(r)} className="p-1.5 rounded-lg text-gray-400 hover:text-[#1E4D3A] hover:bg-[#1E4D3A]/10" aria-label={`Editar ${r.nombre}`}>
