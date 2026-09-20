@@ -42,7 +42,7 @@ export const AsistenciaPasadaModal: React.FC<AsistenciaPasadaModalProps> = ({ re
   useEffect(() => {
     setCargando(true);
     setError(null);
-    assembliesApi.asistencias(reunionId, { page: 1, limit: 200 })
+    assembliesApi.asistencias(reunionId, { page: 1, limit: 100 })
       .then((response) => setRegistros(obtenerItemsPaginados(response.data.data)))
       .catch((err) => setError(err instanceof Error ? err.message : 'No se pudo cargar la asistencia.'))
       .finally(() => setCargando(false));
