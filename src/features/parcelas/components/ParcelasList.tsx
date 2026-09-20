@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Pencil, ArrowRightLeft, Power, PowerOff, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, ArrowRightLeft, Power, PowerOff, Loader2, UserPlus } from 'lucide-react';
 import { Parcela } from '../types/domain.types';
 
 interface ListProps {
@@ -15,6 +15,7 @@ interface ListProps {
   onEditar?: (parcela: Parcela) => void;
   onToggleActivo?: (parcela: Parcela) => void;
   onTraspasar?: (parcela: Parcela) => void;
+  onDerechosUso?: (parcela: Parcela) => void;
 }
 
 export const ParcelasList: React.FC<ListProps> = ({
@@ -28,6 +29,7 @@ export const ParcelasList: React.FC<ListProps> = ({
   onEditar,
   onToggleActivo,
   onTraspasar,
+  onDerechosUso,
 }) => {
   const paginasVisibles = Array.from({ length: totalPages }, (_, i) => i + 1)
     .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1);
@@ -125,6 +127,13 @@ export const ParcelasList: React.FC<ListProps> = ({
                           title="Editar registro"
                         >
                           <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onDerechosUso?.(p)}
+                          className="p-2 border border-gray-100 rounded-lg hover:border-sky-200 hover:bg-sky-50 text-sky-600 transition-all"
+                          title="Asignar/retirar derechos de uso"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => onToggleActivo?.(p)}

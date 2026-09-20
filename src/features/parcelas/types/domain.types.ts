@@ -29,6 +29,7 @@ export interface PredialHistorico {
 }
 
 export interface TitularFila {
+  ownershipId?: string;
   comuneroId: string;
   nombreCompleto: string;
   foto?: string;
@@ -37,6 +38,13 @@ export interface TitularFila {
   calidadAgraria: 'Comunero' | 'Avecindado' | 'Posesionario' | string;
   actoJuridico: 'Asignación' | 'Cesión de derechos' | 'Sucesión' | string;
   vigencia: 'Vigente' | string;
+}
+
+export interface DerechoUsoFila {
+  comuneroId: string;
+  nombreCompleto: string;
+  foto?: string;
+  actoJuridico: string;
 }
 
 export interface Parcela {
@@ -59,6 +67,7 @@ export interface Parcela {
   titularesCount: number;
   propietarios: string[];
   titularesDetalle?: TitularFila[];
+  derechosUsoDetalle?: DerechoUsoFila[];
   historialPropietarios?: PropietarioHistorico[];
   historialPrediales?: PredialHistorico[];
 }

@@ -7,11 +7,15 @@ import { ParcelaDetail } from '../components/ParcelaDetail';
 import { AgregarParcelaForm, ParcelaFormPayload } from '../components/AgregarParcelaForm';
 import { TraspasarParcelaModal } from '../components/TraspasarParcelaModal';
 import { AsignarTitularModal } from '../components/AsignarTitularModal';
+import { CargarHistorialModal } from '../components/CargarHistorialModal';
+import { DerechosUsoModal } from '../components/DerechosUsoModal';
 import { Comunero } from '../../comuneros/types/types';
 import { comunerosApi } from '../../comuneros/services/comunerosApi';
 import { Parcela } from '../types/domain.types';
 import { useParcelas } from '../hooks/useParcelas';
 import { ApiError } from '../services/parcelas.service';
+import { plotsService } from '../services/parcelas.service';
+import { detailToParcela } from '../adapters/parcela.adapter';
 
 interface ParcelasFeatureProps {
   comunerosRegistrados?: Comunero[];
@@ -54,10 +58,12 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
     updateParcela,
     toggleActivo,
     asignarTitular,
-    actualizarTitularLocal,
     ejecutarTraspaso,
     getDetalle,
     invalidarDetalle,
+    cargarHistorial,
+    asignarDerechoUso,
+    removerDerechoUso,
   } = useParcelas();
 
   const [selectedParcela, setSelectedParcela] = useState<Parcela | null>(null);
@@ -65,7 +71,9 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
   const [parcelaAEditar, setParcelaAEditar] = useState<Parcela | null>(null);
   const [parcelaATraspasar, setParcelaATraspasar] = useState<Parcela | null>(null);
   const [parcelaAAsignarTitular, setParcelaAAsignarTitular] = useState<Parcela | null>(null);
+  const [parcelaDerechosUso, setParcelaDerechosUso] = useState<Parcela | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [mostrarCargaHistorial, setMostrarCargaHistorial] = useState(false);
 
   useEffect(() => {
     if (comunerosRegistrados.length > 0) {
@@ -80,7 +88,16 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
 
     const cargarComuneros = async () => {
       try {
-        const { comuneros } = await comunerosApi.listar(1, 200);
+        const primeraPagina = await comunerosApi.listar(1, 200);
+        const paginasRestantes = Array.from(
+          { length: Math.max(0, primeraPagina.totalPages - 1) },
+          (_, index) => comunerosApi.listar(index + 2, 200),
+        );
+        const restantes = await Promise.all(paginasRestantes);
+        const comuneros = [
+          ...primeraPagina.comuneros,
+          ...restantes.flatMap((pagina) => pagina.comuneros),
+        ].filter((comunero, index, lista) => lista.findIndex((item) => item.id === comunero.id) === index);
         if (!isMounted) return;
         setComunerosLocal(comuneros);
         if (typeof window !== 'undefined') {
@@ -115,9 +132,13 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
     }
   };
 
-  const handleEditarClick = (parcela: Parcela) => {
-    setParcelaAEditar(parcela);
-    setIsAddModalOpen(true);
+  const handleEditarClick = async (parcela: Parcela) => {
+    try {
+      setParcelaAEditar(await getDetalle(parcela.id));
+      setIsAddModalOpen(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo cargar el expediente de la parcela.');
+    }
   };
 
   const handleCloseForm = () => {
@@ -126,11 +147,22 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
   };
 
   const handleTraspasarClick = async (parcela: Parcela) => {
-    const parcelaCompleta = await getDetalle(parcela.id);
-    if (parcelaCompleta.propietarios.length === 0) {
+    const detalleActual = await plotsService.detail(parcela.id);
+    const parcelaCompleta = detailToParcela(detalleActual);
+    if (parcelaCompleta.titularesCount === 0) {
       setParcelaAAsignarTitular(parcelaCompleta);
+    } else if (!parcelaCompleta.titularesDetalle?.some((titular) => titular.ownershipId)) {
+      alert('El backend no devolvió el identificador de titularidad necesario para realizar el traspaso. Actualiza el detalle de la parcela e inténtalo de nuevo.');
     } else {
       setParcelaATraspasar(parcelaCompleta);
+    }
+  };
+
+  const handleDerechosUsoClick = async (parcela: Parcela) => {
+    try {
+      setParcelaDerechosUso(await getDetalle(parcela.id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo cargar los derechos de uso de la parcela.');
     }
   };
 
@@ -168,36 +200,32 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
 
     invalidarDetalle(parcelaAAsignarTitular.id);
     await asignarTitular(parcelaAAsignarTitular.id, datos.comuneroId, datos.nombreCompleto, datos.hectares, datos.certificate, datos.transferType);
-    actualizarTitularLocal(parcelaAAsignarTitular.id, datos);
     const actualizada = await getDetalle(parcelaAAsignarTitular.id);
     setSelectedParcela(actualizada);
     setParcelaAAsignarTitular(null);
   };
 
   const handleEjecutarTraspaso = async (datos: {
-    adquirentes: { comuneroId: string; nombre: string; certificado: string }[];
+    targetOwnershipId: string;
+    oldPersonId: string;
+    adquirente: { comuneroId: string; nombre: string; certificado: string };
     actoJuridico: string;
-    motivo: string;
-    fecha: string;
   }) => {
     if (!parcelaATraspasar) return;
-    const oldPersonId = parcelaATraspasar.titularesDetalle?.[0]?.comuneroId;
-    const nuevoTitular = datos.adquirentes[0];
-    if (!oldPersonId || !nuevoTitular) {
+    if (!datos.targetOwnershipId || !datos.oldPersonId || !datos.adquirente) {
       alert('No se pudo identificar a los titulares para realizar el traspaso.');
       return;
     }
     invalidarDetalle(parcelaATraspasar.id);
     await ejecutarTraspaso(parcelaATraspasar.id, {
-      oldPersonId,
-      newPersonId: nuevoTitular.comuneroId,
-      certificate: nuevoTitular.certificado,
+      targetOwnershipId: datos.targetOwnershipId,
+      oldPersonId: datos.oldPersonId,
+      newPersonId: datos.adquirente.comuneroId,
+      certificate: datos.adquirente.certificado,
       transferType: datos.actoJuridico === 'Cesión de Derechos'
         ? 'SALE'
         : datos.actoJuridico === 'Sucesión Hereditaria'
         ? 'INHERITANCE'
-        : datos.actoJuridico === 'Donación Directa'
-        ? 'DONATION'
         : 'SALE',
     });
     const parcelaActualizada = await getDetalle(parcelaATraspasar.id);
@@ -240,6 +268,7 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
           onTraspasar={handleTraspasarClick}
           onEditar={handleEditarClick}
           onToggleActivo={handleToggleActivo}
+          onDerechosUso={handleDerechosUsoClick}
         />
       </div>
 
@@ -254,7 +283,7 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
               </button>
             </div>
             <div className="p-5 sm:p-6">
-              <ParcelaDetail parcela={selectedParcela} />
+              <ParcelaDetail parcela={selectedParcela} onCargarHistorial={() => setMostrarCargaHistorial(true)} />
             </div>
           </div>
         </div>
@@ -284,6 +313,37 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
           comunerosRegistrados={comunerosLocal}
           onClose={() => setParcelaAAsignarTitular(null)}
           onAsignar={handleConfirmarAsignacion}
+        />
+      )}
+
+      {mostrarCargaHistorial && selectedParcela && (
+        <CargarHistorialModal
+          comuneros={comunerosLocal}
+          onClose={() => setMostrarCargaHistorial(false)}
+          onGuardar={async (registro) => {
+            await cargarHistorial(selectedParcela.id, [registro]);
+            setSelectedParcela(await getDetalle(selectedParcela.id));
+          }}
+        />
+      )}
+
+      {parcelaDerechosUso && (
+        <DerechosUsoModal
+          parcela={parcelaDerechosUso}
+          comunerosRegistrados={comunerosLocal}
+          onClose={() => setParcelaDerechosUso(null)}
+          onAsignar={async (personId) => {
+            await asignarDerechoUso(parcelaDerechosUso.id, personId);
+            if (selectedParcela?.id === parcelaDerechosUso.id) {
+              setSelectedParcela(await getDetalle(parcelaDerechosUso.id));
+            }
+          }}
+          onRemover={async (personId) => {
+            await removerDerechoUso(parcelaDerechosUso.id, personId);
+            if (selectedParcela?.id === parcelaDerechosUso.id) {
+              setSelectedParcela(await getDetalle(parcelaDerechosUso.id));
+            }
+          }}
         />
       )}
     </div>

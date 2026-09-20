@@ -8,6 +8,8 @@ export interface ParcelDTO {
 }
 
 export interface ParcelOwnerDTO {
+  ownershipId?: string;
+  id?: string;
   personId: string;
   fullName?: string;
   ownerName?: string;
@@ -19,6 +21,7 @@ export interface ParcelOwnerDTO {
   previousOwnerId?: string;
   startDate?: string;
   endDate?: string;
+  finalizationReason?: string;
 }
 
 export interface ParcelDetailDTO extends ParcelDTO {

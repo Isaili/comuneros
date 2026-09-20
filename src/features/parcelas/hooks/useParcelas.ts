@@ -32,7 +32,6 @@ export function useParcelas(options: UseParcelasOptions = {}) {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const ultimaCargaRef = useRef('');
   const detallesEnCargaRef = useRef(new Map<string, Promise<Parcela>>());
-  const optimisticOwnersRef = useState(() => new Map<string, Pick<Parcela, 'propietarios' | 'titularesCount' | 'titularesDetalle'>>())[0];
   const detallesCacheRef = useState<Record<string, Parcela>>(leerDetallesCache)[0];
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -48,8 +47,19 @@ export function useParcelas(options: UseParcelasOptions = {}) {
       const response = await plotsService.list({ page, limit: pageSize, parcelNumber: debouncedSearchTerm || undefined });
       setParcelas(response.data.items.map((parcel) => {
         const parcela = parcelToParcela(parcel, { titularesCount: parcel.activeOwnersCount });
-        const override = optimisticOwnersRef.get(parcela.id);
-        return override ? { ...parcela, ...override } : parcela;
+        // Enriquecemos con nombres reales de titulares desde el detalle ya
+        // visto (GET /parcel no devuelve nombres, solo el conteo). Solo se
+        // confía en la caché si el conteo de titulares sigue coincidiendo,
+        // para no mostrar nombres obsoletos tras una asignación o traspaso.
+        const detalleCacheado = detallesCacheRef[parcela.id];
+        if (detalleCacheado && detalleCacheado.titularesCount === parcela.titularesCount) {
+          return {
+            ...parcela,
+            propietarios: detalleCacheado.propietarios,
+            titularesDetalle: detalleCacheado.titularesDetalle,
+          };
+        }
+        return parcela;
       }));
       setTotal(response.data.total);
     } catch (err) {
@@ -86,6 +96,24 @@ export function useParcelas(options: UseParcelasOptions = {}) {
     throw new Error('El backend no proporciona endpoints de activación para parcelas.');
   }, []);
 
+  // Refresca la fila de la parcela en la lista con datos reales de titulares
+  // obtenidos directamente del backend (GET /parcel/{id}), en vez de depender
+  // de un valor optimista/local que puede quedar desactualizado (por ejemplo,
+  // tras un traspaso).
+  const refrescarFilaConDetalle = useCallback(async (parcelaId: string) => {
+    const detalleResponse = await plotsService.detail(parcelaId);
+    const detalle = detailToParcela(detalleResponse);
+    setParcelas((prev) => prev.map((parcela) => parcela.id === parcelaId
+      ? {
+          ...parcela,
+          propietarios: detalle.propietarios,
+          titularesCount: detalle.titularesCount,
+          titularesDetalle: detalle.titularesDetalle,
+        }
+      : parcela));
+    return detalle;
+  }, []);
+
   const asignarTitular = useCallback(async (
     parcelaId: string,
     comuneroId: string,
@@ -95,80 +123,25 @@ export function useParcelas(options: UseParcelasOptions = {}) {
     transferType: string
   ) => {
     await plotsService.initialOwners(parcelaId, [{ personId: comuneroId, hectares, certificate, transferType }]);
-    const ownerData = {
-      propietarios: [_nombreCompleto],
-      titularesCount: 1,
-      titularesDetalle: [{
-        comuneroId,
-        nombreCompleto: _nombreCompleto,
-        certificado: certificate,
-        hectareasPosesion: hectares,
-        calidadAgraria: 'Comunero',
-        actoJuridico: transferType,
-        vigencia: 'Vigente',
-      }],
-    };
-    optimisticOwnersRef.set(parcelaId, ownerData);
-    setParcelas((prev) => prev.map((parcela) => parcela.id === parcelaId
-      ? {
-          ...parcela,
-          ...ownerData,
-        }
-      : parcela));
-  }, []);
-
-  const actualizarTitularLocal = useCallback((parcelaId: string, titular: {
-    comuneroId: string;
-    nombreCompleto: string;
-    hectares: number;
-    certificate: string;
-    transferType: string;
-  }) => {
-    optimisticOwnersRef.set(parcelaId, {
-      propietarios: [titular.nombreCompleto],
-      titularesCount: 1,
-      titularesDetalle: [{
-        comuneroId: titular.comuneroId,
-        nombreCompleto: titular.nombreCompleto,
-        certificado: titular.certificate,
-        hectareasPosesion: titular.hectares,
-        calidadAgraria: 'Comunero',
-        actoJuridico: titular.transferType,
-        vigencia: 'Vigente',
-      }],
-    });
-    setParcelas((prev) => prev.map((parcela) => parcela.id === parcelaId
-      ? {
-          ...parcela,
-          propietarios: [titular.nombreCompleto],
-          titularesCount: 1,
-          titularesDetalle: [{
-            comuneroId: titular.comuneroId,
-            nombreCompleto: titular.nombreCompleto,
-            certificado: titular.certificate,
-            hectareasPosesion: titular.hectares,
-            calidadAgraria: 'Comunero',
-            actoJuridico: titular.transferType,
-            vigencia: 'Vigente',
-          }],
-        }
-      : parcela));
-  }, []);
+    await refrescarFilaConDetalle(parcelaId);
+  }, [refrescarFilaConDetalle]);
 
   const ejecutarTraspaso = useCallback(async (parcelaId: string, datos: {
+    targetOwnershipId: string;
     oldPersonId: string;
     newPersonId: string;
     certificate: string;
     transferType: string;
   }) => {
     await plotsService.transfer(parcelaId, {
+      targetOwnershipId: datos.targetOwnershipId,
       oldPersonId: datos.oldPersonId,
       newPersonId: datos.newPersonId,
       newCertificate: datos.certificate,
       transferType: datos.transferType,
     });
-    await fetchParcelas();
-  }, [fetchParcelas]);
+    await refrescarFilaConDetalle(parcelaId);
+  }, [refrescarFilaConDetalle]);
 
   const getDetalle = useCallback(async (id: string) => {
     const cacheado = detallesCacheRef[id];
@@ -194,11 +167,9 @@ export function useParcelas(options: UseParcelasOptions = {}) {
         return { ...owner, fullName: owner.personId };
       }
       }));
-      const override = optimisticOwnersRef.get(id);
       const resultado = {
         ...detalle,
         historialPropietarios: historyToPropietarios(historialConNombres, detalleResponse.activeOwners),
-        ...(detalleResponse.activeOwnersCount > 0 ? {} : (override ?? {})),
       };
       detallesCacheRef[id] = resultado;
       window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(detallesCacheRef));
@@ -211,22 +182,45 @@ export function useParcelas(options: UseParcelasOptions = {}) {
     } finally {
       detallesEnCargaRef.current.delete(id);
     }
-  }, [detallesCacheRef, detallesEnCargaRef, optimisticOwnersRef]);
+  }, [detallesCacheRef, detallesEnCargaRef]);
 
   const invalidarDetalle = useCallback((id: string) => {
     delete detallesCacheRef[id];
     window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(detallesCacheRef));
   }, [detallesCacheRef]);
 
+  const cargarHistorial = useCallback(async (parcelaId: string, historicalOwners: Array<{
+    personId: string;
+    hectares: number;
+    certificate: string;
+    transferType: string;
+    startDate: string;
+    endDate: string;
+    previousOwnerId?: string;
+    finalizationReason: string;
+  }>) => {
+    await plotsService.historyCreate(parcelaId, historicalOwners);
+    invalidarDetalle(parcelaId);
+  }, [invalidarDetalle]);
+
+  const asignarDerechoUso = useCallback(async (parcelaId: string, personId: string) => {
+    await plotsService.usageRight(parcelaId, personId);
+    invalidarDetalle(parcelaId);
+  }, [invalidarDetalle]);
+
+  const removerDerechoUso = useCallback(async (parcelaId: string, personId: string) => {
+    await plotsService.removeUsageRight(parcelaId, personId);
+    invalidarDetalle(parcelaId);
+  }, [invalidarDetalle]);
+
   return {
     parcelas, loading, initialLoading, error, page, totalPages, total,
     setPage, setSearch, setActiveFilter: () => undefined,
-    createParcela, updateParcela, toggleActivo, asignarTitular, actualizarTitularLocal, ejecutarTraspaso,
+    createParcela, updateParcela, toggleActivo, asignarTitular, ejecutarTraspaso,
     getDetalle,
     invalidarDetalle,
     getHistorial: plotsService.history,
-    asignarDerechoUso: plotsService.usageRight,
-    removerDerechoUso: plotsService.removeUsageRight,
+    cargarHistorial, asignarDerechoUso, removerDerechoUso,
     refetch: fetchParcelas,
   };
 }

@@ -1,11 +1,12 @@
 import { CreateParcelPayload, ParcelDTO, ParcelDetailDTO, ParcelOwnerDTO } from '../types/api.types';
-import { Parcela, PredialHistorico, PropietarioHistorico, TitularFila } from '../types/domain.types';
+import { DerechoUsoFila, Parcela, PredialHistorico, PropietarioHistorico, TitularFila } from '../types/domain.types';
 
 interface ParcelaExtrasInput {
   estadoPredial?: 'Pagado' | 'Pagar';
   propietarios?: string[];
   titularesCount?: number;
   titularesDetalle?: TitularFila[];
+  derechosUsoDetalle?: DerechoUsoFila[];
   historialPropietarios?: PropietarioHistorico[];
   historialPrediales?: PredialHistorico[];
 }
@@ -28,6 +29,7 @@ export function parcelToParcela(parcel: ParcelDTO | ParcelDetailDTO, extras: Par
     propietarios: extras.propietarios ?? [],
     titularesCount: extras.titularesCount ?? extras.propietarios?.length ?? 0,
     titularesDetalle: extras.titularesDetalle,
+    derechosUsoDetalle: extras.derechosUsoDetalle,
     historialPropietarios: extras.historialPropietarios ?? [],
     historialPrediales: extras.historialPrediales ?? [],
   };
@@ -37,6 +39,7 @@ export const detailToParcela = (parcel: ParcelDetailDTO): Parcela => parcelToPar
   propietarios: parcel.activeOwners.map((owner) => owner.fullName ?? owner.personId),
   titularesCount: parcel.activeOwnersCount,
   titularesDetalle: parcel.activeOwners.map((owner) => ({
+    ownershipId: owner.ownershipId ?? owner.id,
     comuneroId: owner.personId,
     nombreCompleto: owner.fullName ?? owner.personId,
     foto: owner.photo,
@@ -45,6 +48,12 @@ export const detailToParcela = (parcel: ParcelDetailDTO): Parcela => parcelToPar
     calidadAgraria: 'Comunero',
     actoJuridico: owner.transferType ?? '—',
     vigencia: 'Vigente',
+  })),
+  derechosUsoDetalle: parcel.activeUsageRights.map((right): DerechoUsoFila => ({
+    comuneroId: right.personId,
+    nombreCompleto: right.fullName ?? right.personId,
+    foto: right.photo,
+    actoJuridico: right.transferType ?? '—',
   })),
 });
 

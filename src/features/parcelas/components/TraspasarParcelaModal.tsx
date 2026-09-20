@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ArrowRightLeft, X, Plus, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, X } from 'lucide-react';
 import { Parcela } from '../types/domain.types';
 import { Comunero } from '../../comuneros/types/types';
 import { ComuneroPicker } from './shared/ComuneroPicker';
@@ -17,10 +17,10 @@ interface TraspasarParcelaModalProps {
   comunerosRegistrados: Comunero[];
   onClose: () => void;
   onConfirmar: (datos: {
-    adquirentes: { comuneroId: string; nombre: string; certificado: string }[];
+    targetOwnershipId: string;
+    oldPersonId: string;
+    adquirente: { comuneroId: string; nombre: string; certificado: string };
     actoJuridico: string;
-    motivo: string;
-    fecha: string;
   }) => void;
 }
 
@@ -37,11 +37,14 @@ export const TraspasarParcelaModal: React.FC<TraspasarParcelaModalProps> = ({
   onConfirmar,
 }) => {
   const [actoJuridico, setActoJuridico] = useState('Cesión de Derechos');
-  const [motivo, setMotivo] = useState('');
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [adquirentes, setAdquirentes] = useState<AdquirenteFila[]>([
-    { comuneroId: '', nombre: '', certificado: `CERT-${Math.floor(1000 + Math.random() * 9000)}` },
-  ]);
+  const [titularSeleccionadoId, setTitularSeleccionadoId] = useState(
+    parcela.titularesDetalle?.[0]?.ownershipId ?? '',
+  );
+  const [adquirente, setAdquirente] = useState<AdquirenteFila>({
+    comuneroId: '',
+    nombre: '',
+    certificado: `CERT-${Math.floor(1000 + Math.random() * 9000)}`,
+  });
 
   // Corregido: excluye a TODOS los titulares actuales (antes solo excluía
   // al primero, permitiendo "traspasar" a un co-titular ya existente).
@@ -49,30 +52,24 @@ export const TraspasarParcelaModal: React.FC<TraspasarParcelaModalProps> = ({
     .filter(c => parcela.propietarios.includes(nombreCompletoDe(c)))
     .map(c => c.id);
 
-  const agregarFila = () => {
-    setAdquirentes(prev => [...prev, { comuneroId: '', nombre: '', certificado: `CERT-${Math.floor(1000 + Math.random() * 9000)}` }]);
-  };
-
-  const eliminarFila = (index: number) => {
-    if (adquirentes.length > 1) setAdquirentes(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const actualizarFila = (index: number, campo: keyof AdquirenteFila, valor: string) => {
-    setAdquirentes(prev => prev.map((fila, i) => i === index ? { ...fila, [campo]: valor } : fila));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adquirentes.some(a => !a.comuneroId || !a.nombre)) {
-      alert('Seleccione un comunero válido para cada adquirente.');
+    const titularActual = parcela.titularesDetalle?.find(
+      (titular) => titular.ownershipId === titularSeleccionadoId,
+    );
+    if (!titularActual?.ownershipId) {
+      alert('Seleccione un titular activo válido para realizar el traspaso.');
       return;
     }
-    const [year, month, day] = fecha.split('-');
+    if (!adquirente.comuneroId || !adquirente.nombre || !adquirente.certificado.trim()) {
+      alert('Seleccione un comunero y capture su certificado.');
+      return;
+    }
     onConfirmar({
-      adquirentes: adquirentes.map(a => ({ comuneroId: a.comuneroId, nombre: a.nombre, certificado: a.certificado })),
+      targetOwnershipId: titularActual.ownershipId,
+      oldPersonId: titularActual.comuneroId,
+      adquirente: { ...adquirente, certificado: adquirente.certificado.trim() },
       actoJuridico,
-      motivo,
-      fecha: `${day}/${month}/${year}`,
     });
   };
 
@@ -99,70 +96,61 @@ export const TraspasarParcelaModal: React.FC<TraspasarParcelaModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs font-semibold text-gray-700 overflow-y-auto flex-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+          <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
             <div className="space-y-1">
               <label className="block text-gray-500">Acto Jurídico</label>
               <select value={actoJuridico} onChange={(e) => setActoJuridico(e.target.value)} className="w-full p-2.5 bg-white border border-gray-200 rounded-xl outline-none focus:border-amber-500">
                 <option value="Cesión de Derechos">Cesión de Derechos</option>
                 <option value="Sucesión Hereditaria">Sucesión Hereditaria</option>
                 <option value="Compraventa">Compraventa Contractual</option>
-                <option value="Donación Directa">Donación Directa</option>
               </select>
-            </div>
-            <div className="space-y-1">
-              <label className="block text-gray-500">Fecha de Operación</label>
-              <input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} className="w-full p-2.5 bg-white border border-gray-200 rounded-xl outline-none focus:border-amber-500" />
             </div>
           </div>
 
           <div>
-            <label className="block mb-1 text-gray-500">Observaciones / Motivo</label>
-            <input type="text" placeholder="Ej. Acuerdo de asamblea del 12 de mayo..." value={motivo} onChange={(e) => setMotivo(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-gray-200 rounded-xl outline-none focus:border-amber-500" />
+            <label className="block mb-1 text-gray-500">Titular actual a traspasar</label>
+            <select
+              value={titularSeleccionadoId}
+              onChange={(e) => setTitularSeleccionadoId(e.target.value)}
+              required
+              className="w-full p-2.5 bg-white border border-gray-200 rounded-xl outline-none focus:border-amber-500"
+            >
+              <option value="">Selecciona un titular</option>
+              {parcela.titularesDetalle?.map((titular) => (
+                <option key={titular.ownershipId ?? titular.comuneroId} value={titular.ownershipId ?? ''}>
+                  {titular.nombreCompleto} · {titular.hectareasPosesion.toFixed(2)} ha
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-gray-900">Nuevos Titulares / Adquirentes</label>
-              <button type="button" onClick={agregarFila} className="text-xs text-amber-600 font-bold hover:underline flex items-center gap-1">
-                <Plus className="w-3.5 h-3.5" /> Agregar otro
-              </button>
+            <label className="text-xs font-bold text-gray-900">Nuevo titular</label>
+            <div className="p-3 bg-slate-50 border border-gray-100 rounded-xl space-y-2">
+              <ComuneroPicker
+                items={comunerosRegistrados}
+                selectedId={adquirente.comuneroId}
+                excludeIds={idsExcluidos}
+                getId={(c) => c.id}
+                getLabel={nombreCompletoDe}
+                getSubtitle={(c) => c.tipo.toUpperCase()}
+                placeholder="Buscar comunero o avecindado..."
+                onSelect={(c) => setAdquirente((actual) => ({
+                  ...actual,
+                  comuneroId: c.id,
+                  nombre: nombreCompletoDe(c),
+                }))}
+                required
+              />
+              <input
+                type="text"
+                required
+                placeholder="Nº Certificado emitido"
+                value={adquirente.certificado}
+                onChange={(e) => setAdquirente((actual) => ({ ...actual, certificado: e.target.value }))}
+                className="w-full p-2 bg-white border border-gray-200 rounded-lg font-mono outline-none focus:border-amber-500"
+              />
             </div>
-
-            {adquirentes.map((fila, index) => (
-              <div key={index} className="p-3 bg-slate-50 border border-gray-100 rounded-xl space-y-2 relative">
-                <div className="flex items-start gap-2">
-                  <div className="flex-1">
-                    <ComuneroPicker
-                      items={comunerosRegistrados}
-                      selectedId={fila.comuneroId}
-                      excludeIds={idsExcluidos}
-                      getId={(c) => c.id}
-                      getLabel={nombreCompletoDe}
-                      getSubtitle={(c) => c.tipo.toUpperCase()}
-                      placeholder="Buscar comunero o avecindado..."
-                      onSelect={(c) => {
-                        actualizarFila(index, 'comuneroId', c.id);
-                        actualizarFila(index, 'nombre', nombreCompletoDe(c));
-                      }}
-                      required
-                    />
-                  </div>
-                  {adquirentes.length > 1 && (
-                    <button type="button" onClick={() => eliminarFila(index)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  required
-                  placeholder="Nº Certificado emitido"
-                  value={fila.certificado}
-                  onChange={(e) => actualizarFila(index, 'certificado', e.target.value)}
-                  className="w-full p-2 bg-white border border-gray-200 rounded-lg font-mono outline-none focus:border-amber-500"
-                />
-              </div>
-            ))}
           </div>
 
           <div className="bg-amber-50 text-amber-800 p-3 rounded-xl text-[10px] font-medium leading-tight">

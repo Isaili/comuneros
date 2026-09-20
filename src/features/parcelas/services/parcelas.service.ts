@@ -51,7 +51,13 @@ export const plotsService = {
   historyCreate: (id: string, historicalOwners: unknown[]) =>
     http(`/parcel/${id}/history`, { method: 'POST', body: JSON.stringify({ historicalOwners }) }),
 
-  transfer: (id: string, payload: { oldPersonId: string; newPersonId: string; newCertificate: string; transferType: string }) =>
+  transfer: (id: string, payload: {
+    targetOwnershipId: string;
+    oldPersonId: string;
+    newPersonId: string;
+    newCertificate: string;
+    transferType: string;
+  }) =>
     http(`/parcel/${id}/transfer`, { method: 'POST', body: JSON.stringify(payload) }),
 
   usageRight: (id: string, personId: string) =>

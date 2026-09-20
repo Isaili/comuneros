@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState } from 'react';
-import { MapPin, History, Info, ArrowRight } from 'lucide-react';
+import { MapPin, History, Info, ArrowRight, Plus } from 'lucide-react';
 import { Parcela } from '../types/domain.types';
 
 interface DetailProps {
   parcela: Parcela;
+  onCargarHistorial?: () => void;
 }
 
-export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
+export const ParcelaDetail: React.FC<DetailProps> = ({ parcela, onCargarHistorial }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'historial'>('info');
   const esPagado = parcela.estadoPredial === 'Pagado';
 
@@ -17,6 +18,7 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
 
   const listaPropietarios = parcela.propietarios ?? [];
   const titularesDetalle = parcela.titularesDetalle;
+  const derechosUso = parcela.derechosUsoDetalle ?? [];
 
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-5 space-y-4 w-full max-h-[720px] overflow-y-auto scrollbar-thin">
@@ -145,6 +147,38 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
           </div>
 
           <div className="space-y-2">
+            <h4 className="font-bold text-[11px] text-gray-400 uppercase tracking-wide">
+              Derechos de Uso Activos ({derechosUso.length})
+            </h4>
+            {derechosUso.length > 0 ? (
+              <div className="divide-y divide-gray-50 rounded-xl border border-gray-100">
+                {derechosUso.map((derecho) => {
+                  const [primerNombre, ...resto] = derecho.nombreCompleto.split(' ');
+                  return (
+                    <div key={derecho.comuneroId} className="flex items-center gap-2 px-3 py-2">
+                      {derecho.foto ? (
+                        <img src={derecho.foto} className="w-6 h-6 rounded-full object-cover border border-gray-100 shadow-xs" alt={derecho.nombreCompleto} />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-sky-50 text-sky-700 flex items-center justify-center text-[9px] font-black border border-gray-100">
+                          {derecho.nombreCompleto.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-gray-900 truncate">{primerNombre}</p>
+                        <p className="text-[9px] font-medium text-gray-400 -mt-0.5 truncate">{resto.join(' ')}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-[11px] text-gray-400 bg-slate-50 border border-slate-100 rounded-xl p-3">
+                Sin derechos de uso asignados.
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
             <h4 className="font-bold text-[11px] text-gray-400 uppercase tracking-wide">Historial de pagos de predial</h4>
             {registrosHistorialPredial.length > 0 ? (
               <div className="overflow-x-auto scrollbar-thin">
@@ -183,8 +217,14 @@ export const ParcelaDetail: React.FC<DetailProps> = ({ parcela }) => {
         </>
       ) : (
         <div className="space-y-4 py-2">
-          <div className="bg-amber-50/60 border border-amber-100 text-amber-800 rounded-xl p-3 text-[11px] flex gap-2">
+          <div className="flex flex-col gap-3 rounded-xl border border-amber-100 bg-amber-50/60 p-3 text-[11px] text-amber-800 sm:flex-row sm:items-center sm:justify-between">
             <p>Este módulo registra el tracto sucesivo agrario, según actas de asamblea.</p>
+            {onCargarHistorial && (
+              <button onClick={onCargarHistorial} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100/60">
+                <Plus className="h-3.5 w-3.5" />
+                Cargar historial
+              </button>
+            )}
           </div>
 
           {historialPropietarios.length > 0 ? (

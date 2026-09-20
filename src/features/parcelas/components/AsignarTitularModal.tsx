@@ -107,7 +107,6 @@ export const AsignarTitularModal: React.FC<AsignarTitularModalProps> = ({
             <select value={transferType} onChange={(e) => setTransferType(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white">
               <option value="SALE">Compraventa</option>
               <option value="INHERITANCE">Herencia</option>
-              <option value="DONATION">Donación</option>
             </select>
           </div>
 

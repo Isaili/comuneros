@@ -86,6 +86,14 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // El backend no expone un endpoint para actualizar los datos básicos de
+    // una parcela existente (solo permite crearla). En modo edición, los
+    // cambios reales (derechos de uso) ya se guardan al instante desde sus
+    // propios botones, así que aquí solo cerramos el expediente.
+    if (esEdicion) {
+      onClose();
+      return;
+    }
     onGuardar({
       numero: numeroParcela,
       superficieHa: superficie,
@@ -127,16 +135,18 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
               <label className="text-gray-500 font-bold block">Nº de Parcela (En Certificado) *</label>
               <div className="relative">
                 <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input type="text" required placeholder="Ej. Parcela 155" value={numeroParcela} onChange={(e) => setNumeroParcela(e.target.value)} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-gray-800 font-bold outline-none focus:border-[#006837]" />
+                <input type="text" required readOnly={esEdicion} disabled={esEdicion} placeholder="Ej. Parcela 155" value={numeroParcela} onChange={(e) => setNumeroParcela(e.target.value)} className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-gray-800 font-bold outline-none focus:border-[#006837] disabled:bg-slate-50 disabled:text-gray-400" />
               </div>
+              {esEdicion && <p className="text-[10px] text-gray-400 font-medium">No editable: el backend no permite modificar este dato.</p>}
             </div>
 
             <div className="space-y-1.5">
               <label className="text-gray-500 font-bold block">Superficie (Hectáreas) *</label>
               <div className="relative">
-                <input type="number" step="0.0001" min="0.0001" required placeholder="Ej. 2.50" value={superficie || ''} onChange={(e) => setSuperficie(Number(e.target.value))} className="w-full pr-12 pl-3 py-2.5 border border-gray-200 rounded-xl text-gray-800 font-bold outline-none focus:border-[#006837]" />
+                <input type="number" step="0.0001" min="0.0001" required readOnly={esEdicion} disabled={esEdicion} placeholder="Ej. 2.50" value={superficie || ''} onChange={(e) => setSuperficie(Number(e.target.value))} className="w-full pr-12 pl-3 py-2.5 border border-gray-200 rounded-xl text-gray-800 font-bold outline-none focus:border-[#006837] disabled:bg-slate-50 disabled:text-gray-400" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">ha</span>
               </div>
+              {esEdicion && <p className="text-[10px] text-gray-400 font-medium">No editable: el backend no permite modificar este dato.</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -318,9 +328,9 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
 
         <div className="p-4 border-t border-gray-100 bg-slate-50/50 flex flex-col-reverse sm:flex-row items-center gap-2 shrink-0">
           <button type="button" onClick={onClose} className="w-full sm:w-1/2 py-2.5 sm:py-3 border border-gray-200 rounded-xl font-bold text-gray-500 bg-white hover:bg-gray-50">Cancelar</button>
-          <button type="submit" disabled={guardando} className="w-full sm:w-1/2 py-2.5 sm:py-3 bg-[#006837] hover:bg-[#00522b] disabled:opacity-60 text-white rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-xs">
+          <button type="submit" disabled={!esEdicion && guardando} className="w-full sm:w-1/2 py-2.5 sm:py-3 bg-[#006837] hover:bg-[#00522b] disabled:opacity-60 text-white rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-xs">
             <Save className="w-4 h-4" />
-            {guardando ? 'Guardando...' : esEdicion ? 'Guardar Cambios' : 'Registrar Parcela'}
+            {esEdicion ? 'Cerrar' : guardando ? 'Guardando...' : 'Registrar Parcela'}
           </button>
         </div>
       </form>
