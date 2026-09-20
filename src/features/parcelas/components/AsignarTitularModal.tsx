@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { UserPlus, X } from 'lucide-react';
 import { Comunero } from '../../comuneros/types/types';
 import { ComuneroPicker } from './shared/ComuneroPicker';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 interface AsignarTitularModalProps {
   parcela: { superficieHa: number };
@@ -15,7 +16,7 @@ interface AsignarTitularModalProps {
     hectares: number;
     certificate: string;
     transferType: string;
-  }) => void;
+  }) => Promise<void> | void;
 }
 
 // NOTA: el tipo Comunero ha tenido dos formas distintas en el código
@@ -38,9 +39,11 @@ export const AsignarTitularModal: React.FC<AsignarTitularModalProps> = ({
   const [hectares, setHectares] = useState(String(parcela.superficieHa));
   const [certificate, setCertificate] = useState('');
   const [transferType, setTransferType] = useState('SALE');
+  const [guardando, setGuardando] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (guardando) return;
     const comunero = comunerosRegistrados.find(c => c.id === seleccionadoId);
     if (!comunero) {
       alert('Por favor seleccione un titular.');
@@ -51,17 +54,25 @@ export const AsignarTitularModal: React.FC<AsignarTitularModalProps> = ({
       alert('Indique las hectáreas y el certificado del titular.');
       return;
     }
-    onAsignar({
-      comuneroId: comunero.id,
-      nombreCompleto: nombreCompletoDe(comunero),
-      hectares: hectaresNumber,
-      certificate: certificate.trim(),
-      transferType,
-    });
+    setGuardando(true);
+    try {
+      await onAsignar({
+        comuneroId: comunero.id,
+        nombreCompleto: nombreCompletoDe(comunero),
+        hectares: hectaresNumber,
+        certificate: certificate.trim(),
+        transferType,
+      });
+    } catch (cause) {
+      alert(cause instanceof Error ? cause.message : 'No se pudo asignar el titular.');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      {guardando && <LoadingOverlay message="Asignando titular..." />}
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-visible z-10 flex flex-col">
         <div className="bg-slate-50 border-b border-gray-100 px-5 py-4 flex items-center justify-between">
@@ -111,15 +122,15 @@ export const AsignarTitularModal: React.FC<AsignarTitularModalProps> = ({
           </div>
 
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-bold">
+            <button type="button" onClick={onClose} disabled={guardando} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-bold disabled:opacity-50">
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={!seleccionadoId}
+              disabled={!seleccionadoId || guardando}
               className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl shadow-xs font-bold transition-colors"
             >
-              Confirmar Asignación
+              {guardando ? 'Guardando...' : 'Confirmar Asignación'}
             </button>
           </div>
         </form>

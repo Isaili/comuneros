@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Plus, Trash2, Calculator, Landmark, FileText, History, DollarSign } from 'lucide-react';
 import { Parcela, PropietarioHistorico, PredialHistorico } from '../types/domain.types';
 import { FechaTextInput } from './shared/Fechatextinput';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 export interface ParcelaFormPayload {
   numero: string;
@@ -86,6 +87,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (guardando) return;
     // El backend no expone un endpoint para actualizar los datos básicos de
     // una parcela existente (solo permite crearla). En modo edición, los
     // cambios reales (derechos de uso) ya se guardan al instante desde sus
@@ -106,6 +108,7 @@ export const AgregarParcelaForm: React.FC<AgregarParcelaFormProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 overflow-y-auto">
+      {guardando && !esEdicion && <LoadingOverlay message="Guardando parcela..." />}
       <form onSubmit={handleSubmit} className="bg-white w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] text-gray-700 text-xs font-semibold">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-slate-50/50 shrink-0">
           <div>

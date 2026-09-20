@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, MapPin } from 'lucide-react';
 import { Neighborhood } from '../types/types';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 interface Props {
   onClose: () => void;
@@ -45,6 +46,7 @@ export const AgregarBarrioForm: React.FC<Props> = ({ onClose, onGuardar, barrioA
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-xs p-0 sm:p-4">
+      {isSubmitting && <LoadingOverlay message="Guardando barrio..." />}
       <form
         onSubmit={handleSubmit}
         className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-scale-up"

@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import { X, CalendarPlus, MapPin, Clock, FileText, Hourglass } from 'lucide-react';
 import { AssemblyType } from '../../types/types';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 interface CrearReunionModalProps {
   onClose: () => void;
-  onCrear: (reunion: { title: string; scheduledDate: string; type: AssemblyType; agreements: string[] }) => void;
+  onCrear: (reunion: { title: string; scheduledDate: string; type: AssemblyType; agreements: string[] }) => Promise<void> | void;
   initialValues?: { title: string; scheduledDate: string; type: AssemblyType; agreements?: string[] };
   modo?: 'crear' | 'editar';
 }
@@ -21,6 +22,7 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
   const [tipo, setTipo] = useState<AssemblyType>(initialValues?.type ?? 'ORDINARY');
   const [acuerdos, setAcuerdos] = useState(initialValues?.agreements?.join('\n') ?? '');
   const [errores, setErrores] = useState<Record<string, string>>({});
+  const [guardando, setGuardando] = useState(false);
 
   const validar = () => {
     const nuevosErrores: Record<string, string> = {};
@@ -36,19 +38,28 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
     return Object.keys(nuevosErrores).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (guardando) return;
     if (!validar()) return;
-    onCrear({
-      title: nombre.trim(),
-      scheduledDate: new Date(`${fecha}T${horaInicio}:00`).toISOString(),
-      type: tipo,
-      agreements: acuerdos.split('\n').map((acuerdo) => acuerdo.trim()).filter(Boolean),
-    });
+    setGuardando(true);
+    try {
+      await onCrear({
+        title: nombre.trim(),
+        scheduledDate: new Date(`${fecha}T${horaInicio}:00`).toISOString(),
+        type: tipo,
+        agreements: acuerdos.split('\n').map((acuerdo) => acuerdo.trim()).filter(Boolean),
+      });
+    } catch (cause) {
+      alert(cause instanceof Error ? cause.message : 'No se pudo guardar la asamblea.');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+      {guardando && <LoadingOverlay message="Guardando asamblea..." />}
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col text-gray-700 text-sm font-semibold">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-slate-50/50 shrink-0">
           <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
@@ -171,14 +182,15 @@ export const CrearReunionModal: React.FC<CrearReunionModalProps> = ({ onClose, o
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-200 hover:bg-gray-100 rounded-lg text-sm font-bold text-gray-600 transition-colors">
+            <button type="button" onClick={onClose} disabled={guardando} className="px-4 py-2 border border-gray-200 hover:bg-gray-100 rounded-lg text-sm font-bold text-gray-600 transition-colors disabled:opacity-50">
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#1E4D3A] hover:bg-[#153629] text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 shadow-sm"
+              disabled={guardando}
+              className="px-4 py-2 bg-[#1E4D3A] hover:bg-[#153629] text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <CalendarPlus className="w-3.5 h-3.5" /> Crear asamblea
+              <CalendarPlus className="w-3.5 h-3.5" /> {guardando ? 'Guardando...' : 'Crear asamblea'}
             </button>
           </div>
         </form>

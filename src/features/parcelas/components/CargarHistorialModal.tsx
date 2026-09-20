@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { History, Save, X } from 'lucide-react';
 import { Comunero } from '../../comuneros/types/types';
 import { ComuneroPicker } from './shared/ComuneroPicker';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 interface CargarHistorialModalProps {
   comuneros: Comunero[];
@@ -39,6 +40,7 @@ export function CargarHistorialModal({ comuneros, onClose, onGuardar }: CargarHi
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (isSaving) return;
     const hectaresNumber = Number(hectares);
     if (!personId || !Number.isFinite(hectaresNumber) || hectaresNumber <= 0) {
       setError('Selecciona a la persona e indica una superficie válida.');
@@ -68,6 +70,7 @@ export function CargarHistorialModal({ comuneros, onClose, onGuardar }: CargarHi
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      {isSaving && <LoadingOverlay message="Guardando registro histórico..." />}
       <form onSubmit={handleSubmit} className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-100 bg-slate-50 px-5 py-4">
           <h3 className="flex items-center gap-2 text-sm font-bold text-gray-900">

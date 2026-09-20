@@ -5,6 +5,7 @@ import { Trash2, UserPlus, X } from 'lucide-react';
 import { Comunero } from '../../comuneros/types/types';
 import { DerechoUsoFila, Parcela } from '../types/domain.types';
 import { ComuneroPicker } from './shared/ComuneroPicker';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 interface DerechosUsoModalProps {
   parcela: Parcela;
@@ -26,6 +27,7 @@ export function DerechosUsoModal({ parcela, comunerosRegistrados, onClose, onAsi
   const [error, setError] = useState('');
 
   const asignar = async () => {
+    if (guardando) return;
     const persona = comunerosRegistrados.find((item) => item.id === personaId);
     if (!persona) return;
     setGuardando(true);
@@ -61,6 +63,7 @@ export function DerechosUsoModal({ parcela, comunerosRegistrados, onClose, onAsi
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      {guardando && <LoadingOverlay message="Guardando derecho de uso..." />}
       <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl text-xs font-semibold text-gray-700">
         <div className="flex items-center justify-between border-b border-gray-100 bg-slate-50 px-5 py-4">
           <div>

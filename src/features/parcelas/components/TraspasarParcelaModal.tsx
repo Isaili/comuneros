@@ -5,6 +5,7 @@ import { ArrowRightLeft, X } from 'lucide-react';
 import { Parcela } from '../types/domain.types';
 import { Comunero } from '../../comuneros/types/types';
 import { ComuneroPicker } from './shared/ComuneroPicker';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 interface AdquirenteFila {
   comuneroId: string;
@@ -21,7 +22,7 @@ interface TraspasarParcelaModalProps {
     oldPersonId: string;
     adquirente: { comuneroId: string; nombre: string; certificado: string };
     actoJuridico: string;
-  }) => void;
+  }) => Promise<void> | void;
 }
 
 const nombreCompletoDe = (c: Comunero) => {
@@ -45,6 +46,7 @@ export const TraspasarParcelaModal: React.FC<TraspasarParcelaModalProps> = ({
     nombre: '',
     certificado: `CERT-${Math.floor(1000 + Math.random() * 9000)}`,
   });
+  const [guardando, setGuardando] = useState(false);
 
   // Corregido: excluye a TODOS los titulares actuales (antes solo excluía
   // al primero, permitiendo "traspasar" a un co-titular ya existente).
@@ -52,8 +54,9 @@ export const TraspasarParcelaModal: React.FC<TraspasarParcelaModalProps> = ({
     .filter(c => parcela.propietarios.includes(nombreCompletoDe(c)))
     .map(c => c.id);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (guardando) return;
     const titularActual = parcela.titularesDetalle?.find(
       (titular) => titular.ownershipId === titularSeleccionadoId,
     );
@@ -65,16 +68,24 @@ export const TraspasarParcelaModal: React.FC<TraspasarParcelaModalProps> = ({
       alert('Seleccione un comunero y capture su certificado.');
       return;
     }
-    onConfirmar({
-      targetOwnershipId: titularActual.ownershipId,
-      oldPersonId: titularActual.comuneroId,
-      adquirente: { ...adquirente, certificado: adquirente.certificado.trim() },
-      actoJuridico,
-    });
+    setGuardando(true);
+    try {
+      await onConfirmar({
+        targetOwnershipId: titularActual.ownershipId,
+        oldPersonId: titularActual.comuneroId,
+        adquirente: { ...adquirente, certificado: adquirente.certificado.trim() },
+        actoJuridico,
+      });
+    } catch (cause) {
+      alert(cause instanceof Error ? cause.message : 'No se pudo ejecutar el traspaso.');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      {guardando && <LoadingOverlay message="Ejecutando traspaso..." />}
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto z-10 flex flex-col">
         <div className="bg-slate-50 border-b border-gray-100 px-5 py-4 flex items-center justify-between shrink-0">
@@ -158,11 +169,11 @@ export const TraspasarParcelaModal: React.FC<TraspasarParcelaModalProps> = ({
           </div>
 
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-bold">
+            <button type="button" onClick={onClose} disabled={guardando} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-bold disabled:opacity-50">
               Cancelar
             </button>
-            <button type="submit" className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs font-bold transition-colors">
-              Confirmar Traspaso
+            <button type="submit" disabled={guardando} className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white rounded-xl shadow-xs font-bold transition-colors">
+              {guardando ? 'Guardando...' : 'Confirmar Traspaso'}
             </button>
           </div>
         </form>
