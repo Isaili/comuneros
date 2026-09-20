@@ -46,6 +46,7 @@ const estadoDesdeApi: Record<AssemblyStatus, Reunion['estado']> = {
   SCHEDULED: 'programada',
   REGISTRATION_OPEN: 'en_curso',
   IN_PROGRESS: 'en_curso',
+  EXITS_OPEN: 'en_curso',
   COMPLETED: 'finalizada',
   CANCELED: 'cancelada',
 };
@@ -90,6 +91,7 @@ export const assembliesApi = {
     apiClient.put<ApiEnvelope<AssemblyDTO>>(`/assemblies/${id}`, payload),
   abrirRegistro: (id: string) => apiClient.patch(`/assemblies/${id}/start-registration`),
   bloquearRegistro: (id: string) => apiClient.patch(`/assemblies/${id}/lock-registration`),
+  abrirSalidas: (id: string) => apiClient.patch(`/assemblies/${id}/open-exit`),
   cerrar: (id: string) => apiClient.patch(`/assemblies/${id}/close`),
   cancelar: (id: string) => apiClient.patch(`/assemblies/${id}/cancel`),
   asistencias: (id: string, params: {

@@ -1,5 +1,5 @@
 export type EstadoReunion = 'programada' | 'en_curso' | 'finalizada' | 'cancelada';
-export type AssemblyStatus = 'SCHEDULED' | 'REGISTRATION_OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELED';
+export type AssemblyStatus = 'SCHEDULED' | 'REGISTRATION_OPEN' | 'IN_PROGRESS' | 'EXITS_OPEN' | 'COMPLETED' | 'CANCELED';
 export type AssemblyType = 'ORDINARY' | 'EXTRAORDINARY';
 
 export interface Reunion {

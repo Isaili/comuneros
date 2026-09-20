@@ -11,6 +11,7 @@ interface ReunionEstadoCardProps {
   totalAsistentes: number;
   entradasCerradas: boolean;
   salidasHabilitadas: boolean;
+  accionEnCurso?: boolean;
   onAbrirClick: () => void;
   onCerrarEntradasClick: () => void;
   onHabilitarSalidasClick: () => void;
@@ -28,6 +29,7 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
   totalAsistentes,
   entradasCerradas,
   salidasHabilitadas,
+  accionEnCurso = false,
   onAbrirClick,
   onCerrarEntradasClick,
   onHabilitarSalidasClick,
@@ -107,7 +109,8 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
           {!entradasCerradas && (
             <button
               onClick={onCerrarEntradasClick}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
+              disabled={accionEnCurso}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <DoorClosed className="w-4 h-4" /> Cerrar entradas
             </button>
@@ -115,7 +118,8 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
           {entradasCerradas && !salidasHabilitadas && (
             <button
               onClick={onHabilitarSalidasClick}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
+              disabled={accionEnCurso}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <LogOut className="w-4 h-4" /> Habilitar salidas
             </button>
@@ -123,7 +127,8 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
           {salidasHabilitadas && (
             <button
               onClick={onCerrarReunionClick}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors"
+              disabled={accionEnCurso}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <DoorClosed className="w-4 h-4" /> Cerrar reunión
             </button>
@@ -131,7 +136,8 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
           {!salidasHabilitadas && (
             <button
               onClick={onCancelarClick}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl px-6 py-2.5 text-sm font-bold transition-colors"
+              disabled={accionEnCurso}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl px-6 py-2.5 text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Ban className="w-4 h-4" /> Cancelar reunión
             </button>
@@ -141,13 +147,15 @@ export const ReunionEstadoCard: React.FC<ReunionEstadoCardProps> = ({
         <div className="flex flex-col sm:flex-row gap-2.5">
           <button
             onClick={onAbrirClick}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1E4D3A] hover:bg-[#153629] text-white rounded-xl px-6 py-3 text-sm font-bold shadow-sm transition-colors"
+            disabled={accionEnCurso}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1E4D3A] hover:bg-[#153629] text-white rounded-xl px-6 py-3 text-sm font-bold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <DoorOpen className="w-4 h-4" /> Abrir reunión
           </button>
           <button
             onClick={onCancelarClick}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl px-6 py-3 text-sm font-bold transition-colors"
+            disabled={accionEnCurso}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl px-6 py-3 text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Ban className="w-4 h-4" /> Cancelar reunión
           </button>

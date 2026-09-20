@@ -51,6 +51,7 @@ export default function KioscoQRFeature() {
   const [notificacionCierre, setNotificacionCierre] = useState<string | null>(null);
   const [salidasHabilitadas, setSalidasHabilitadas] = useState(false);
   const [entradasCerradas, setEntradasCerradas] = useState(false);
+  const [accionEnCurso, setAccionEnCurso] = useState(false);
   const [estadoEscaneo, setEstadoEscaneo] = useState<'idle' | 'valid' | 'warning' | 'invalid' | 'entrada' | 'salida'>('idle');
   const [ultimoCodigo, setUltimoCodigo] = useState('');
   const [mensajeEscaneo, setMensajeEscaneo] = useState('Esperando QR');
@@ -157,8 +158,14 @@ export default function KioscoQRFeature() {
   };
 
   const abrirReunion = () => {
-    if (!reunionProxima) return;
-    void abrirReunionEspecifica(reunionProxima).catch((error) => console.error('Error al abrir asamblea:', error));
+    if (!reunionProxima || accionEnCurso) return;
+    setAccionEnCurso(true);
+    void abrirReunionEspecifica(reunionProxima)
+      .catch((error) => {
+        console.error('Error al abrir asamblea:', error);
+        window.alert(obtenerMensajeApi(error, 'No se pudo abrir la reunión.'));
+      })
+      .finally(() => setAccionEnCurso(false));
   };
 
   useEffect(() => {
@@ -177,14 +184,23 @@ export default function KioscoQRFeature() {
 
   const confirmarCierre = async () => {
     if (!reunionActiva) return;
-    publicarEvento(canalRef.current, {
-      tipo: 'salidas_habilitadas',
-      timestamp: new Date().toISOString(),
-      reunion: reunionActiva,
-    });
+    try {
+      await assembliesApi.abrirSalidas(reunionActiva.id);
+      const response = await assembliesApi.obtener(reunionActiva.id);
+      const actualizada = assemblyToReunion(response.data.data);
+      setReuniones((prev) => prev.map((item) => item.id === actualizada.id ? actualizada : item));
 
-    setModalCerrar(false);
-    setSalidasHabilitadas(true);
+      publicarEvento(canalRef.current, {
+        tipo: 'salidas_habilitadas',
+        timestamp: new Date().toISOString(),
+        reunion: actualizada,
+      });
+
+      setModalCerrar(false);
+      setSalidasHabilitadas(true);
+    } catch (error) {
+      window.alert(obtenerMensajeApi(error, 'No se pudieron habilitar las salidas.'));
+    }
   };
 
   const seleccionarReunionDestacada = (reunionId: string) => {
@@ -261,7 +277,8 @@ export default function KioscoQRFeature() {
   };
 
   const habilitarSalidas = async () => {
-    if (!reunionActiva) return;
+    if (!reunionActiva || accionEnCurso) return;
+    setAccionEnCurso(true);
     try {
       await assembliesApi.bloquearRegistro(reunionActiva.id);
       const response = await assembliesApi.obtener(reunionActiva.id);
@@ -277,12 +294,16 @@ export default function KioscoQRFeature() {
         ? (error as { response?: { data?: { message?: string } } }).response?.data
         : undefined;
       window.alert(responseData?.message ?? (error instanceof Error ? error.message : 'No se pudieron cerrar las entradas.'));
+    } finally {
+      setAccionEnCurso(false);
     }
   };
 
   const cancelarReunion = async () => {
+    if (accionEnCurso) return;
     const reunion = reunionActiva ?? reunionProxima;
     if (!reunion || !window.confirm(`¿Cancelar la reunión "${reunion.nombre}"?`)) return;
+    setAccionEnCurso(true);
     try {
       await assembliesApi.cancelar(reunion.id);
       setReuniones((prev) => prev.map((item) => item.id === reunion.id ? { ...item, estado: 'cancelada' } : item));
@@ -297,11 +318,15 @@ export default function KioscoQRFeature() {
         ? (error as { response?: { data?: { message?: string } } }).response?.data
         : undefined;
       window.alert(responseData?.message ?? (error instanceof Error ? error.message : 'No se pudo cancelar la reunión.'));
+    } finally {
+      setAccionEnCurso(false);
     }
   };
 
   const cerrarReunion = async () => {
-    if (!reunionActiva) return;
+    if (!reunionActiva || accionEnCurso) return;
+    if (!window.confirm('Al cerrar la reunión se finalizará el registro de asistencia y se aplicarán automáticamente las multas por inasistencia. ¿Deseas continuar?')) return;
+    setAccionEnCurso(true);
     try {
       await assembliesApi.cerrar(reunionActiva.id);
     } catch (error) {
@@ -309,6 +334,7 @@ export default function KioscoQRFeature() {
         ? (error as { response?: { data?: { message?: string } } }).response?.data
         : undefined;
       window.alert(responseData?.message ?? (error instanceof Error ? error.message : 'No se pudo cerrar la reunión.'));
+      setAccionEnCurso(false);
       return;
     }
 
@@ -324,6 +350,7 @@ export default function KioscoQRFeature() {
     setComuneroSeleccionado(null);
     setSalidasHabilitadas(false);
     setEntradasCerradas(false);
+    setAccionEnCurso(false);
   };
 
   const simularEscaneo = async (codigoEscaneado?: string) => {
@@ -395,6 +422,7 @@ export default function KioscoQRFeature() {
             totalAsistentes={asistentes.length}
             entradasCerradas={entradasCerradas}
             salidasHabilitadas={salidasHabilitadas}
+            accionEnCurso={accionEnCurso}
             onAbrirClick={abrirReunion}
             onCerrarEntradasClick={habilitarSalidas}
             onHabilitarSalidasClick={() => setModalCerrar(true)}
