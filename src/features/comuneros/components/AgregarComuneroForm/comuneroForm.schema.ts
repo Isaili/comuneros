@@ -7,7 +7,7 @@ export const comuneroValidationSchema = Yup.object().shape({
   apellidoMaterno: Yup.string().min(2, 'Muy corto').required('El apellido materno es obligatorio'),
   fechaNacimiento: Yup.string().required('La fecha de nacimiento es obligatoria'),
   estadoCivil: Yup.string()
-    .oneOf(['soltero', 'casado', 'divorciado', 'viudo', 'union_libre'], 'Selecciona un estado civil válido')
+    .oneOf(['soltero', 'casado', 'divorciado', 'viudo'], 'Selecciona un estado civil válido')
     .required('El estado civil es obligatorio'),
   telefono: Yup.string()
     .matches(/^[0-9]{10}$/, 'El teléfono debe tener exactamente 10 dígitos numéricos')
@@ -34,7 +34,6 @@ export const mapaEstadoCivilAInglés: Record<string, CrearComuneroPayload['marit
   casado: 'MARRIED',
   divorciado: 'DIVORCED',
   viudo: 'WIDOWED',
-  union_libre: 'FREE_UNION',
 };
 
 // Mapeos inversos para cuando editamos (de lo que viene de la API al select del form)

@@ -61,7 +61,7 @@ function calcularEdad(fechaNacimientoRaw?: string | null): string | null {
 }
 
 export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDelete }) => {
-  const [activeTab, setActiveTab] = useState<'parcelas' | 'lotes'>('parcelas');
+  const [activeTab, setActiveTab] = useState<'parcelas' | 'lotes' | 'multas'>('parcelas');
   const [imgError, setImgError] = useState(false);
 
   if (!comunero) return null;
@@ -132,10 +132,37 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
     }
   };
 
+  const handleDownloadFoto = async () => {
+    try {
+      if (!foto) throw new Error('Este comunero no tiene fotografía registrada');
+      const response = await fetch(foto);
+      if (!response.ok) throw new Error('No se pudo obtener la imagen');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const safeName = `${nombreCompleto || folio}`
+        .replace(/[^a-zA-Z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .toLowerCase() || 'foto-comunero';
+
+      const extension = blob.type.split('/')[1] || 'png';
+      link.href = url;
+      link.download = `${safeName}.${extension}`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error al descargar la foto:', error);
+      alert('No se pudo descargar la foto. Intenta de nuevo.');
+    }
+  };
+
   // Manejo de terrenos
   const terrenos = Array.isArray(comunero.terrenos) ? comunero.terrenos : [];
   const parcelas = terrenos.filter((t: any) => t.tipo === 'Parcela' || t.type === 'PARCEL');
   const lotes = terrenos.filter((t: any) => t.tipo === 'Lote' || t.type === 'LOT');
+  const multas = Array.isArray(comunero.multas) ? comunero.multas : [];
 
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 sm:p-8 space-y-8 animate-fade-in">
@@ -224,8 +251,20 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
             )}
           </div>
 
-          <span className="text-[11px] font-extrabold tracking-wider mt-2 px-2.5 py-1 rounded invisible select-none">
-            FOLIO: {folio}
+          <div className="mt-3 flex items-center gap-2 flex-wrap justify-center">
+            <button
+              type="button"
+              onClick={handleDownloadFoto}
+              disabled={!foto}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#006837] text-white text-[11px] font-bold shadow-sm hover:bg-[#00552f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Descargar foto
+            </button>
+          </div>
+
+          <span className="text-[11px] font-extrabold tracking-wider mt-2 bg-white px-2.5 py-1 rounded invisible select-none">
+            {qrValue || 'placeholder'}
           </span>
         </div>
 
@@ -298,8 +337,53 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
           >
             Lotes ({lotes.length})
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('multas')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              activeTab === 'multas'
+                ? 'bg-[#006837] text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Multas ({multas.length})
+          </button>
         </div>
 
+        {activeTab === 'multas' ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="text-gray-400 font-bold border-b border-gray-100">
+                  <th className="pb-2">Folio</th>
+                  <th className="pb-2">Tipo</th>
+                  <th className="pb-2">Cantidad</th>
+                  <th className="pb-2">Fecha</th>
+                  <th className="pb-2">Estado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 font-medium text-gray-700">
+                {multas.length > 0 ? (
+                  multas.map((m: any, idx: number) => (
+                    <tr key={m.id ?? idx} className="hover:bg-gray-50/50">
+                      <td className="py-2.5">{m.folio ?? '—'}</td>
+                      <td className="py-2.5">{m.tipo ?? '—'}</td>
+                      <td className="py-2.5">{m.cantidad != null ? `$${m.cantidad}` : '—'}</td>
+                      <td className="py-2.5">{formatFecha(m.fechaGeneracion)}</td>
+                      <td className="py-2.5 text-gray-500 capitalize">{m.estado ?? '—'}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-center text-gray-400 font-normal">
+                      No hay multas registradas para este comunero.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
@@ -341,6 +425,7 @@ export const ComuneroDetail: React.FC<DetailProps> = ({ comunero, onEdit, onDele
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   );

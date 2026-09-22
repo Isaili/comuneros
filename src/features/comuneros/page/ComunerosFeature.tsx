@@ -2,12 +2,18 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Comunero, CrearComuneroPayload } from '../types/types';
+import { Comunero, CrearComuneroPayload, EstadoPersona, TipoPersona } from '../types/types';
 import { comunerosApi } from '../services/comunerosApi';
 import { ComunerosHeader } from '../components/ComunerosHeader';
 import { ComunerosList } from '../components/ComunerosList';
 import { ComuneroDetail } from '../components/ComuneroDetail';
 import { AgregarComuneroForm } from '../components/AgregarComuneroForm';
+
+const mapaTipoAPersonType: Record<TipoPersona, 'COMMONER' | 'RESIDENT' | 'INHABITANT'> = {
+  comunero: 'COMMONER',
+  avecindado: 'RESIDENT',
+  poblador: 'INHABITANT',
+};
 
 const deduplicarComuneros = (items: Comunero[]) => {
   const mapa = new Map<string, Comunero>();
@@ -210,6 +216,42 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
     }
   };
 
+  const refrescarComuneroActualizado = async (id: string) => {
+    const comuneroActualizado = await comunerosApi.obtenerPorId(id);
+    setDetallesCache((actual) => {
+      const actualizado = { ...actual, [id]: comuneroActualizado };
+      window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
+      return actualizado;
+    });
+    if (selectedComunero?.id === id) setSelectedComunero(comuneroActualizado);
+    ultimaCargaRef.current = '';
+    await cargarComuneros(page);
+  };
+
+  const handleChangeTipo = async (id: string, tipo: TipoPersona) => {
+    try {
+      await comunerosApi.actualizarTipo(id, mapaTipoAPersonType[tipo]);
+      await refrescarComuneroActualizado(id);
+    } catch (err) {
+      console.error('Error al cambiar el tipo de persona:', err);
+      alert('No se pudo cambiar el tipo de persona.');
+    }
+  };
+
+  const handleChangeEstado = async (id: string, estado: EstadoPersona) => {
+    try {
+      if (estado === 'fallecido') {
+        await comunerosApi.marcarFallecido(id);
+      } else {
+        await comunerosApi.actualizarEstado(id, estado === 'activo' ? 'ACTIVATE' : 'INACTIVE');
+      }
+      await refrescarComuneroActualizado(id);
+    } catch (err) {
+      console.error('Error al cambiar el estatus:', err);
+      alert('No se pudo cambiar el estatus.');
+    }
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
       <ComunerosHeader onAddClick={handleAddComunero} onSearchChange={handleSearch} />
@@ -254,6 +296,8 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
             onSelect={handleSelectComunero}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onChangeTipo={handleChangeTipo}
+            onChangeEstado={handleChangeEstado}
             page={page}
             totalPages={totalPages}
             onPageChange={setPage}

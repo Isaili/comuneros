@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Edit2, Trash2, ChevronLeft, ChevronRight, UserCheck, UserPlus, Home, Users } from 'lucide-react';
-import { Comunero } from '@/features/comuneros/types/types';
+import { Edit2, Trash2, ChevronLeft, ChevronRight, UserCheck, UserPlus, Home, Users, Repeat, ShieldEllipsis } from 'lucide-react';
+import { Comunero, TipoPersona, EstadoPersona } from '@/features/comuneros/types/types';
 import { getPersonTypeConfig, PersonTypeKey } from '@/features/comuneros/utils/Persontype';
+import { CambiarTipoEstadoModal } from './CambiarTipoEstadoModal';
 
 interface ListProps {
   comuneros: Comunero[];
@@ -9,6 +10,8 @@ interface ListProps {
   onSelect: (comunero: Comunero) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onChangeTipo: (id: string, tipo: TipoPersona) => void | Promise<void>;
+  onChangeEstado: (id: string, estado: EstadoPersona) => void | Promise<void>;
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -70,6 +73,13 @@ function getNumerosPagina(totalPages: number, paginaActual: number): (number | '
   return [1, '...', paginaActual - 1, paginaActual, paginaActual + 1, '...', totalPages];
 }
 
+function normalizeEstadoPersona(estado: string | null | undefined): EstadoPersona {
+  const valor = String(estado ?? '').trim().toUpperCase();
+  if (valor === 'INACTIVE' || valor === 'INACTIVO') return 'inactivo';
+  if (valor === 'DECEASED' || valor === 'FALLECIDO') return 'fallecido';
+  return 'activo';
+}
+
 function getFechaFormateada(c: any): string {
   const rawValue =
     c?.fechaRegistro ??
@@ -101,11 +111,26 @@ export const ComunerosList: React.FC<ListProps> = ({
   onSelect,
   onEdit,
   onDelete,
+  onChangeTipo,
+  onChangeEstado,
   page,
   totalPages,
   onPageChange,
 }) => {
   const numerosPagina = getNumerosPagina(totalPages, page);
+  const [modal, setModal] = useState<{ modo: 'tipo' | 'estado'; comunero: any } | null>(null);
+
+  const cerrarModal = () => setModal(null);
+
+  const confirmarModal = async (valor: string) => {
+    if (!modal) return;
+    if (modal.modo === 'tipo') {
+      await onChangeTipo(modal.comunero.id, valor as TipoPersona);
+    } else {
+      await onChangeEstado(modal.comunero.id, valor as EstadoPersona);
+    }
+    cerrarModal();
+  };
 
   if (comuneros.length === 0) {
     return (
@@ -195,6 +220,22 @@ export const ComunerosList: React.FC<ListProps> = ({
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
+                          onClick={() => setModal({ modo: 'tipo', comunero: c })}
+                          aria-label={`Cambiar tipo de ${nombre} ${apellidoPaterno}`}
+                          className="p-2 border border-gray-100 rounded-lg hover:border-amber-200 hover:bg-amber-50 text-amber-600 transition-all"
+                        >
+                          <Repeat className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setModal({ modo: 'estado', comunero: c })}
+                          aria-label={`Cambiar estatus de ${nombre} ${apellidoPaterno}`}
+                          className="p-2 border border-gray-100 rounded-lg hover:border-sky-200 hover:bg-sky-50 text-sky-600 transition-all"
+                        >
+                          <ShieldEllipsis className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => onEdit(c.id)}
                           aria-label={`Editar a ${nombre} ${apellidoPaterno}`}
                           className="p-2 border border-gray-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50 text-emerald-600 transition-all"
@@ -264,6 +305,22 @@ export const ComunerosList: React.FC<ListProps> = ({
                   <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
+                      onClick={() => setModal({ modo: 'tipo', comunero: c })}
+                      aria-label={`Cambiar tipo de ${nombre} ${apellidoPaterno}`}
+                      className="p-2 rounded-lg hover:bg-amber-50 text-amber-600"
+                    >
+                      <Repeat className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModal({ modo: 'estado', comunero: c })}
+                      aria-label={`Cambiar estatus de ${nombre} ${apellidoPaterno}`}
+                      className="p-2 rounded-lg hover:bg-sky-50 text-sky-600"
+                    >
+                      <ShieldEllipsis className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => onEdit(c.id)}
                       aria-label={`Editar a ${nombre} ${apellidoPaterno}`}
                       className="p-2 rounded-lg hover:bg-emerald-50 text-emerald-600"
@@ -329,6 +386,22 @@ export const ComunerosList: React.FC<ListProps> = ({
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+      )}
+
+      {modal && (
+        <CambiarTipoEstadoModal
+          modo={modal.modo}
+          nombreCompleto={`${modal.comunero.nombre ?? modal.comunero.firstName ?? ''} ${
+            modal.comunero.apellidoPaterno ?? modal.comunero.paternalLastName ?? ''
+          }`.trim()}
+          valorActual={
+            modal.modo === 'tipo'
+              ? getPersonTypeConfig(modal.comunero.tipo ?? modal.comunero.personType).key
+              : normalizeEstadoPersona(modal.comunero.status ?? modal.comunero.estado)
+          }
+          onCancelar={cerrarModal}
+          onConfirmar={confirmarModal}
+        />
       )}
     </div>
   );

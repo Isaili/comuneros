@@ -26,9 +26,8 @@ export const DatosPersonalesSection: React.FC<Props> = ({ formData, errors, onCh
           <option value="">Selecciona...</option>
           <option value="soltero">Soltero(a)</option>
           <option value="casado">Casado(a)</option>
-          <option value="divorciado">Divorciado(a)</option>
           <option value="viudo">Viudo(a)</option>
-          <option value="union_libre">Unión libre</option>
+          <option value="divorciado">Divorciado(a)</option>
         </select>
       </FormField>
     </div>

@@ -121,5 +121,12 @@ export const comunerosApi = {
     return resultado;
   },
 
+  // TODO: reemplazar la ruta cuando se entregue el endpoint definitivo de cambio de tipo de persona
+  actualizarTipo: async (id: string, personType: PersonaBackendDTO['personType']) => {
+    const resultado = await apiClient.patch(`/persons/${id}/person-type`, { personType });
+    invalidarCacheDashboard();
+    return resultado;
+  },
+
   eliminarFoto: (id: string) => apiClient.delete(`/persons/${id}/photo`),
 };
