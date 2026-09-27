@@ -12,17 +12,17 @@ import { ConfirmarCierreReunionModal } from '../components/modals/ConfirmarCierr
 import { CrearReunionModal } from '../components/modals/CrearReunionModal';
 import { AsistenciaPasadaModal } from '../components/modals/AsistenciaPasadaModal';
 import { AvisoProximoCierre } from '../components/Avisoproximocierre';
-import { Reunion, AsistenteRegistro } from '../types/types';
-import { assembliesApi, assemblyToReunion, attendanceToRegistro, obtenerItemsPaginados } from '../services/assembliesApi';
+import { Reunion, AsistenteRegistro, AssemblyStatus } from '../types/types';
+import { assembliesApi, AssemblyDTO, assemblyToReunion, attendanceToRegistro, obtenerItemsPaginados } from '../services/assembliesApi';
 import { comunerosApi } from '../../comuneros/services/comunerosApi';
 import { crearCanalAsistencia, publicarEvento, guardarSnapshot } from '../../bienvenida-comunero/model/asistenciaChannel';
 
 const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`).getTime();
 
 const INTERVALO_REVISION_MS = 15_000;
-let reunionesInicialesPromise: ReturnType<typeof assembliesApi.listar> | null = null;
 const ASISTENTES_CACHE_KEY = 'kiosco_reunion_asistentes_cache';
 const FOTOS_PERSONAS_CACHE_KEY = 'comuneros_fotos_cache';
+const ESTADOS_ASAMBLEA_ACTIVOS: AssemblyStatus[] = ['REGISTRATION_OPEN', 'IN_PROGRESS', 'EXITS_OPEN'];
 
 const obtenerMensajeApi = (error: unknown, fallback: string) => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -61,6 +61,18 @@ export default function KioscoQRFeature() {
   const canalRef = useRef<BroadcastChannel | null>(null);
   const codigosEntradaRegistradosRef = useRef<Set<string>>(new Set());
 
+  const sincronizarAsambleaActiva = (asamblea: AssemblyDTO) => {
+    setReuniones((prev) => prev.map((reunion) =>
+      reunion.id === asamblea.id ? assemblyToReunion(asamblea) : reunion
+    ));
+    setReunionActivaId(asamblea.id);
+    setAsistentes([]);
+    setComuneroSeleccionado(null);
+    setSalidasHabilitadas(asamblea.status === 'EXITS_OPEN');
+    setEntradasCerradas(asamblea.status !== 'REGISTRATION_OPEN');
+    codigosEntradaRegistradosRef.current.clear();
+  };
+
   const reproducirSonido = (tipo: 'entrada' | 'salida' | 'duplicado') => {
     const AudioContextClass = window.AudioContext
       ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -93,10 +105,17 @@ export default function KioscoQRFeature() {
   }, []);
 
   useEffect(() => {
-    reunionesInicialesPromise ??= assembliesApi.listar({ page: 1, limit: 100 });
-    reunionesInicialesPromise
-      .then((response) => setReuniones(response.data.data.items.map(assemblyToReunion)))
+    let cancelado = false;
+    assembliesApi.listar({ page: 1, limit: 100 })
+      .then((response) => {
+        if (cancelado) return;
+        const asambleas = response.data.data.items;
+        setReuniones(asambleas.map(assemblyToReunion));
+        const activa = asambleas.find((asamblea) => ESTADOS_ASAMBLEA_ACTIVOS.includes(asamblea.status));
+        if (activa) sincronizarAsambleaActiva(activa);
+      })
       .catch((error) => console.error('Error al cargar asambleas:', error));
+    return () => { cancelado = true; };
   }, []);
 
   const reunionActiva = useMemo(
@@ -140,23 +159,39 @@ export default function KioscoQRFeature() {
   const esLaMasCercana = reunionProxima?.id === reunionMasCercana?.id;
 
   const abrirReunionEspecifica = async (reunion: Reunion) => {
-    await assembliesApi.abrirRegistro(reunion.id);
-    const response = await assembliesApi.obtener(reunion.id);
-    const actualizada = assemblyToReunion(response.data.data);
-    setReuniones((prev) => prev.map((r) => (r.id === reunion.id ? actualizada : r)));
-    setReunionActivaId(reunion.id);
-    setReunionSeleccionadaId(null);
-    setAsistentes([]);
-    setComuneroSeleccionado(null);
-    setSalidasHabilitadas(false);
-    setEntradasCerradas(false);
-    codigosEntradaRegistradosRef.current.clear();
+    let asamblea = (await assembliesApi.obtener(reunion.id)).data.data;
+    let seAbrioAhora = false;
 
-    publicarEvento(canalRef.current, {
-      tipo: 'reunion_abierta',
-      timestamp: new Date().toISOString(),
-      reunion: actualizada,
-    });
+    if (asamblea.status === 'SCHEDULED') {
+      try {
+        await assembliesApi.abrirRegistro(reunion.id);
+        seAbrioAhora = true;
+        asamblea = (await assembliesApi.obtener(reunion.id)).data.data;
+      } catch (error) {
+        const actualizada = (await assembliesApi.obtener(reunion.id)).data.data;
+        if (!ESTADOS_ASAMBLEA_ACTIVOS.includes(actualizada.status)) throw error;
+        asamblea = actualizada;
+      }
+    }
+
+    if (!ESTADOS_ASAMBLEA_ACTIVOS.includes(asamblea.status)) {
+      setReuniones((prev) => prev.map((item) =>
+        item.id === asamblea.id ? assemblyToReunion(asamblea) : item
+      ));
+      throw new Error('La asamblea ya no está programada y no tiene el registro abierto.');
+    }
+
+    const actualizada = assemblyToReunion(asamblea);
+    sincronizarAsambleaActiva(asamblea);
+    setReunionSeleccionadaId(null);
+
+    if (seAbrioAhora) {
+      publicarEvento(canalRef.current, {
+        tipo: 'reunion_abierta',
+        timestamp: new Date().toISOString(),
+        reunion: actualizada,
+      });
+    }
   };
 
   const abrirReunion = () => {

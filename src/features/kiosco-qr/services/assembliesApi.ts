@@ -7,7 +7,7 @@ interface ApiEnvelope<T> {
   data: T;
 }
 
-interface AssemblyDTO {
+export interface AssemblyDTO {
   id: string;
   title: string;
   scheduledDate: string;
