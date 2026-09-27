@@ -39,7 +39,7 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
 
   useEffect(() => {
     if (activo) codigoInputRef.current?.focus();
-  }, [activo]);
+  }, [activo, salidasHabilitadas]);
 
   useEffect(() => {
     ultimoCodigoRef.current = null;
