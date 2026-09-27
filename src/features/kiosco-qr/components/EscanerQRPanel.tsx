@@ -24,6 +24,7 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
   onSimularEscaneo,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const codigoInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ultimoCodigoRef = useRef<string | null>(null);
@@ -35,6 +36,10 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
   useEffect(() => {
     onSimularEscaneoRef.current = onSimularEscaneo;
   }, [onSimularEscaneo]);
+
+  useEffect(() => {
+    if (activo) codigoInputRef.current?.focus();
+  }, [activo]);
 
   useEffect(() => {
     ultimoCodigoRef.current = null;
@@ -51,6 +56,14 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
   }[estadoEscaneo];
 
   const StatusIcon = estadoMeta.icon;
+
+  const handleSubmitCodigo = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const codigo = codigoManual.trim();
+    if (!codigo) return;
+    onSimularEscaneo(codigo);
+    setCodigoManual('');
+  };
 
   useEffect(() => {
     if (!activo) {
@@ -222,31 +235,40 @@ export const EscanerQrPanel: React.FC<EscanerQrPanelProps> = ({
       </p>
 
       {activo && (
-        <div className="mt-4 w-full max-w-xs space-y-2">
+        <form onSubmit={handleSubmitCodigo} className="mt-4 w-full max-w-xs space-y-2">
           <label className="block text-[10px] font-bold uppercase tracking-[0.14em] text-gray-400">
-            Código QR a validar
+            Lector USB o código manual
           </label>
           <input
+            ref={codigoInputRef}
+            type="text"
             value={codigoManual}
             onChange={(e) => setCodigoManual(e.target.value)}
             placeholder="Ej. COM-ABC123"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-gray-700 text-xs font-semibold outline-none focus:border-[#1E4D3A]"
           />
           <button
-            onClick={() => onSimularEscaneo(codigoManual.trim() || undefined)}
+            type="submit"
+            onMouseDown={(event) => event.preventDefault()}
             className="w-full flex items-center justify-center gap-1.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors"
           >
             {salidasHabilitadas ? (
               <>
-                <Smartphone className="w-3.5 h-3.5" /> Simular escaneo (entrada o salida)
+                <Smartphone className="w-3.5 h-3.5" /> Validar código (entrada o salida)
               </>
             ) : (
               <>
-                <LogIn className="w-3.5 h-3.5" /> Simular escaneo (solo entrada)
+                <LogIn className="w-3.5 h-3.5" /> Validar código (solo entrada)
               </>
             )}
           </button>
-        </div>
+          <p className="text-[10px] text-gray-400 text-center">
+            El lector debe estar en modo teclado y enviar Enter al terminar cada lectura.
+          </p>
+        </form>
       )}
     </div>
   );
