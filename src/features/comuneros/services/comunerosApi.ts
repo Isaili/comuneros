@@ -74,11 +74,17 @@ export const comunerosApi = {
     statusActual?: PersonaBackendDTO['status'],
     eliminarFoto = false
   ): Promise<Comunero> => {
-    const { personType: _personType, status: nuevoStatus, phone: _phone, ...datosPersonales } = payload;
+    const datosPersonales = { ...payload };
+    const nuevoStatus = datosPersonales.status;
+    delete datosPersonales.personType;
+    delete datosPersonales.status;
+    delete datosPersonales.phone;
+    let personaActualizada: PersonaBackendDTO | null = null;
 
     // 1. Aplica cambios de datos personales
     if (Object.keys(datosPersonales).length > 0) {
-      await apiClient.patch<ApiEnvelope<PersonaBackendDTO>>(`/persons/${id}`, datosPersonales);
+      const { data } = await apiClient.patch<ApiEnvelope<PersonaBackendDTO>>(`/persons/${id}`, datosPersonales);
+      personaActualizada = data.data;
     }
 
     // 2. Aplica cambios de estado
@@ -95,18 +101,26 @@ export const comunerosApi = {
     if (fotoFile) {
       const formData = new FormData();
       formData.append('photo', fotoFile);
-      await apiClient.patch<ApiEnvelope<{ url: string }>>(`/persons/${id}/photo`, formData, {
+      const { data } = await apiClient.patch<ApiEnvelope<{ url: string }>>(`/persons/${id}/photo`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      if (personaActualizada) personaActualizada.photo = data.data.url;
     } else if (eliminarFoto) {
       await comunerosApi.eliminarFoto(id);
+      if (personaActualizada) personaActualizada.photo = undefined;
     }
 
-    // 4. Invalida el caché del dashboard (cubre datos, status y foto en un solo lugar)
     invalidarCacheDashboard();
 
-    // 5. Hace un GET fresco de la entidad recién actualizada y lo retorna
-    return await comunerosApi.obtenerPorId(id);
+    if (!personaActualizada) {
+      throw new Error('La respuesta de actualización no incluyó los datos de la persona.');
+    }
+
+    const resultado = {
+      ...personaActualizada,
+      status: nuevoStatus ?? personaActualizada.status,
+    };
+    return mapearComuneroDesdeBackend(resultado);
   },
 
   actualizarEstado: async (id: string, status: 'ACTIVATE' | 'INACTIVE') => {

@@ -51,6 +51,7 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
 
   const [selectedComunero, setSelectedComunero] = useState<Comunero | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [comuneroAEditar, setComuneroAEditar] = useState<Comunero | null>(null);
   const [detallesCache, setDetallesCache] = useState<Record<string, Comunero>>(leerDetallesCache);
@@ -80,7 +81,16 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
     if (ultimaCargaRef.current === cargaKey) return;
     ultimaCargaRef.current = cargaKey;
     cargarComuneros(page);
-  }, [page, cargarComuneros]);
+  }, [page, searchTerm, cargarComuneros]);
+
+  useEffect(() => {
+    if (searchInput === searchTerm) return;
+    const debounce = window.setTimeout(() => {
+      setSearchTerm(searchInput);
+      setPage(1);
+    }, 5000);
+    return () => window.clearTimeout(debounce);
+  }, [searchInput, searchTerm]);
 
   const handleSelectComunero = async (comunero: Comunero) => {
     const detalleGuardado = detallesCache[comunero.id];
@@ -107,8 +117,7 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
   };
 
   const handleSearch = (text: string) => {
-    setSearchTerm(text);
-    setPage(1);
+    setSearchInput(text);
   };
 
   const handleAddComunero = () => {
@@ -125,7 +134,6 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
       const archivoAEnviar = fotoFile instanceof Blob ? fotoFile : null;
 
       if (comuneroAEditar) {
-        // 1. Ejecuta actualización y obtiene la entidad fresca mediante un GET interno
         const comuneroActualizado = await comunerosApi.actualizar(
           comuneroAEditar.id,
           payload,
@@ -134,34 +142,35 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
           eliminarFoto
         );
 
-        // 2. Sobrescribe la caché local/localStorage con el resultado del GET
+        setComuneros((actuales) => actuales.flatMap((comunero) => {
+          if (comunero.id !== comuneroActualizado.id) return [comunero];
+          return comuneroActualizado.status === 'ACTIVE' ? [comuneroActualizado] : [];
+        }));
+
         setDetallesCache((actual) => {
           const actualizado = { ...actual, [comuneroAEditar.id]: comuneroActualizado };
           window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
           return actualizado;
         });
 
-        // 3. Si el comunero editado es el que se está viendo, actualiza la vista
         if (selectedComunero?.id === comuneroAEditar.id) {
           setSelectedComunero(comuneroActualizado);
         }
       } else {
         await comunerosApi.crear(payload, archivoAEnviar);
+        ultimaCargaRef.current = '';
+        await cargarComuneros(page);
       }
 
-      // 4. Invalida la referencia para forzar un nuevo GET de la lista
-      ultimaCargaRef.current = '';
-
-      // 5. Cierra el modal y limpia el estado de edición
       setIsAddModalOpen(false);
       setComuneroAEditar(null);
-
-      // 6. Recarga la lista paginada general
-      await cargarComuneros(page);
-    } catch (err: any) {
-      if (err.response) {
-        console.error('❌ Error devuelto por el servidor:', err.response.data);
-        const errorMsg = err.response.data.message || 'Error al procesar la solicitud.';
+    } catch (err: unknown) {
+      const responseData = typeof err === 'object' && err !== null && 'response' in err
+        ? (err as { response?: { data?: { message?: string | string[] } } }).response?.data
+        : undefined;
+      if (responseData) {
+        console.error('❌ Error devuelto por el servidor:', responseData);
+        const errorMsg = responseData.message || 'Error al procesar la solicitud.';
         alert(`No se pudo guardar: ${Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg}`);
       } else {
         console.error('Error al guardar comunero:', err);
@@ -254,7 +263,11 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-fade-in w-full px-2 sm:px-4 py-2 max-w-[1600px] mx-auto relative">
-      <ComunerosHeader onAddClick={handleAddComunero} onSearchChange={handleSearch} />
+      <ComunerosHeader
+        onAddClick={handleAddComunero}
+        searchValue={searchInput}
+        onSearchChange={handleSearch}
+      />
 
       <div className="w-full">
         {isLoading ? (

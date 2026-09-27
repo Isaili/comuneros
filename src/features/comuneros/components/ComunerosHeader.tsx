@@ -6,10 +6,11 @@ import { Search, Plus, Calendar, Users, MapPin } from 'lucide-react';
 
 interface HeaderProps {
   onAddClick: () => void;
+  searchValue: string;
   onSearchChange: (text: string) => void;
 }
 
-export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchChange }) => {
+export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, searchValue, onSearchChange }) => {
   const [fechaActual, setFechaActual] = useState<string>('');
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export const ComunerosHeader: React.FC<HeaderProps> = ({ onAddClick, onSearchCha
           <input
             type="text"
             placeholder="Buscar por nombre o apellido..."
+            value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#006837] focus:ring-1 focus:ring-[#006837] transition-all placeholder-gray-500 text-gray-900"
           />
