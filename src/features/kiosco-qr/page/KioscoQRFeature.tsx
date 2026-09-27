@@ -19,6 +19,11 @@ import { crearCanalAsistencia, publicarEvento, guardarSnapshot } from '../../bie
 
 const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`).getTime();
 
+const normalizarCodigoQr = (codigo: string) => {
+  const partes = codigo.trim().match(/^QR[-']([0-9a-f]{8})[-']([0-9a-f]{4})[-']([0-9a-f]{4})[-']([0-9a-f]{4})[-']([0-9a-f]{12})$/i);
+  return partes ? `QR-${partes.slice(1).join('-')}` : codigo.trim();
+};
+
 const INTERVALO_REVISION_MS = 15_000;
 const ASISTENTES_CACHE_KEY = 'kiosco_reunion_asistentes_cache';
 const FOTOS_PERSONAS_CACHE_KEY = 'comuneros_fotos_cache';
@@ -393,7 +398,7 @@ export default function KioscoQRFeature() {
   const simularEscaneo = async (codigoEscaneado?: string) => {
     if (!reunionActiva) return;
 
-    const codigoIngresado = (codigoEscaneado ?? '').trim();
+    const codigoIngresado = normalizarCodigoQr(codigoEscaneado ?? '');
     setUltimoCodigo(codigoIngresado);
 
     if (!salidasHabilitadas && codigosEntradaRegistradosRef.current.has(codigoIngresado.toUpperCase())) {
