@@ -22,9 +22,9 @@ export const metadata: Metadata = {
   title: "Casa de Bienes Comunales Copainalá",
   description: "Sistema de gestión de comuneros, parcelas, lotes y asambleas de Copainalá.",
   icons: {
-    icon: "/recibo1.png",
-    shortcut: "/recibo1.png",
-    apple: "/recibo1.png",
+    icon: [{ url: "/recibo1.png?v=2", type: "image/png" }],
+    shortcut: [{ url: "/recibo1.png?v=2", type: "image/png" }],
+    apple: [{ url: "/recibo1.png?v=2", type: "image/png" }],
   },
 };
 
