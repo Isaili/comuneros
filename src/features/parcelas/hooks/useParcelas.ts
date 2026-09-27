@@ -7,18 +7,6 @@ import { detailToParcela, historyToPropietarios, parcelToParcela, parcelaToCreat
 import { comunerosApi } from '../../comuneros/services/comunerosApi';
 
 interface UseParcelasOptions { pageSize?: number }
-const DETALLES_CACHE_KEY = 'parcelas_detalles_cache';
-
-const leerDetallesCache = (): Record<string, Parcela> => {
-  if (typeof window === 'undefined') return {};
-  try {
-    const raw = window.localStorage.getItem(DETALLES_CACHE_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
-};
 
 export function useParcelas(options: UseParcelasOptions = {}) {
   const pageSize = options.pageSize ?? 12;
@@ -32,8 +20,12 @@ export function useParcelas(options: UseParcelasOptions = {}) {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const ultimaCargaRef = useRef('');
   const detallesEnCargaRef = useRef(new Map<string, Promise<Parcela>>());
-  const detallesCacheRef = useState<Record<string, Parcela>>(leerDetallesCache)[0];
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  useEffect(() => {
+    window.localStorage.removeItem('parcelas_detalles_cache');
+    window.localStorage.removeItem('parcelas_titulares_local');
+  }, []);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setDebouncedSearchTerm(searchTerm.trim()), 300);
@@ -45,22 +37,22 @@ export function useParcelas(options: UseParcelasOptions = {}) {
     setError(null);
     try {
       const response = await plotsService.list({ page, limit: pageSize, parcelNumber: debouncedSearchTerm || undefined });
-      setParcelas(response.data.items.map((parcel) => {
+      const parcelasConTitulares = await Promise.all(response.data.items.map(async (parcel) => {
         const parcela = parcelToParcela(parcel, { titularesCount: parcel.activeOwnersCount });
-        // Enriquecemos con nombres reales de titulares desde el detalle ya
-        // visto (GET /parcel no devuelve nombres, solo el conteo). Solo se
-        // confía en la caché si el conteo de titulares sigue coincidiendo,
-        // para no mostrar nombres obsoletos tras una asignación o traspaso.
-        const detalleCacheado = detallesCacheRef[parcela.id];
-        if (detalleCacheado && detalleCacheado.titularesCount === parcela.titularesCount) {
+        try {
+          const detalleResponse = await plotsService.detail(parcela.id);
+          const detalle = detailToParcela(detalleResponse);
           return {
             ...parcela,
-            propietarios: detalleCacheado.propietarios,
-            titularesDetalle: detalleCacheado.titularesDetalle,
+            propietarios: detalle.propietarios,
+            titularesCount: detalle.titularesCount,
+            titularesDetalle: detalle.titularesDetalle,
           };
+        } catch {
+          return parcela;
         }
-        return parcela;
       }));
+      setParcelas(parcelasConTitulares);
       setTotal(response.data.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la lista de parcelas.');
@@ -144,8 +136,6 @@ export function useParcelas(options: UseParcelasOptions = {}) {
   }, [refrescarFilaConDetalle]);
 
   const getDetalle = useCallback(async (id: string) => {
-    const cacheado = detallesCacheRef[id];
-    if (cacheado) return cacheado;
     const cargaEnCurso = detallesEnCargaRef.current.get(id);
     if (cargaEnCurso) return cargaEnCurso;
 
@@ -171,8 +161,6 @@ export function useParcelas(options: UseParcelasOptions = {}) {
         ...detalle,
         historialPropietarios: historyToPropietarios(historialConNombres, detalleResponse.activeOwners),
       };
-      detallesCacheRef[id] = resultado;
-      window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(detallesCacheRef));
       return resultado;
     })();
 
@@ -182,12 +170,7 @@ export function useParcelas(options: UseParcelasOptions = {}) {
     } finally {
       detallesEnCargaRef.current.delete(id);
     }
-  }, [detallesCacheRef, detallesEnCargaRef]);
-
-  const invalidarDetalle = useCallback((id: string) => {
-    delete detallesCacheRef[id];
-    window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(detallesCacheRef));
-  }, [detallesCacheRef]);
+  }, []);
 
   const cargarHistorial = useCallback(async (parcelaId: string, historicalOwners: Array<{
     personId: string;
@@ -200,25 +183,21 @@ export function useParcelas(options: UseParcelasOptions = {}) {
     finalizationReason: string;
   }>) => {
     await plotsService.historyCreate(parcelaId, historicalOwners);
-    invalidarDetalle(parcelaId);
-  }, [invalidarDetalle]);
+  }, []);
 
   const asignarDerechoUso = useCallback(async (parcelaId: string, personId: string) => {
     await plotsService.usageRight(parcelaId, personId);
-    invalidarDetalle(parcelaId);
-  }, [invalidarDetalle]);
+  }, []);
 
   const removerDerechoUso = useCallback(async (parcelaId: string, personId: string) => {
     await plotsService.removeUsageRight(parcelaId, personId);
-    invalidarDetalle(parcelaId);
-  }, [invalidarDetalle]);
+  }, []);
 
   return {
     parcelas, loading, initialLoading, error, page, totalPages, total,
     setPage, setSearch, setActiveFilter: () => undefined,
     createParcela, updateParcela, toggleActivo, asignarTitular, ejecutarTraspaso,
     getDetalle,
-    invalidarDetalle,
     getHistorial: plotsService.history,
     cargarHistorial, asignarDerechoUso, removerDerechoUso,
     refetch: fetchParcelas,

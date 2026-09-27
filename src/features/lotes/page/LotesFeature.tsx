@@ -22,7 +22,6 @@ interface DatosTraspasoLotePayload {
 }
 
 const LOTES_STORAGE_KEY = 'lotes_titulares_local';
-const COMUNEROS_STORAGE_KEY = 'lotes_comuneros_registrados';
 
 const leerTitularesLocal = (): Record<string, { propietarios: string[]; historialPropietarios: PropietarioHistoricoLote[] }> => {
   if (typeof window === 'undefined') return {};
@@ -42,18 +41,6 @@ const guardarTitularesLocal = (value: Record<string, { propietarios: string[]; h
     window.localStorage.setItem(LOTES_STORAGE_KEY, JSON.stringify(value));
   } catch {
     // noop
-  }
-};
-
-const leerComunerosCache = (): Comunero[] => {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(COMUNEROS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
   }
 };
 
@@ -141,21 +128,19 @@ const MOCK_COMUNEROS: Comunero[] = [
 
 export const LotesFeature: React.FC = () => {
   const [lotes, setLotes] = useState<LoteSimplificado[]>(MOCK_LOTES);
-  const [comuneros, setComuneros] = useState<Comunero[]>(() => leerComunerosCache());
+  const [comuneros, setComuneros] = useState<Comunero[]>([]);
 
   useEffect(() => {
+    window.localStorage.removeItem('lotes_comuneros_registrados');
     let isMounted = true;
     const cargarComuneros = async () => {
       try {
         const { comuneros: lista } = await comunerosApi.listar(1, 200);
         if (!isMounted) return;
         setComuneros(lista);
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(COMUNEROS_STORAGE_KEY, JSON.stringify(lista));
-        }
       } catch {
         if (!isMounted) return;
-        setComuneros(leerComunerosCache());
+        setComuneros([]);
       }
     };
 

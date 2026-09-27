@@ -8,8 +8,3 @@ export interface EventoAsistencia {
   reunion: Reunion | null;
   asistente?: AsistenteRegistro;
 }
-
-export interface SnapshotAsistencia {
-  reunionActiva: Reunion | null;
-  asistentes: AsistenteRegistro[];
-}

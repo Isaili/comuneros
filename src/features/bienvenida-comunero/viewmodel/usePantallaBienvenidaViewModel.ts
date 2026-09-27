@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Reunion, AsistenteRegistro } from '../../kiosco-qr/types/types';
 import { EventoAsistencia } from '../model/types';
-import { CANAL_ASISTENCIA, leerSnapshot } from '../model/asistenciaChannel';
+import { assembliesApi, assemblyToReunion, attendanceToRegistro } from '../../kiosco-qr/services/assembliesApi';
+import { CANAL_ASISTENCIA } from '../model/asistenciaChannel';
 
 const MAX_HISTORIAL = 8;
 
@@ -23,54 +24,60 @@ export function usePantallaBienvenidaViewModel(): PantallaBienvenidaState {
   const [conectado, setConectado] = useState(false);
 
   useEffect(() => {
-    const snapshot = leerSnapshot();
-    if (snapshot) {
-      setReunionActiva(snapshot.reunionActiva);
-      setAsistentes(snapshot.asistentes);
+    let cancelado = false;
+    window.localStorage.removeItem('kiosco-asistencia:snapshot');
+    const canal = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(CANAL_ASISTENCIA);
+    setConectado(!!canal);
+
+    if (canal) {
+      canal.onmessage = (mensaje: MessageEvent<EventoAsistencia>) => {
+        const data = mensaje.data;
+
+        if (data.tipo === 'reunion_abierta') {
+          setReunionActiva(data.reunion);
+          setAsistentes([]);
+          setHistorial([]);
+          setEventoDestacado(null);
+          return;
+        }
+
+        if (data.tipo === 'reunion_cerrada') {
+          setReunionActiva(null);
+          setAsistentes([]);
+          setEventoDestacado(null);
+          return;
+        }
+
+        if (data.tipo === 'entrada' && data.asistente) {
+          setAsistentes((prev) => [...prev, data.asistente as AsistenteRegistro]);
+        }
+
+        if (data.tipo === 'salida' && data.asistente) {
+          const asistenteActualizado = data.asistente;
+          setAsistentes((prev) => prev.map((a) => (a.id === asistenteActualizado.id ? asistenteActualizado : a)));
+        }
+
+        setEventoDestacado(data);
+        setHistorial((prev) => [data, ...prev].slice(0, MAX_HISTORIAL));
+      };
     }
 
-    if (typeof BroadcastChannel === 'undefined') {
-      setConectado(false);
-      return;
-    }
-
-    const canal = new BroadcastChannel(CANAL_ASISTENCIA);
-    setConectado(true);
-
-    canal.onmessage = (mensaje: MessageEvent<EventoAsistencia>) => {
-      const data = mensaje.data;
-
-      if (data.tipo === 'reunion_abierta') {
-        setReunionActiva(data.reunion);
-        setAsistentes([]);
-        setHistorial([]);
-        setEventoDestacado(null);
-        return;
-      }
-
-      if (data.tipo === 'reunion_cerrada') {
-        setReunionActiva(null);
-        setAsistentes([]);
-        setEventoDestacado(null);
-        return;
-      }
-
-      if (data.tipo === 'entrada' && data.asistente) {
-        setAsistentes((prev) => [...prev, data.asistente as AsistenteRegistro]);
-      }
-
-      if (data.tipo === 'salida' && data.asistente) {
-        const asistenteActualizado = data.asistente;
-        setAsistentes((prev) => prev.map((a) => (a.id === asistenteActualizado.id ? asistenteActualizado : a)));
-      }
-
-      setEventoDestacado(data);
-      setHistorial((prev) => [data, ...prev].slice(0, MAX_HISTORIAL));
-
-    };
+    void assembliesApi.listar({ page: 1, limit: 100 })
+      .then(async (response) => {
+        const activa = response.data.data.items.find((assembly) =>
+          ['REGISTRATION_OPEN', 'IN_PROGRESS', 'EXITS_OPEN'].includes(assembly.status)
+        );
+        if (!activa || cancelado) return;
+        setReunionActiva(assemblyToReunion(activa));
+        const asistencias = await assembliesApi.asistencias(activa.id, { page: 1, limit: 100 });
+        if (cancelado) return;
+        setAsistentes(asistencias.data.data.items.map((attendance, index) => attendanceToRegistro(attendance, index)));
+      })
+      .catch((error) => console.error('Error al cargar la reunión activa de bienvenida:', error));
 
     return () => {
-      canal.close();
+      cancelado = true;
+      canal?.close();
     };
   }, []);
 

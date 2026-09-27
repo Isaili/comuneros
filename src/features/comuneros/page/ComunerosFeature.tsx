@@ -23,19 +23,6 @@ const deduplicarComuneros = (items: Comunero[]) => {
   return Array.from(mapa.values());
 };
 
-const DETALLES_CACHE_KEY = 'comuneros_detalles_cache';
-
-const leerDetallesCache = (): Record<string, Comunero> => {
-  if (typeof window === 'undefined') return {};
-  try {
-    const valor = window.localStorage.getItem(DETALLES_CACHE_KEY);
-    const datos = valor ? JSON.parse(valor) : {};
-    return datos && typeof datos === 'object' ? datos : {};
-  } catch {
-    return {};
-  }
-};
-
 interface ComunerosFeatureProps {
   onIrABarrios?: () => void;
 }
@@ -54,8 +41,11 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [comuneroAEditar, setComuneroAEditar] = useState<Comunero | null>(null);
-  const [detallesCache, setDetallesCache] = useState<Record<string, Comunero>>(leerDetallesCache);
   const ultimaCargaRef = useRef('');
+
+  useEffect(() => {
+    window.localStorage.removeItem('comuneros_detalles_cache');
+  }, []);
 
   const cargarComuneros = useCallback(async (paginaActual: number) => {
     setIsLoading(true);
@@ -93,21 +83,10 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
   }, [searchInput, searchTerm]);
 
   const handleSelectComunero = async (comunero: Comunero) => {
-    const detalleGuardado = detallesCache[comunero.id];
-    if (detalleGuardado) {
-      setSelectedComunero(detalleGuardado);
-      return;
-    }
-
     setSelectedComunero(comunero);
     setIsDetailLoading(true);
     try {
       const detalle = await comunerosApi.obtenerPorId(comunero.id);
-      setDetallesCache((actual) => {
-        const actualizado = { ...actual, [comunero.id]: detalle };
-        window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
-        return actualizado;
-      });
       setSelectedComunero(detalle);
     } catch (err) {
       console.error('Error al cargar el detalle del comunero:', err);
@@ -147,12 +126,6 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
           return comuneroActualizado.status === 'ACTIVE' ? [comuneroActualizado] : [];
         }));
 
-        setDetallesCache((actual) => {
-          const actualizado = { ...actual, [comuneroAEditar.id]: comuneroActualizado };
-          window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
-          return actualizado;
-        });
-
         if (selectedComunero?.id === comuneroAEditar.id) {
           setSelectedComunero(comuneroActualizado);
         }
@@ -186,12 +159,6 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
     try {
       // GET fresco previo a la edición
       const comuneroCompleto = await comunerosApi.obtenerPorId(id);
-      
-      setDetallesCache((actual) => {
-        const actualizado = { ...actual, [id]: comuneroCompleto };
-        window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
-        return actualizado;
-      });
 
       setComuneroAEditar(comuneroCompleto);
     } catch (err) {
@@ -207,14 +174,6 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
     if (!confirm('¿Estás seguro de que deseas dar de baja este registro?')) return;
     try {
       await comunerosApi.actualizarEstado(id, 'INACTIVE');
-      
-      // Elimina la versión antigua del cache
-      setDetallesCache((actual) => {
-        const actualizado = { ...actual };
-        delete actualizado[id];
-        window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
-        return actualizado;
-      });
 
       ultimaCargaRef.current = '';
       await cargarComuneros(page);
@@ -227,11 +186,6 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
 
   const refrescarComuneroActualizado = async (id: string) => {
     const comuneroActualizado = await comunerosApi.obtenerPorId(id);
-    setDetallesCache((actual) => {
-      const actualizado = { ...actual, [id]: comuneroActualizado };
-      window.localStorage.setItem(DETALLES_CACHE_KEY, JSON.stringify(actualizado));
-      return actualizado;
-    });
     if (selectedComunero?.id === id) setSelectedComunero(comuneroActualizado);
     ultimaCargaRef.current = '';
     await cargarComuneros(page);

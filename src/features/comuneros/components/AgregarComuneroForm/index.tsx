@@ -83,7 +83,6 @@ export const AgregarComuneroForm: React.FC<AgregarComuneroFormProps> = ({
           <FotoPerfilCapture
             ref={fotoRef}
             value={fotografia}
-            required={!esEdicion}
             onCapture={handlePhotoCaptured}
             onRemove={handlePhotoRemoved}
           />

@@ -15,7 +15,7 @@ import { AvisoProximoCierre } from '../components/Avisoproximocierre';
 import { Reunion, AsistenteRegistro, AssemblyStatus } from '../types/types';
 import { assembliesApi, AssemblyDTO, assemblyToReunion, attendanceToRegistro, obtenerItemsPaginados } from '../services/assembliesApi';
 import { comunerosApi } from '../../comuneros/services/comunerosApi';
-import { crearCanalAsistencia, publicarEvento, guardarSnapshot } from '../../bienvenida-comunero/model/asistenciaChannel';
+import { crearCanalAsistencia, publicarEvento } from '../../bienvenida-comunero/model/asistenciaChannel';
 
 const fechaHoraTimestamp = (r: Reunion) => new Date(`${r.fecha}T${r.horaInicio}`).getTime();
 
@@ -25,28 +25,18 @@ const normalizarCodigoQr = (codigo: string) => {
 };
 
 const INTERVALO_REVISION_MS = 15_000;
-const ASISTENTES_CACHE_KEY = 'kiosco_reunion_asistentes_cache';
-const FOTOS_PERSONAS_CACHE_KEY = 'comuneros_fotos_cache';
 const ESTADOS_ASAMBLEA_ACTIVOS: AssemblyStatus[] = ['REGISTRATION_OPEN', 'IN_PROGRESS', 'EXITS_OPEN'];
 
 const enriquecerFotos = async (registros: AsistenteRegistro[]) => {
-  if (typeof window === 'undefined') return registros;
-  const fotosGuardadas = JSON.parse(window.localStorage.getItem(FOTOS_PERSONAS_CACHE_KEY) ?? '{}') as Record<string, string>;
-  const registrosConFoto = await Promise.all(registros.map(async (registro) => {
+  return Promise.all(registros.map(async (registro) => {
     if (registro.fotografia || !registro.comuneroId) return registro;
-    if (fotosGuardadas[registro.comuneroId]) {
-      return { ...registro, fotografia: fotosGuardadas[registro.comuneroId] };
-    }
     try {
       const persona = await comunerosApi.obtenerPorId(registro.comuneroId);
-      if (persona.fotografia) fotosGuardadas[registro.comuneroId] = persona.fotografia;
       return { ...registro, fotografia: persona.fotografia ?? '' };
     } catch {
       return registro;
     }
   }));
-  window.localStorage.setItem(FOTOS_PERSONAS_CACHE_KEY, JSON.stringify(fotosGuardadas));
-  return registrosConFoto;
 };
 
 const obtenerMensajeApi = (error: unknown, fallback: string) => {
@@ -125,6 +115,9 @@ export default function KioscoQRFeature() {
   };
 
   useEffect(() => {
+    window.localStorage.removeItem('kiosco_reunion_asistentes_cache');
+    window.localStorage.removeItem('comuneros_fotos_cache');
+    window.localStorage.removeItem('kiosco-asistencia:snapshot');
     canalRef.current = crearCanalAsistencia();
     return () => canalRef.current?.close();
   }, []);
@@ -160,10 +153,6 @@ export default function KioscoQRFeature() {
       .catch((error) => console.error('Error al cargar asistencias:', error));
     return () => { cancelado = true; };
   }, [reunionActivaId]);
-
-  useEffect(() => {
-    guardarSnapshot({ reunionActiva, asistentes });
-  }, [reunionActiva, asistentes]);
 
   const reunionesProgramadas = useMemo(
     () =>
@@ -274,21 +263,17 @@ export default function KioscoQRFeature() {
   const seleccionarReunionDestacada = (reunionId: string) => {
     setReunionSeleccionadaId(reunionId);
     setReunionAsistentesId(reunionId);
-    const cache = JSON.parse(window.localStorage.getItem(ASISTENTES_CACHE_KEY) ?? '{}') as Record<string, AsistenteRegistro[]>;
     setCargandoAsistentes(true);
-    const asistentesCargados = cache[reunionId]?.length
-      ? Promise.resolve(cache[reunionId])
-      : assembliesApi.asistencias(reunionId, { page: 1, limit: 100 }).then((response) =>
-        obtenerItemsPaginados(response.data.data)
-          .filter((attendance) => (attendance.status ?? attendance.attendanceStatus) === 'PRESENT')
-          .map((attendance, index) => attendanceToRegistro(attendance, index))
-      );
+    const asistentesCargados = assembliesApi.asistencias(reunionId, { page: 1, limit: 100 }).then((response) =>
+      obtenerItemsPaginados(response.data.data)
+        .filter((attendance) => (attendance.status ?? attendance.attendanceStatus) === 'PRESENT')
+        .map((attendance, index) => attendanceToRegistro(attendance, index))
+    );
 
     void asistentesCargados
       .then(async (registros) => {
         const registrosConFoto = await enriquecerFotos(registros);
         setAsistentesReunion(registrosConFoto);
-        window.localStorage.setItem(ASISTENTES_CACHE_KEY, JSON.stringify({ ...cache, [reunionId]: registrosConFoto }));
       })
       .catch((error) => console.error('Error al cargar asistentes:', error))
       .finally(() => setCargandoAsistentes(false));

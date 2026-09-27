@@ -82,12 +82,6 @@ export function useComuneroForm({ comuneroAEditar, onGuardar }: UseComuneroFormA
     e.preventDefault();
     if (isSubmitting) return;
 
-    // Al crear se requiere foto, al ediexistente es válida
-    if (!fotoFile && !fotografia && !esEdicion) {
-      alert('Debes tomar o subir una fotografía del miembro.');
-      return;
-    }
-
     try {
       await comuneroValidationSchema.validate(formData, { abortEarly: false });
       setIsSubmitting(true);

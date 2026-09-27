@@ -21,29 +21,12 @@ interface ParcelasFeatureProps {
   comunerosRegistrados?: Comunero[];
 }
 
-const COMUNEROS_CACHE_KEY = 'parcelas_comuneros_registrados';
 const COMUNEROS_REGISTRADOS_VACIOS: Comunero[] = [];
-
-const leerComunerosCache = (): Comunero[] => {
-  if (typeof window === 'undefined') return [];
-
-  try {
-    const raw = window.localStorage.getItem(COMUNEROS_CACHE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
 
 export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
   comunerosRegistrados = COMUNEROS_REGISTRADOS_VACIOS,
 }) => {
-  const [comunerosLocal, setComunerosLocal] = useState<Comunero[]>(() => {
-    if (comunerosRegistrados.length > 0) return comunerosRegistrados;
-    return leerComunerosCache();
-  });
+  const [comunerosLocal, setComunerosLocal] = useState<Comunero[]>(comunerosRegistrados);
 
   const {
     parcelas,
@@ -60,7 +43,6 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
     asignarTitular,
     ejecutarTraspaso,
     getDetalle,
-    invalidarDetalle,
     cargarHistorial,
     asignarDerechoUso,
     removerDerechoUso,
@@ -76,11 +58,9 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
   const [mostrarCargaHistorial, setMostrarCargaHistorial] = useState(false);
 
   useEffect(() => {
+    window.localStorage.removeItem('parcelas_comuneros_registrados');
     if (comunerosRegistrados.length > 0) {
       setComunerosLocal(comunerosRegistrados);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(COMUNEROS_CACHE_KEY, JSON.stringify(comunerosRegistrados));
-      }
       return;
     }
 
@@ -100,12 +80,9 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
         ].filter((comunero, index, lista) => lista.findIndex((item) => item.id === comunero.id) === index);
         if (!isMounted) return;
         setComunerosLocal(comuneros);
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(COMUNEROS_CACHE_KEY, JSON.stringify(comuneros));
-        }
       } catch {
         if (!isMounted) return;
-        setComunerosLocal(leerComunerosCache());
+        setComunerosLocal([]);
       }
     };
 
@@ -183,22 +160,6 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
   }) => {
     if (!parcelaAAsignarTitular) return;
 
-    const asignacionesGuardadas = (() => {
-      if (typeof window === 'undefined') return {} as Record<string, { comuneroId: string; nombreCompleto: string }>;
-      try {
-        const raw = window.localStorage.getItem('parcelas_titulares_local');
-        return raw ? JSON.parse(raw) : {};
-      } catch {
-        return {} as Record<string, { comuneroId: string; nombreCompleto: string }>;
-      }
-    })();
-
-    asignacionesGuardadas[parcelaAAsignarTitular.id] = { comuneroId: datos.comuneroId, nombreCompleto: datos.nombreCompleto };
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('parcelas_titulares_local', JSON.stringify(asignacionesGuardadas));
-    }
-
-    invalidarDetalle(parcelaAAsignarTitular.id);
     await asignarTitular(parcelaAAsignarTitular.id, datos.comuneroId, datos.nombreCompleto, datos.hectares, datos.certificate, datos.transferType);
     const actualizada = await getDetalle(parcelaAAsignarTitular.id);
     setSelectedParcela(actualizada);
@@ -216,7 +177,6 @@ export const ParcelasFeature: React.FC<ParcelasFeatureProps> = ({
       alert('No se pudo identificar a los titulares para realizar el traspaso.');
       return;
     }
-    invalidarDetalle(parcelaATraspasar.id);
     await ejecutarTraspaso(parcelaATraspasar.id, {
       targetOwnershipId: datos.targetOwnershipId,
       oldPersonId: datos.oldPersonId,

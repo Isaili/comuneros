@@ -3,7 +3,6 @@ import { User, Camera, Upload, RotateCcw } from 'lucide-react';
 
 interface FotoPerfilCaptureProps {
   value: string | null;
-  required?: boolean;
   onCapture: (file: File | Blob, previewUrl: string) => void;
   onRemove: () => void;
 }
@@ -17,7 +16,7 @@ const TARGET_WIDTH = 400;
 const TARGET_HEIGHT = 400;
 
 export const FotoPerfilCapture = forwardRef<FotoPerfilCaptureHandle, FotoPerfilCaptureProps>(
-  ({ value, required, onCapture, onRemove }, ref) => {
+  ({ value, onCapture, onRemove }, ref) => {
     const [isCameraActive, setIsCameraActive] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -121,7 +120,7 @@ export const FotoPerfilCapture = forwardRef<FotoPerfilCaptureHandle, FotoPerfilC
     return (
       <div className="flex flex-col items-center justify-center bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
         <h4 className="text-gray-500 font-bold self-start">
-          Fotografía de Perfil {required && <span className="text-red-500">*</span>}
+          Fotografía de Perfil
         </h4>
         <div className="relative w-28 h-28 rounded-full border-2 border-[#006837]/20 bg-slate-200 overflow-hidden shadow-inner flex items-center justify-center">
           {isCameraActive ? (
