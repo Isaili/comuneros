@@ -29,26 +29,6 @@ const ASISTENTES_CACHE_KEY = 'kiosco_reunion_asistentes_cache';
 const FOTOS_PERSONAS_CACHE_KEY = 'comuneros_fotos_cache';
 const ESTADOS_ASAMBLEA_ACTIVOS: AssemblyStatus[] = ['REGISTRATION_OPEN', 'IN_PROGRESS', 'EXITS_OPEN'];
 
-const enriquecerFotos = async (registros: AsistenteRegistro[]) => {
-  if (typeof window === 'undefined') return registros;
-  const fotosGuardadas = JSON.parse(window.localStorage.getItem(FOTOS_PERSONAS_CACHE_KEY) ?? '{}') as Record<string, string>;
-  const registrosConFoto = await Promise.all(registros.map(async (registro) => {
-    if (registro.fotografia || !registro.comuneroId) return registro;
-    if (fotosGuardadas[registro.comuneroId]) {
-      return { ...registro, fotografia: fotosGuardadas[registro.comuneroId] };
-    }
-    try {
-      const persona = await comunerosApi.obtenerPorId(registro.comuneroId);
-      if (persona.fotografia) fotosGuardadas[registro.comuneroId] = persona.fotografia;
-      return { ...registro, fotografia: persona.fotografia ?? '' };
-    } catch {
-      return registro;
-    }
-  }));
-  window.localStorage.setItem(FOTOS_PERSONAS_CACHE_KEY, JSON.stringify(fotosGuardadas));
-  return registrosConFoto;
-};
-
 const obtenerMensajeApi = (error: unknown, fallback: string) => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
     const response = (error as {
@@ -150,15 +130,9 @@ export default function KioscoQRFeature() {
 
   useEffect(() => {
     if (!reunionActivaId) return;
-    let cancelado = false;
     assembliesApi.asistencias(reunionActivaId, { page: 1, limit: 100 })
-      .then(async (response) => {
-        const registros = response.data.data.items.map((attendance, index) => attendanceToRegistro(attendance, index));
-        const registrosConFoto = await enriquecerFotos(registros);
-        if (!cancelado) setAsistentes(registrosConFoto);
-      })
+      .then((response) => setAsistentes(response.data.data.items.map((attendance, index) => attendanceToRegistro(attendance, index))))
       .catch((error) => console.error('Error al cargar asistencias:', error));
-    return () => { cancelado = true; };
   }, [reunionActivaId]);
 
   useEffect(() => {
@@ -276,6 +250,25 @@ export default function KioscoQRFeature() {
     setReunionAsistentesId(reunionId);
     const cache = JSON.parse(window.localStorage.getItem(ASISTENTES_CACHE_KEY) ?? '{}') as Record<string, AsistenteRegistro[]>;
     setCargandoAsistentes(true);
+    const enriquecerFotos = async (registros: AsistenteRegistro[]) => {
+      const fotosGuardadas = JSON.parse(window.localStorage.getItem(FOTOS_PERSONAS_CACHE_KEY) ?? '{}') as Record<string, string>;
+      const registrosConFoto = await Promise.all(registros.map(async (registro) => {
+          if (registro.fotografia || !registro.comuneroId) return registro;
+          if (fotosGuardadas[registro.comuneroId]) {
+            return { ...registro, fotografia: fotosGuardadas[registro.comuneroId] };
+          }
+          try {
+            const persona = await comunerosApi.obtenerPorId(registro.comuneroId);
+            if (persona.fotografia) fotosGuardadas[registro.comuneroId] = persona.fotografia;
+            return { ...registro, fotografia: persona.fotografia ?? '' };
+          } catch {
+            return registro;
+          }
+      }));
+      window.localStorage.setItem(FOTOS_PERSONAS_CACHE_KEY, JSON.stringify(fotosGuardadas));
+      return registrosConFoto;
+    };
+
     const asistentesCargados = cache[reunionId]?.length
       ? Promise.resolve(cache[reunionId])
       : assembliesApi.asistencias(reunionId, { page: 1, limit: 100 }).then((response) =>
@@ -425,10 +418,9 @@ export default function KioscoQRFeature() {
         : await assembliesApi.entradaQr(reunionActiva.id, codigoIngresado);
       const ahora = new Date().toISOString();
       const registroBase = attendanceToRegistro(response.data.data, Date.now(), ahora);
-      const [registroConFoto] = await enriquecerFotos([registroBase]);
-      const registro = salidasHabilitadas && !registroConFoto.horaSalida
-        ? { ...registroConFoto, horaSalida: ahora }
-        : registroConFoto;
+      const registro = salidasHabilitadas && !registroBase.horaSalida
+        ? { ...registroBase, horaSalida: ahora }
+        : registroBase;
       reproducirSonido(salidasHabilitadas ? 'salida' : 'entrada');
       setAsistentes((prev) => salidasHabilitadas
         ? prev.map((a) => a.comuneroId === registro.comuneroId ? { ...a, ...registro } : a)

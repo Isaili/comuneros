@@ -10,8 +10,33 @@ import { plotsService } from '../../parcelas/services/parcelas.service';
 import {
   leerCacheDashboard,
   guardarCacheDashboard,
+  invalidarCacheDashboard,
   DASHBOARD_INVALIDATE_EVENT,
 } from '@/features/menu/services/dashboardCache'; 
+
+let cargaDashboardEnCurso: Promise<{
+  totales: { comuneros: number; parcelas: number };
+}> | null = null;
+
+const cargarTotalesDesdeApi = () => {
+  cargaDashboardEnCurso ??= Promise.all([
+    comunerosApi.listar(1, 1),
+    plotsService.list({ page: 1, limit: 1 }),
+  ]).then(([comunerosResponse, parcelasResponse]) => {
+    const resultado = {
+      totales: {
+        comuneros: comunerosResponse.total || 0,
+        parcelas: parcelasResponse.data.total || 0,
+      },
+    };
+    guardarCacheDashboard(resultado);
+    return resultado;
+  }).finally(() => {
+    cargaDashboardEnCurso = null;
+  });
+
+  return cargaDashboardEnCurso;
+};
 
 export default function DashboardView({ activo = true }: { activo?: boolean }) {
   const [fechaActual, setFechaActual] = useState<string>('');
@@ -33,7 +58,6 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
     if (!activo) return;
 
     let montado = true;
-  let solicitudActual = 0;
 
     const cargarTotales = (forzar = false) => {
       if (!forzar) {
@@ -44,34 +68,19 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
         }
       }
 
-      const solicitud = ++solicitudActual;
-      Promise.all([
-        comunerosApi.listar(1, 1),
-        plotsService.list({ page: 1, limit: 1 }),
-      ])
-        .then(([comunerosResponse, parcelasResponse]) => {
-          if (!montado || solicitud !== solicitudActual) return;
-          const resultado = {
-            totales: {
-              comuneros: comunerosResponse.total || 0,
-              parcelas: parcelasResponse.data.total || 0,
-            },
-          };
-          guardarCacheDashboard(resultado);
+      cargarTotalesDesdeApi()
+        .then((resultado) => {
+          if (!montado) return;
           setTotales(resultado.totales);
         })
         .catch((error) => {
-          if (!montado || solicitud !== solicitudActual) return;
           console.error('Error al cargar resumen del dashboard:', error);
         });
     };
 
     cargarTotales();
 
-    const onInvalidate = () => {
-      solicitudActual += 1;
-      cargarTotales(true);
-    };
+    const onInvalidate = () => cargarTotales(true);
     window.addEventListener(DASHBOARD_INVALIDATE_EVENT, onInvalidate);
 
     return () => {
