@@ -19,7 +19,7 @@ const dancingScript = Dancing_Script({
 });
 
 export const metadata: Metadata = {
-  title: "Casa de Bienes Comunales de Copainalá",
+  title: "Casa de Bienes Comunales Copainalá",
   description: "Sistema de gestión de comuneros, parcelas, lotes y asambleas de Copainalá.",
   icons: {
     icon: "/recibo1.png",
