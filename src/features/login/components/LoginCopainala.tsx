@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useForm, Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -206,9 +207,9 @@ export default function LoginCopainala() {
                   />
                   <span className="text-gray-600 font-medium">Recordar sesión</span>
                 </label>
-                <a href="#" className="text-green-600 font-medium hover:text-[#C09E5F] transition-colors">
+                <Link href="/recuperar-contrasena" className="text-green-600 font-medium hover:text-[#C09E5F] transition-colors">
                   ¿Olvidaste tu contraseña?
-                </a>
+                </Link>
               </div>
 
               {/* Botón Principal */}
