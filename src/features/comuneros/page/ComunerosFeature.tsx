@@ -33,6 +33,7 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
   const [page, setPage] = useState(1);
   const [limit] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalComuneros, setTotalComuneros] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
@@ -50,7 +51,7 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
   const cargarComuneros = useCallback(async (paginaActual: number) => {
     setIsLoading(true);
     try {
-      const { comuneros: lista, totalPages: paginasTotales } = await comunerosApi.listar(
+      const { comuneros: lista, total, totalPages: paginasTotales } = await comunerosApi.listar(
         paginaActual,
         limit,
         { fullName: searchTerm || undefined }
@@ -58,6 +59,7 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
       const listaSinDuplicados = deduplicarComuneros(lista);
       setComuneros(listaSinDuplicados);
       setTotalPages(paginasTotales);
+      setTotalComuneros(total);
     } catch (err) {
       console.error('Error al cargar comuneros:', err);
       setComuneros([]);
@@ -259,6 +261,7 @@ export const ComunerosFeature: React.FC<ComunerosFeatureProps> = () => {
         ) : comuneros.length > 0 ? (
           <ComunerosList
             comuneros={comuneros}
+            totalComuneros={totalComuneros}
             selectedId={selectedComunero?.id ?? ''}
             onSelect={handleSelectComunero}
             onEdit={handleEdit}

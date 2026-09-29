@@ -6,6 +6,7 @@ import { CambiarTipoEstadoModal } from './CambiarTipoEstadoModal';
 
 interface ListProps {
   comuneros: Comunero[];
+  totalComuneros?: number;
   selectedId: string;
   onSelect: (comunero: Comunero) => void;
   onEdit: (id: string) => void;
@@ -107,6 +108,7 @@ function getFechaFormateada(c: any): string {
 
 export const ComunerosList: React.FC<ListProps> = ({
   comuneros,
+  totalComuneros,
   selectedId,
   onSelect,
   onEdit,
@@ -149,7 +151,7 @@ export const ComunerosList: React.FC<ListProps> = ({
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-gray-900 text-base">
-            Lista de Miembros ({comuneros.length})
+            Lista de Miembros ({totalComuneros ?? comuneros.length})
           </h3>
         </div>
 
