@@ -19,6 +19,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import { tokenStorage } from "@/core/auth/services/tokenStorage";
 
 const menuItems = [
   { name: "Dashboard", view: "dashboard", icon: LayoutGrid },
@@ -46,12 +47,12 @@ export default function Sidebar({ currentView, setView }: { currentView?: string
   const toggleSidebar = () => setIsOpen(!isOpen);
 
   const handleLogout = () => {
-  
-    localStorage.removeItem("token");
+
+    tokenStorage.clearTokens();
     localStorage.removeItem("user");
     localStorage.removeItem("menu:current-view");
 
-  
+
     router.push("/login");
   };
 

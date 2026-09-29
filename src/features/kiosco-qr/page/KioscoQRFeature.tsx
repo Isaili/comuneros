@@ -24,7 +24,6 @@ const normalizarCodigoQr = (codigo: string) => {
   return partes ? `QR-${partes.slice(1).join('-')}` : codigo.trim();
 };
 
-const INTERVALO_REVISION_MS = 15_000;
 const ESTADOS_ASAMBLEA_ACTIVOS: AssemblyStatus[] = ['REGISTRATION_OPEN', 'IN_PROGRESS', 'EXITS_OPEN'];
 
 const enriquecerFotos = async (registros: AsistenteRegistro[]) => {
@@ -127,7 +126,9 @@ export default function KioscoQRFeature() {
     assembliesApi.listar({ page: 1, limit: 100 })
       .then((response) => {
         if (cancelado) return;
-        const asambleas = response.data.data.items;
+        const asambleas = response.data.data.items.filter((asamblea, index, lista) =>
+          lista.findIndex((item) => item.id === asamblea.id) === index
+        );
         setReuniones(asambleas.map(assemblyToReunion));
         const activa = asambleas.find((asamblea) => ESTADOS_ASAMBLEA_ACTIVOS.includes(asamblea.status));
         if (activa) sincronizarAsambleaActiva(activa);
@@ -163,6 +164,10 @@ export default function KioscoQRFeature() {
   );
   const reunionesPasadas = useMemo(
     () => reuniones.filter((r) => r.estado === 'finalizada').sort((a, b) => fechaHoraTimestamp(b) - fechaHoraTimestamp(a)),
+    [reuniones]
+  );
+  const reunionesCanceladas = useMemo(
+    () => reuniones.filter((r) => r.estado === 'cancelada').sort((a, b) => fechaHoraTimestamp(b) - fechaHoraTimestamp(a)),
     [reuniones]
   );
 
@@ -225,20 +230,6 @@ export default function KioscoQRFeature() {
       .finally(() => setAccionEnCurso(false));
   };
 
-  useEffect(() => {
-    const revisarHorario = () => {
-      if (reunionActivaId) return;
-      if (!reunionMasCercana) return;
-      if (Date.now() >= fechaHoraTimestamp(reunionMasCercana)) {
-        void abrirReunionEspecifica(reunionMasCercana).catch((error) => console.error('Error al abrir asamblea:', error));
-      }
-    };
-
-    revisarHorario();
-    const interval = setInterval(revisarHorario, INTERVALO_REVISION_MS);
-    return () => clearInterval(interval);
-  }, [reunionActivaId, reunionMasCercana?.id]);
-
   const confirmarCierre = async () => {
     if (!reunionActiva) return;
     try {
@@ -282,7 +273,8 @@ export default function KioscoQRFeature() {
   const crearReunion = async (datos: { title: string; scheduledDate: string; type: 'ORDINARY' | 'EXTRAORDINARY'; agreements: string[] }) => {
     try {
       const response = await assembliesApi.crear(datos);
-      setReuniones((prev) => [...prev, assemblyToReunion(response.data.data)]);
+      const nueva = assemblyToReunion(response.data.data);
+      setReuniones((prev) => prev.some((item) => item.id === nueva.id) ? prev : [...prev, nueva]);
       setModalCrear(false);
     } catch (error) {
       const responseData = typeof error === 'object' && error !== null && 'response' in error
@@ -495,6 +487,13 @@ export default function KioscoQRFeature() {
             onNuevaReunion={() => setModalCrear(true)}
             titulo="Reuniones pasadas"
             etiquetaBoton="Ver asistencia"
+          />
+          <ProximasReunionesList
+            reuniones={reunionesCanceladas}
+            onSeleccionar={() => {}}
+            onNuevaReunion={() => setModalCrear(true)}
+            titulo="Reuniones canceladas"
+            etiquetaBoton="Cancelada"
           />
           {reunionAsistentesId && (
             <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">

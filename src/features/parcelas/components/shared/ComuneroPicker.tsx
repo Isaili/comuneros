@@ -47,8 +47,7 @@ export function ComuneroPicker<T>({
 
   const disponibles = items.filter(item => !excludeIds.includes(getId(item)));
   const filtrados = disponibles
-    .filter(item => getLabel(item).toLowerCase().includes(query.toLowerCase()))
-    .slice(0, 6);
+    .filter(item => getLabel(item).toLowerCase().includes(query.toLowerCase()));
 
   const seleccionado = disponibles.find(item => getId(item) === selectedId);
 
