@@ -6,10 +6,8 @@
 import { tokenStorage } from '@/core/auth/services/tokenStorage';
 import { refrescarAccessToken } from '@/core/api/apiClient';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
-const API_BASE_URL = typeof window === 'undefined'
-  ? BASE_URL.replace(/\/+$/, '')
-  : '/api/proxy';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://comiseria-production.up.railway.app';
+const API_BASE_URL = BASE_URL.replace(/\/+$/, '');
 
 export class ApiError extends Error {
   status: number;

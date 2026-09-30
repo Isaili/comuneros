@@ -5,16 +5,15 @@ import { tokenStorage } from '../auth/services/tokenStorage';
 import { userStorage } from '../auth/services/userStorage';
 import { LoginResponse } from '../auth/models/auth.model';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-const CLIENT_BASE_URL = typeof window === 'undefined' ? BASE_URL : '/api/proxy';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://comiseria-production.up.railway.app';
 
 const REFRESH_ENDPOINT = '/auth/refresh';
 
 // withCredentials: true envía/recibe la cookie httpOnly del refresh token en cada request.
-export const apiClient = axios.create({ baseURL: CLIENT_BASE_URL, withCredentials: true });
+export const apiClient = axios.create({ baseURL: BASE_URL, withCredentials: true });
 
 // Cliente sin interceptores para no reintentar el propio refresh en bucle.
-const refreshClient = axios.create({ baseURL: CLIENT_BASE_URL, withCredentials: true });
+const refreshClient = axios.create({ baseURL: BASE_URL, withCredentials: true });
 
 interface RequestConfigConReintento extends InternalAxiosRequestConfig {
   _retry?: boolean;
