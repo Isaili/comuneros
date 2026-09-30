@@ -38,9 +38,9 @@ export const comunerosApi = {
     filters?: { fullName?: string; personType?: PersonaBackendDTO['personType']; status?: PersonaBackendDTO['status'] },
     options?: { incluirDetalle?: boolean }
   ): Promise<{ comuneros: Comunero[]; total: number; totalPages: number }> => {
-    // Parámetro _t: Date.now() para romper la caché HTTP
+    // El backend valida estrictamente los query params (rechaza cualquiera que no reconozca), no mandar _t ni extras.
     const { data } = await apiClient.get<ApiEnvelope<PaginatedListDTO<PersonaBackendDTO>>>('/persons', {
-      params: { page, limit, status: filters?.status ?? 'ACTIVE', ...filters, _t: Date.now() },
+      params: { page, limit, status: filters?.status ?? 'ACTIVE', ...filters },
     });
 
     const { items, total, limit: limitRespuesta } = data.data;
@@ -60,10 +60,7 @@ export const comunerosApi = {
   },
 
   obtenerPorId: async (id: string): Promise<Comunero> => {
-    // Realiza el GET individual directo a la API con parámetro anti-caché
-    const { data } = await apiClient.get<ApiEnvelope<PersonaBackendDTO>>(`/persons/${id}`, {
-      params: { _t: Date.now() },
-    });
+    const { data } = await apiClient.get<ApiEnvelope<PersonaBackendDTO>>(`/persons/${id}`);
     return mapearComuneroDesdeBackend(data.data);
   },
 
