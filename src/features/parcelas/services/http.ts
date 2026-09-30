@@ -7,7 +7,9 @@ import { tokenStorage } from '@/core/auth/services/tokenStorage';
 import { refrescarAccessToken } from '@/core/api/apiClient';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
-const API_BASE_URL = BASE_URL.replace(/\/+$/, '');
+const API_BASE_URL = typeof window === 'undefined'
+  ? BASE_URL.replace(/\/+$/, '')
+  : '/api/proxy';
 
 export class ApiError extends Error {
   status: number;
@@ -34,7 +36,7 @@ const solicitar = async (path: string, options: RequestInit, token: string | nul
   });
 
 export async function http<T>(path: string, options: RequestInit = {}, _retry = false): Promise<T> {
-  let res = await solicitar(path, options, tokenStorage.getAccessToken());
+  const res = await solicitar(path, options, tokenStorage.getAccessToken());
 
   if (res.status === 401 && !_retry) {
     const nuevoAccessToken = await refrescarAccessToken();
