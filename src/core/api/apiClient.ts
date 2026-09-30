@@ -24,6 +24,11 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Evita que el navegador sirva un GET cacheado con datos desactualizados (sin usar query params, que el backend rechaza).
+  if ((config.method ?? 'get').toLowerCase() === 'get') {
+    config.headers['Cache-Control'] = 'no-cache';
+    config.headers['Pragma'] = 'no-cache';
+  }
   return config;
 });
 
