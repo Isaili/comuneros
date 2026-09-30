@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UserPlus, X } from 'lucide-react';
 import { Comunero } from '../../comuneros/types/types';
 import { ComuneroPicker } from './shared/ComuneroPicker';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import { plotsService } from '../services/parcelas.service';
 
 interface AsignarTitularModalProps {
-  parcela: { superficieHa: number };
+  parcela: { id: string; superficieHa: number; titularesDetalle?: { hectareasPosesion: number }[] };
   comunerosRegistrados: Comunero[];
   onClose: () => void;
   onAsignar: (datos: {
@@ -35,15 +36,48 @@ export const AsignarTitularModal: React.FC<AsignarTitularModalProps> = ({
   onClose,
   onAsignar,
 }) => {
+  const hectareasActivas = (parcela.titularesDetalle ?? []).reduce((suma, t) => suma + (t.hectareasPosesion || 0), 0);
+  const [hectareasHistoricas, setHectareasHistoricas] = useState(0);
+  const [cargandoCapacidad, setCargandoCapacidad] = useState(true);
+
+  useEffect(() => {
+    let cancelado = false;
+    // El backend cuenta también la superficie histórica ya asignada (aunque ya no tenga titular activo)
+    // para validar la capacidad física de la parcela, por eso hay que sumarla aquí también.
+    plotsService.history(parcela.id, 1, 200)
+      .then((respuesta) => {
+        if (cancelado) return;
+        const suma = respuesta.data.items.reduce((acc, item) => acc + (item.hectares || 0), 0);
+        setHectareasHistoricas(suma);
+      })
+      .catch(() => { if (!cancelado) setHectareasHistoricas(0); })
+      .finally(() => { if (!cancelado) setCargandoCapacidad(false); });
+    return () => { cancelado = true; };
+  }, [parcela.id]);
+
+  const hectareasYaAsignadas = hectareasActivas + hectareasHistoricas;
+  const hectareasDisponibles = Math.max(0, parcela.superficieHa - hectareasYaAsignadas);
+
   const [seleccionadoId, setSeleccionadoId] = useState<string>('');
   const [hectares, setHectares] = useState(String(parcela.superficieHa));
   const [certificate, setCertificate] = useState('');
   const [transferType, setTransferType] = useState('SALE');
   const [guardando, setGuardando] = useState(false);
 
+  useEffect(() => {
+    if (!cargandoCapacidad) {
+      setHectares(String(hectareasDisponibles || parcela.superficieHa));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargandoCapacidad]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (guardando) return;
+    if (hectareasYaAsignadas > 0 && hectareasDisponibles <= 0) {
+      alert('Esta parcela ya alcanzó su capacidad física máxima (toda la superficie ya está asignada, incluyendo historial). Usa "Traspaso" en vez de "Asignar Titular".');
+      return;
+    }
     const comunero = comunerosRegistrados.find(c => c.id === seleccionadoId);
     if (!comunero) {
       alert('Por favor seleccione un titular.');
@@ -52,6 +86,10 @@ export const AsignarTitularModal: React.FC<AsignarTitularModalProps> = ({
     const hectaresNumber = Number(hectares);
     if (!Number.isFinite(hectaresNumber) || hectaresNumber <= 0 || !certificate.trim()) {
       alert('Indique las hectáreas y el certificado del titular.');
+      return;
+    }
+    if (hectareasDisponibles > 0 && hectaresNumber > hectareasDisponibles) {
+      alert(`Solo quedan ${hectareasDisponibles.toFixed(4)} ha disponibles en esta parcela (considerando historial). Para superficie ya asignada usa Traspaso en vez de Asignar Titular.`);
       return;
     }
     setGuardando(true);
@@ -104,7 +142,15 @@ export const AsignarTitularModal: React.FC<AsignarTitularModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-gray-500 font-bold block">Hectáreas</label>
+              <label className="text-gray-500 font-bold block">
+                Hectáreas {cargandoCapacidad ? (
+                  <span className="font-normal text-gray-400">(calculando disponibilidad...)</span>
+                ) : hectareasYaAsignadas > 0 && hectareasDisponibles <= 0 ? (
+                  <span className="font-normal text-red-600">(sin superficie disponible, usa Traspaso)</span>
+                ) : hectareasDisponibles > 0 ? (
+                  <span className="font-normal text-emerald-700">({hectareasDisponibles.toFixed(4)} ha disponibles)</span>
+                ) : null}
+              </label>
               <input type="number" min="0.0001" step="0.0001" required value={hectares} onChange={(e) => setHectares(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl" />
             </div>
             <div className="space-y-1">
