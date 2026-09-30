@@ -57,8 +57,13 @@ export default function LoginCopainala() {
       await authApi.login(data.usuario, data.password);
       router.push('/menu');
     } catch (err) {
-      const mensaje = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setLoginError(mensaje ?? 'Usuario o contraseña incorrectos. Intenta de nuevo.');
+      const respuesta = (err as { response?: { data?: { message?: string } } })?.response;
+      if (!respuesta) {
+        // Sin response = el navegador bloqueó la petición (CORS) o no hay conexión, no son credenciales incorrectas.
+        setLoginError('No se pudo conectar con el servidor. Puede ser un bloqueo de CORS del backend o falta de conexión.');
+        return;
+      }
+      setLoginError(respuesta.data?.message ?? 'Usuario o contraseña incorrectos. Intenta de nuevo.');
     }
   };
 
