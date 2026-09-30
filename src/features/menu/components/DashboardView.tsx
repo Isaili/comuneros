@@ -37,10 +37,11 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
 
     const cargarTotales = (forzar = false) => {
       if (!forzar) {
+        // El caché solo sirve como vista previa instantánea para evitar el "parpadeo";
+        // siempre se refresca contra el backend para no quedarse con un total desactualizado.
         const cache = leerCacheDashboard();
         if (cache?.totales) {
           setTotales(cache.totales);
-          return;
         }
       }
 
