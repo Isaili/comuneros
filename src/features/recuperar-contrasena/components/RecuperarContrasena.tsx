@@ -6,6 +6,7 @@ import { useForm, Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { ArrowLeft, Home, Mail, MapPin, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { recuperarContrasenaApi } from '../services/recuperarContrasenaApi';
 
 const floatingPins = [
   { top: '16%', left: '12%' },
@@ -42,7 +43,7 @@ export default function RecuperarContrasena() {
   const onSubmit = async (data: RecuperarFormData) => {
     setError(null);
     try {
-      console.log('Solicitud de recuperación enviada a:', data.correo);
+      await recuperarContrasenaApi.solicitarRecuperacion(data.correo);
       setEnviado(true);
     } catch {
       setError('No se pudo enviar el correo de recuperación. Intenta de nuevo.');
