@@ -2,16 +2,18 @@ console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { tokenStorage } from '../auth/services/tokenStorage';
+import { userStorage } from '../auth/services/userStorage';
+import { LoginResponse } from '../auth/models/auth.model';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-// TODO: ajustar la ruta cuando Norberto entregue el endpoint real de refresh.
 const REFRESH_ENDPOINT = '/auth/refresh';
 
-export const apiClient = axios.create({ baseURL: BASE_URL });
+// withCredentials: true envía/recibe la cookie httpOnly del refresh token en cada request.
+export const apiClient = axios.create({ baseURL: BASE_URL, withCredentials: true });
 
 // Cliente sin interceptores para no reintentar el propio refresh en bucle.
-const refreshClient = axios.create({ baseURL: BASE_URL });
+const refreshClient = axios.create({ baseURL: BASE_URL, withCredentials: true });
 
 interface RequestConfigConReintento extends InternalAxiosRequestConfig {
   _retry?: boolean;
@@ -34,8 +36,35 @@ const resolverCola = (nuevoAccessToken: string | null) => {
 };
 
 const irALogin = () => {
-  tokenStorage.clearTokens();
+  tokenStorage.clearAccessToken();
+  userStorage.clearUser();
   if (typeof window !== 'undefined') window.location.href = '/login';
+};
+
+// Reutilizable por cualquier cliente HTTP (axios o fetch) que reciba un 401.
+// El refresh token va solo en la cookie httpOnly "refresh_token" (withCredentials/credentials:'include'), no en el body.
+export const refrescarAccessToken = async (): Promise<string | null> => {
+  if (refrescando) {
+    return new Promise((resolve) => {
+      colaEsperandoRefresh.push(resolve);
+    });
+  }
+
+  refrescando = true;
+  try {
+    const response = await refreshClient.post<{ data: LoginResponse } | LoginResponse>(REFRESH_ENDPOINT);
+    const { accessToken, user } = 'data' in response.data ? response.data.data : response.data;
+    tokenStorage.setAccessToken(accessToken);
+    userStorage.setUser(user);
+    resolverCola(accessToken);
+    return accessToken;
+  } catch (refreshError) {
+    resolverCola(null);
+    irALogin();
+    return null;
+  } finally {
+    refrescando = false;
+  }
 };
 
 apiClient.interceptors.response.use(
@@ -47,41 +76,16 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const refreshToken = tokenStorage.getRefreshToken();
-    if (!refreshToken) {
-      irALogin();
+    originalRequest._retry = true;
+
+    const nuevoAccessToken = await refrescarAccessToken();
+    if (!nuevoAccessToken) {
       return Promise.reject(error);
     }
 
-    originalRequest._retry = true;
-
-    if (refrescando) {
-      return new Promise((resolve, reject) => {
-        colaEsperandoRefresh.push((nuevoAccessToken) => {
-          if (!nuevoAccessToken) {
-            reject(error);
-            return;
-          }
-          originalRequest.headers.Authorization = `Bearer ${nuevoAccessToken}`;
-          resolve(apiClient(originalRequest));
-        });
-      });
-    }
-
-    refrescando = true;
-    try {
-      const response = await refreshClient.post(REFRESH_ENDPOINT, { refreshToken });
-      const { accessToken, refreshToken: nuevoRefreshToken } = response.data.data ?? response.data;
-      tokenStorage.setTokens(accessToken, nuevoRefreshToken);
-      resolverCola(accessToken);
-      originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-      return apiClient(originalRequest);
-    } catch (refreshError) {
-      resolverCola(null);
-      irALogin();
-      return Promise.reject(refreshError);
-    } finally {
-      refrescando = false;
-    }
+    originalRequest.headers.Authorization = `Bearer ${nuevoAccessToken}`;
+    return apiClient(originalRequest);
   }
 );
+
+

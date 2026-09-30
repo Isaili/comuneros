@@ -19,7 +19,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import LoadingOverlay from "@/components/LoadingOverlay";
-import { tokenStorage } from "@/core/auth/services/tokenStorage";
+import { authApi } from "@/core/auth/services/authApi";
 
 const menuItems = [
   { name: "Dashboard", view: "dashboard", icon: LayoutGrid },
@@ -46,13 +46,13 @@ export default function Sidebar({ currentView, setView }: { currentView?: string
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
-  const handleLogout = () => {
-
-    tokenStorage.clearTokens();
-    localStorage.removeItem("user");
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // si el backend no responde, igual limpiamos la sesión localmente
+    }
     localStorage.removeItem("menu:current-view");
-
-
     router.push("/login");
   };
 

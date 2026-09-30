@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ConfiguracionHeader } from '../components/ConfiguracionHeader';
 import { ConfiguracionCards } from '../components/ConfiguracionCards';
 import { HistorialCambiosList } from '../components/HistorialCambiosList';
+import { CambiarPasswordCard } from '../components/CambiarPasswordCard';
 import { MOCK_CONFIGURACION, MOCK_HISTORIAL } from '../mocks/configuracion.mock';
 import { ConfiguracionSistema, RegistroHistorial } from '../types/configuracion';
 
@@ -107,6 +108,7 @@ export default function ConfiguracionPage() {
           configuracionInicial={config}
           onGuardar={handleGuardarCambio}
         />
+        <CambiarPasswordCard />
         <HistorialCambiosList historial={historial} />
       </div>
     </main>

@@ -6,6 +6,7 @@ import { useForm, Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useRouter } from 'next/navigation';
+import { authApi } from '@/core/auth/services/authApi';
 import { 
   User, 
   Lock, 
@@ -19,18 +20,8 @@ import {
 const loginSchema = yup.object({
   usuario: yup
     .string()
-    .required('El usuario o correo es obligatorio')
-    .test(
-      'usuario-o-correo',
-      'Ingresa un usuario válido o un correo electrónico válido',
-      (value) => {
-        if (!value) return false;
-        if (value.includes('@')) {
-          return yup.string().email().isValidSync(value);
-        }
-        return value.length >= 3;
-      }
-    ),
+    .required('El correo es obligatorio')
+    .email('Ingresa un correo electrónico válido'),
   password: yup
     .string()
     .required('La contraseña es obligatoria')
@@ -63,10 +54,11 @@ export default function LoginCopainala() {
   const onSubmitFormulario = async (data: LoginFormData) => {
     setLoginError(null);
     try {
-      console.log('¡Validación exitosa! Redirigiendo a /menu...');
+      await authApi.login(data.usuario, data.password);
       router.push('/menu');
     } catch (err) {
-      setLoginError('Usuario o contraseña incorrectos. Intenta de nuevo.');
+      const mensaje = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setLoginError(mensaje ?? 'Usuario o contraseña incorrectos. Intenta de nuevo.');
     }
   };
 
