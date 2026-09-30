@@ -3,31 +3,34 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '@/core/api/apiClient';
 import { tokenStorage } from '../services/tokenStorage';
+import { userStorage } from '../services/userStorage';
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
 // Envuelve rutas privadas: valida la sesión contra el backend antes de pintar
-// el contenido. Si no hay sesión válida, el propio interceptor de apiClient
-// (401 -> intenta refresh -> si falla, redirige a /login) se encarga de sacar al usuario.
+// el contenido. No depende únicamente del interceptor de apiClient (que solo
+// redirige ante un 401 real) porque un bloqueo CORS del navegador llega como
+// error de red, no como 401, y se quedaría sin redirigir nunca.
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const [verificado, setVerificado] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
 
+    const irALogin = () => {
+      tokenStorage.clearAccessToken();
+      userStorage.clearUser();
+      window.location.href = '/login';
+    };
+
     const verificarSesion = async () => {
-      if (!tokenStorage.getAccessToken()) {
-        // Sin access token en memoria: puede que el refresh cookie siga vigente.
-        // /users/me disparará el 401 -> el interceptor intentará refrescar solo.
-      }
       try {
         await apiClient.get('/users/me');
         if (!cancelado) setVerificado(true);
       } catch {
-        // Si la sesión no pudo restablecerse, el interceptor de apiClient ya
-        // redirigió a /login (irALogin). No hacemos nada más aquí.
+        if (!cancelado) irALogin();
       }
     };
 
