@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { apiClient } from '@/core/api/apiClient';
 import { tokenStorage } from '../services/tokenStorage';
 import { userStorage } from '../services/userStorage';
 
@@ -9,35 +8,37 @@ interface AuthGuardProps {
   children: React.ReactNode;
 }
 
-// Envuelve rutas privadas: valida la sesión contra el backend antes de pintar
-// el contenido. No depende únicamente del interceptor de apiClient (que solo
-// redirige ante un 401 real) porque un bloqueo CORS del navegador llega como
-// error de red, no como 401, y se quedaría sin redirigir nunca.
+// Decodifica el payload de un JWT sin verificar la firma (solo para leer "exp"
+// y evitar mandar peticiones con un token obviamente vencido). La validación
+// real de la firma la hace siempre el backend en cada request.
+const tokenExpirado = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (typeof payload.exp !== 'number') return false;
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return false;
+  }
+};
+
+// Envuelve rutas privadas. No existe un endpoint como "/users/me" para validar
+// la sesión contra el backend, así que se valida localmente la presencia y
+// vigencia del access token; el 401 real de cada request (si el backend lo
+// llega a exigir) sigue disparando el refresh/redirect vía el interceptor de apiClient.
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const [verificado, setVerificado] = useState(false);
 
   useEffect(() => {
-    let cancelado = false;
+    const token = tokenStorage.getAccessToken();
 
-    const irALogin = () => {
+    if (!token || tokenExpirado(token)) {
       tokenStorage.clearAccessToken();
       userStorage.clearUser();
       window.location.href = '/login';
-    };
+      return;
+    }
 
-    const verificarSesion = async () => {
-      try {
-        await apiClient.get('/users/me');
-        if (!cancelado) setVerificado(true);
-      } catch {
-        if (!cancelado) irALogin();
-      }
-    };
-
-    void verificarSesion();
-    return () => {
-      cancelado = true;
-    };
+    setVerificado(true);
   }, []);
 
   if (!verificado) {
