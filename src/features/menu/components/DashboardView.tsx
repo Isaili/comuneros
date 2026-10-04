@@ -96,7 +96,7 @@ export default function DashboardView({ activo = true }: { activo?: boolean }) {
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight font-serif flex items-center gap-2">
-            ¡Bienvenido, <span className="text-[#006837]">Mario</span>!
+            ¡Bienvenido, <span className="text-[#006837]">Bienes Comunales</span>!
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide mt-1">
             Resumen actualizado del estado de Bienes Comunales.
